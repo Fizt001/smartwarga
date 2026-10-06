@@ -15,8 +15,50 @@ import {
   User, 
   CheckCircle2, 
   Clock,
-  ShieldCheck 
+  ShieldCheck,
+  Users,
+  ArrowRight
 } from 'lucide-react';
+
+const wargaAccounts = [
+  { name: 'Budi Santoso', email: 'budi@smartwarga.test', unit: 'RT 01 Blok A No. 01' },
+  { name: 'Joko Widodo', email: 'joko@smartwarga.test', unit: 'RT 01 Blok A No. 03' },
+  { name: 'Achmad Vickry Firdaus', email: 'achmad.vickry@smartwarga.test', unit: 'RT 01 Blok A No. 04' },
+  { name: 'Cikal Prayoga', email: 'cikal.prayoga@smartwarga.test', unit: 'RT 01 Blok A No. 05' },
+  { name: 'Julvan Augus Miseri Cordias Harefa', email: 'julvan.augus@smartwarga.test', unit: 'RT 01 Blok A No. 06' },
+  { name: 'Reival Al Kahfi', email: 'reival.al@smartwarga.test', unit: 'RT 01 Blok A No. 07' },
+  { name: 'Halim Hafis', email: 'halim.hafis@smartwarga.test', unit: 'RT 01 Blok A No. 08' },
+  { name: 'Kurnia Yuliansyah', email: 'kurnia.yuliansyah@smartwarga.test', unit: 'RT 01 Blok A No. 09' },
+  { name: 'Sonri Tolla', email: 'sonri.tolla@smartwarga.test', unit: 'RT 01 Blok A No. 10' },
+  { name: 'Yohnes Nelsen Christian Pontoh', email: 'yohnes.nelsen@smartwarga.test', unit: 'RT 01 Blok A No. 11' },
+  { name: 'Arfendy Maulana', email: 'arfendy.maulana@smartwarga.test', unit: 'RT 01 Blok A No. 12' },
+  { name: 'M Firmansyah', email: 'm.firmansyah@smartwarga.test', unit: 'RT 01 Blok A No. 13' },
+  { name: 'Dimas Waldy Muzzaky', email: 'dimas.waldy@smartwarga.test', unit: 'RT 01 Blok A No. 14' },
+  { name: 'Argo Iriano Sumarno', email: 'argo.iriano@smartwarga.test', unit: 'RT 01 Blok A No. 15' },
+  { name: 'Mohammad Raffi Aryadi', email: 'mohammad.raffi@smartwarga.test', unit: 'RT 01 Blok A No. 16' },
+  { name: 'Muhammad Fattah Hadi Mirza', email: 'muhammad.fattah@smartwarga.test', unit: 'RT 01 Blok A No. 17' },
+  { name: 'Julisman Harefa', email: 'julisman.harefa@smartwarga.test', unit: 'RT 01 Blok A No. 18' },
+  { name: 'Noventri Dermawan Zendrato', email: 'noventri.dermawan@smartwarga.test', unit: 'RT 01 Blok A No. 19' },
+  { name: 'Ahmad Tsaqib Karim', email: 'ahmad.tsaqib@smartwarga.test', unit: 'RT 01 Blok A No. 20' },
+  { name: 'Titis Rismawati', email: 'titis.rismawati@smartwarga.test', unit: 'RT 01 Blok A No. 21' },
+  { name: 'Amelia Sumayah', email: 'amelia.sumayah@smartwarga.test', unit: 'RT 01 Blok A No. 22' },
+  { name: 'Anggi Fitri Ramadhani', email: 'anggi.fitri@smartwarga.test', unit: 'RT 01 Blok A No. 23' },
+  { name: 'Annisa Zahra Sofanie', email: 'annisa.zahra@smartwarga.test', unit: 'RT 01 Blok A No. 24' },
+  { name: 'Risywda Zahra Mugiharjo', email: 'risywda.zahra@smartwarga.test', unit: 'RT 01 Blok A No. 25' },
+  { name: 'Zahra Ramadhani', email: 'zahra.ramadhani@smartwarga.test', unit: 'RT 01 Blok B No. 01' },
+  { name: 'Shibghi Hidayatullail', email: 'shibghi.hidayatullail@smartwarga.test', unit: 'RT 01 Blok B No. 02' },
+  { name: 'Muhanmad Fadli Syaputra', email: 'muhanmad.fadli@smartwarga.test', unit: 'RT 01 Blok B No. 03' },
+  { name: 'Achmad Pathoni', email: 'achmad.pathoni@smartwarga.test', unit: 'RT 01 Blok B No. 04' },
+  { name: 'Yazid Abdul Karim', email: 'yazid.abdul@smartwarga.test', unit: 'RT 01 Blok B No. 05' },
+  { name: 'Riky Ridwan', email: 'riky.ridwan@smartwarga.test', unit: 'RT 01 Blok B No. 06' },
+  { name: 'Alfriza', email: 'alfriza.warga@smartwarga.test', unit: 'RT 01 Blok B No. 07' },
+  { name: 'Syaifullah Asshadiq', email: 'syaifullah.asshadiq@smartwarga.test', unit: 'RT 01 Blok B No. 08' },
+  { name: 'Muhammad Ilham Hidayat', email: 'muhammad.ilham@smartwarga.test', unit: 'RT 01 Blok B No. 09' },
+  { name: 'Fabwian Nazhif Atthallah', email: 'fabwian.nazhif@smartwarga.test', unit: 'RT 01 Blok B No. 10' },
+  { name: 'Angelo Christian Juan', email: 'angelo.christian@smartwarga.test', unit: 'RT 01 Blok B No. 11' },
+  { name: 'Julius Wisnu Broto', email: 'julius.wisnu@smartwarga.test', unit: 'RT 01 Blok B No. 12' },
+  { name: 'Bambang Pamungkas', email: 'bambang@smartwarga.test', unit: 'RT 02 Blok B No. 01' },
+];
 
 export default function AuthView() {
   const { login } = useAuth();
@@ -25,6 +67,7 @@ export default function AuthView() {
   // Login form state
   const [loginEmail, setLoginEmail] = useState('budi@smartwarga.test');
   const [loginPassword, setLoginPassword] = useState('password');
+  const [selectedWargaEmail, setSelectedWargaEmail] = useState('');
 
   // Register form state
   const [regName, setRegName] = useState('');
@@ -85,7 +128,7 @@ export default function AuthView() {
         login(res.data.token, res.data.user);
       }
     } catch (err: any) {
-      setErrorMsg(err.message || 'Login gagal.');
+      setErrorMsg(err.message === 'Failed to fetch' ? 'Gagal terhubung ke server. Silakan coba sesaat lagi.' : (err.message || 'Login gagal.'));
     } finally {
       setLoading(false);
     }
@@ -134,10 +177,28 @@ export default function AuthView() {
     }
   };
 
-  // Quick Account Picker chips
-  const fillQuickAccount = (email: string) => {
+  // Quick Account Picker chips with optional auto-login
+  const fillQuickAccount = async (email: string, autoLogin: boolean = false) => {
     setLoginEmail(email);
     setLoginPassword('password');
+    setSelectedWargaEmail(email);
+    setErrorMsg('');
+    if (autoLogin) {
+      setLoading(true);
+      try {
+        const res = await fetchApi('/auth/login', {
+          method: 'POST',
+          body: JSON.stringify({ email, password: 'password' }),
+        });
+        if (res.success && res.data) {
+          login(res.data.token, res.data.user);
+        }
+      } catch (err: any) {
+        setErrorMsg(err.message === 'Failed to fetch' ? 'Gagal terhubung ke server. Silakan coba sesaat lagi.' : (err.message || 'Login gagal.'));
+      } finally {
+        setLoading(false);
+      }
+    }
   };
 
   return (
@@ -232,111 +293,181 @@ export default function AuthView() {
               {loading ? 'MEMERIKSA...' : 'MASUK KE SISTEM'}
             </button>
 
-            {/* Quick Demo Credentials */}
-            <div className="pt-4 border-t border-slate-100">
-              <span className="text-[10px] uppercase font-extrabold tracking-wider text-slate-400 block mb-2">
-                Pilih Cepat Akun Demonstrasi & Pengujian (Role-Based):
-              </span>
-              <div className="grid grid-cols-2 gap-1.5 sm:grid-cols-3">
-                <button
-                  type="button"
-                  onClick={() => fillQuickAccount('budi@smartwarga.test')}
-                  className="px-2 py-1.5 bg-emerald-50 text-emerald-800 text-[10px] font-bold rounded-xl border border-emerald-200 hover:bg-emerald-100 flex items-center gap-1.5 text-left"
-                >
-                  <span className="w-2 h-2 rounded-full bg-emerald-500 shrink-0"></span>
-                  <div className="truncate">
-                    <div>Budi (KK Utama)</div>
-                    <div className="text-[9px] font-normal text-emerald-600">RT01-A01 (PJ Unit)</div>
-                  </div>
-                </button>
-                <button
-                  type="button"
-                  onClick={() => fillQuickAccount('joko@smartwarga.test')}
-                  className="px-2 py-1.5 bg-teal-50 text-teal-800 text-[10px] font-bold rounded-xl border border-teal-200 hover:bg-teal-100 flex items-center gap-1.5 text-left"
-                >
-                  <span className="w-2 h-2 rounded-full bg-teal-500 shrink-0"></span>
-                  <div className="truncate">
-                    <div>Joko (KK Utama)</div>
-                    <div className="text-[9px] font-normal text-teal-600">RT01-A03 (PJ Unit)</div>
-                  </div>
-                </button>
-                <button
-                  type="button"
-                  onClick={() => fillQuickAccount('bendahara_rt01@smartwarga.test')}
-                  className="px-2 py-1.5 bg-emerald-50 text-emerald-900 text-[10px] font-bold rounded-xl border border-emerald-300 hover:bg-emerald-100 flex items-center gap-1.5 text-left"
-                >
-                  <span className="w-2 h-2 rounded-full bg-emerald-600 shrink-0"></span>
-                  <div className="truncate">
-                    <div>Ibu Ratna (Bendahara)</div>
-                    <div className="text-[9px] font-normal text-emerald-700">Bendahara RT 01 (ACC Iuran)</div>
-                  </div>
-                </button>
-                <button
-                  type="button"
-                  onClick={() => fillQuickAccount('sekretaris_rt01@smartwarga.test')}
-                  className="px-2 py-1.5 bg-blue-50 text-blue-900 text-[10px] font-bold rounded-xl border border-blue-300 hover:bg-blue-100 flex items-center gap-1.5 text-left"
-                >
-                  <span className="w-2 h-2 rounded-full bg-blue-600 shrink-0"></span>
-                  <div className="truncate">
-                    <div>Pak Danu (Sekretaris)</div>
-                    <div className="text-[9px] font-normal text-blue-700">Sekretaris RT 01 (Kegiatan)</div>
-                  </div>
-                </button>
-                <button
-                  type="button"
-                  onClick={() => fillQuickAccount('bendahara_rw@smartwarga.test')}
-                  className="px-2 py-1.5 bg-indigo-50 text-indigo-900 text-[10px] font-bold rounded-xl border border-indigo-300 hover:bg-indigo-100 flex items-center gap-1.5 text-left"
-                >
-                  <span className="w-2 h-2 rounded-full bg-indigo-600 shrink-0"></span>
-                  <div className="truncate">
-                    <div>Pak Hendra (Bendahara)</div>
-                    <div className="text-[9px] font-normal text-indigo-700">Bendahara RW 05 (Kas RW)</div>
-                  </div>
-                </button>
-                <button
-                  type="button"
-                  onClick={() => fillQuickAccount('sekretaris_rw@smartwarga.test')}
-                  className="px-2 py-1.5 bg-purple-50 text-purple-900 text-[10px] font-bold rounded-xl border border-purple-300 hover:bg-purple-100 flex items-center gap-1.5 text-left"
-                >
-                  <span className="w-2 h-2 rounded-full bg-purple-600 shrink-0"></span>
-                  <div className="truncate">
-                    <div>Ibu Maya (Sekretaris)</div>
-                    <div className="text-[9px] font-normal text-purple-700">Sekretaris RW 05 (Agenda RW)</div>
-                  </div>
-                </button>
-                <button
-                  type="button"
-                  onClick={() => fillQuickAccount('rt01@smartwarga.test')}
-                  className="px-2 py-1.5 bg-slate-100 text-slate-800 text-[10px] font-bold rounded-xl border border-slate-300 hover:bg-slate-200 flex items-center gap-1.5 text-left"
-                >
-                  <span className="w-2 h-2 rounded-full bg-slate-600 shrink-0"></span>
-                  <div className="truncate">
-                    <div>Ketua RT 01</div>
-                    <div className="text-[9px] font-normal text-slate-500">Pengawasan Wilayah</div>
-                  </div>
-                </button>
-                <button
-                  type="button"
-                  onClick={() => fillQuickAccount('rw05@smartwarga.test')}
-                  className="px-2 py-1.5 bg-slate-100 text-slate-800 text-[10px] font-bold rounded-xl border border-slate-300 hover:bg-slate-200 flex items-center gap-1.5 text-left"
-                >
-                  <span className="w-2 h-2 rounded-full bg-slate-800 shrink-0"></span>
-                  <div className="truncate">
-                    <div>Ketua RW 05</div>
-                    <div className="text-[9px] font-normal text-slate-500">Supervisi Lingkungan</div>
-                  </div>
-                </button>
-                <button
-                  type="button"
-                  onClick={() => fillQuickAccount('admin@smartwarga.test')}
-                  className="px-2 py-1.5 bg-slate-900 text-white text-[10px] font-bold rounded-xl hover:bg-slate-800 flex items-center gap-1.5 text-left"
-                >
-                  <span className="w-2 h-2 rounded-full bg-emerald-400 shrink-0"></span>
-                  <div className="truncate">
-                    <div>Super Admin</div>
-                    <div className="text-[9px] font-normal text-slate-400">Akses Penuh Sistem</div>
-                  </div>
-                </button>
+            {/* Quick Demo Credentials & Dropdown Warga */}
+            <div className="pt-4 border-t border-slate-100 space-y-3">
+              {/* Dropdown Fast Login 37 Warga */}
+              <div className="p-3 bg-emerald-50/80 rounded-2xl border border-emerald-200 shadow-sm">
+                <div className="flex items-center justify-between mb-1.5">
+                  <label className="text-[11px] font-black text-emerald-950 flex items-center gap-1.5">
+                    <Users className="w-3.5 h-3.5 text-emerald-600" />
+                    <span>Pilih Cepat Akun Warga (37 KK Terdaftar):</span>
+                  </label>
+                  <span className="text-[10px] text-emerald-700 font-bold bg-emerald-200/70 px-2 py-0.5 rounded-full">
+                    Fast Login
+                  </span>
+                </div>
+                <div className="flex gap-2">
+                  <select
+                    value={selectedWargaEmail}
+                    onChange={(e) => {
+                      setSelectedWargaEmail(e.target.value);
+                      if (e.target.value) {
+                        fillQuickAccount(e.target.value, false);
+                      }
+                    }}
+                    className="flex-1 text-xs font-semibold px-2.5 py-2 rounded-xl border border-emerald-300 bg-white text-slate-800 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                  >
+                    <option value="">-- Pilih Nama Warga Untuk Masuk Cepat --</option>
+                    {wargaAccounts.map((w) => (
+                      <option key={w.email} value={w.email}>
+                        {w.name} — {w.unit}
+                      </option>
+                    ))}
+                  </select>
+                  <button
+                    type="button"
+                    disabled={!selectedWargaEmail || loading}
+                    onClick={() => {
+                      if (selectedWargaEmail) {
+                        fillQuickAccount(selectedWargaEmail, true);
+                      }
+                    }}
+                    className="px-3.5 py-2 bg-emerald-600 hover:bg-emerald-700 disabled:opacity-40 text-white rounded-xl text-xs font-black shrink-0 transition flex items-center gap-1 shadow-sm active:scale-95"
+                  >
+                    <span>Masuk</span>
+                    <ArrowRight className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+              </div>
+
+              {/* Role-Based Quick Buttons (Pengurus & Struktur) */}
+              <div>
+                <span className="text-[10px] uppercase font-extrabold tracking-wider text-slate-400 block mb-2">
+                  Pilih Cepat Pengurus Lingkungan & Warga Percontohan:
+                </span>
+                <div className="grid grid-cols-2 gap-1.5 sm:grid-cols-3">
+                  <button
+                    type="button"
+                    onClick={() => fillQuickAccount('budi@smartwarga.test', true)}
+                    className="px-2 py-1.5 bg-emerald-50 text-emerald-800 text-[10px] font-bold rounded-xl border border-emerald-200 hover:bg-emerald-100 flex items-center gap-1.5 text-left transition active:scale-95"
+                  >
+                    <span className="w-2 h-2 rounded-full bg-emerald-500 shrink-0"></span>
+                    <div className="truncate">
+                      <div>Budi Santoso</div>
+                      <div className="text-[9px] font-normal text-emerald-600">RT01-A01 (PJ Unit)</div>
+                    </div>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => fillQuickAccount('joko@smartwarga.test', true)}
+                    className="px-2 py-1.5 bg-teal-50 text-teal-800 text-[10px] font-bold rounded-xl border border-teal-200 hover:bg-teal-100 flex items-center gap-1.5 text-left transition active:scale-95"
+                  >
+                    <span className="w-2 h-2 rounded-full bg-teal-500 shrink-0"></span>
+                    <div className="truncate">
+                      <div>Joko Widodo</div>
+                      <div className="text-[9px] font-normal text-teal-600">RT01-A03 (PJ Unit)</div>
+                    </div>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => fillQuickAccount('achmad.vickry@smartwarga.test', true)}
+                    className="px-2 py-1.5 bg-cyan-50 text-cyan-800 text-[10px] font-bold rounded-xl border border-cyan-200 hover:bg-cyan-100 flex items-center gap-1.5 text-left transition active:scale-95"
+                  >
+                    <span className="w-2 h-2 rounded-full bg-cyan-500 shrink-0"></span>
+                    <div className="truncate">
+                      <div>Achmad Vickry</div>
+                      <div className="text-[9px] font-normal text-cyan-600">RT01-A04 (Warga Baru)</div>
+                    </div>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => fillQuickAccount('cikal.prayoga@smartwarga.test', true)}
+                    className="px-2 py-1.5 bg-sky-50 text-sky-800 text-[10px] font-bold rounded-xl border border-sky-200 hover:bg-sky-100 flex items-center gap-1.5 text-left transition active:scale-95"
+                  >
+                    <span className="w-2 h-2 rounded-full bg-sky-500 shrink-0"></span>
+                    <div className="truncate">
+                      <div>Cikal Prayoga</div>
+                      <div className="text-[9px] font-normal text-sky-600">RT01-A05 (Warga Baru)</div>
+                    </div>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => fillQuickAccount('bendahara_rt01@smartwarga.test', true)}
+                    className="px-2 py-1.5 bg-emerald-50 text-emerald-900 text-[10px] font-bold rounded-xl border border-emerald-300 hover:bg-emerald-100 flex items-center gap-1.5 text-left transition active:scale-95"
+                  >
+                    <span className="w-2 h-2 rounded-full bg-emerald-600 shrink-0"></span>
+                    <div className="truncate">
+                      <div>Ibu Ratna (Bendahara)</div>
+                      <div className="text-[9px] font-normal text-emerald-700">Bendahara RT 01 (ACC Iuran)</div>
+                    </div>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => fillQuickAccount('sekretaris_rt01@smartwarga.test', true)}
+                    className="px-2 py-1.5 bg-blue-50 text-blue-900 text-[10px] font-bold rounded-xl border border-blue-300 hover:bg-blue-100 flex items-center gap-1.5 text-left transition active:scale-95"
+                  >
+                    <span className="w-2 h-2 rounded-full bg-blue-600 shrink-0"></span>
+                    <div className="truncate">
+                      <div>Pak Danu (Sekretaris)</div>
+                      <div className="text-[9px] font-normal text-blue-700">Sekretaris RT 01 (Kegiatan)</div>
+                    </div>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => fillQuickAccount('bendahara_rw@smartwarga.test', true)}
+                    className="px-2 py-1.5 bg-indigo-50 text-indigo-900 text-[10px] font-bold rounded-xl border border-indigo-300 hover:bg-indigo-100 flex items-center gap-1.5 text-left transition active:scale-95"
+                  >
+                    <span className="w-2 h-2 rounded-full bg-indigo-600 shrink-0"></span>
+                    <div className="truncate">
+                      <div>Pak Hendra (Bendahara)</div>
+                      <div className="text-[9px] font-normal text-indigo-700">Bendahara RW 05 (Kas RW)</div>
+                    </div>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => fillQuickAccount('sekretaris_rw@smartwarga.test', true)}
+                    className="px-2 py-1.5 bg-purple-50 text-purple-900 text-[10px] font-bold rounded-xl border border-purple-300 hover:bg-purple-100 flex items-center gap-1.5 text-left transition active:scale-95"
+                  >
+                    <span className="w-2 h-2 rounded-full bg-purple-600 shrink-0"></span>
+                    <div className="truncate">
+                      <div>Ibu Maya (Sekretaris)</div>
+                      <div className="text-[9px] font-normal text-purple-700">Sekretaris RW 05 (Agenda RW)</div>
+                    </div>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => fillQuickAccount('rt01@smartwarga.test', true)}
+                    className="px-2 py-1.5 bg-slate-100 text-slate-800 text-[10px] font-bold rounded-xl border border-slate-300 hover:bg-slate-200 flex items-center gap-1.5 text-left transition active:scale-95"
+                  >
+                    <span className="w-2 h-2 rounded-full bg-slate-600 shrink-0"></span>
+                    <div className="truncate">
+                      <div>Ketua RT 01</div>
+                      <div className="text-[9px] font-normal text-slate-500">Pengawasan Wilayah</div>
+                    </div>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => fillQuickAccount('rw@smartwarga.test', true)}
+                    className="px-2 py-1.5 bg-slate-100 text-slate-800 text-[10px] font-bold rounded-xl border border-slate-300 hover:bg-slate-200 flex items-center gap-1.5 text-left transition active:scale-95"
+                  >
+                    <span className="w-2 h-2 rounded-full bg-slate-800 shrink-0"></span>
+                    <div className="truncate">
+                      <div>Ketua RW 05</div>
+                      <div className="text-[9px] font-normal text-slate-500">Supervisi Lingkungan</div>
+                    </div>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => fillQuickAccount('admin@smartwarga.test', true)}
+                    className="px-2 py-1.5 bg-slate-900 text-white text-[10px] font-bold rounded-xl hover:bg-slate-800 flex items-center gap-1.5 text-left transition active:scale-95"
+                  >
+                    <span className="w-2 h-2 rounded-full bg-emerald-400 shrink-0"></span>
+                    <div className="truncate">
+                      <div>Super Admin</div>
+                      <div className="text-[9px] font-normal text-slate-400">Akses Penuh Sistem</div>
+                    </div>
+                  </button>
+                </div>
               </div>
 
               <div className="mt-3 p-2.5 bg-slate-50 border border-slate-200 rounded-xl text-[10px] text-slate-600 leading-relaxed">

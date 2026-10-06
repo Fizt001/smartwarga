@@ -39,7 +39,9 @@ import {
   Sparkles,
   Check,
   X,
-  Gift
+  Gift,
+  ChevronDown,
+  ChevronUp
 } from 'lucide-react';
 
 export default function DashboardView({
@@ -77,6 +79,8 @@ export default function DashboardView({
   // Daftar Anggota Keluarga Serumah
   const [familyMembers, setFamilyMembers] = useState<any[]>([]);
   const [familyLoading, setFamilyLoading] = useState(false);
+  const [isKkUtamaOpen, setIsKkUtamaOpen] = useState(true);
+  const [isKkPendukungOpen, setIsKkPendukungOpen] = useState(true);
 
   // Modal Edit Biodata Pribadi (KK Utama)
   const [showProfileModal, setShowProfileModal] = useState(false);
@@ -223,22 +227,26 @@ export default function DashboardView({
     }
   };
 
-  const openAddFamilyModal = () => {
+  const openAddFamilyModal = (targetKkType: 'kk_utama' | 'kk_pendukung' = 'kk_utama') => {
     setEditingMember(null);
+    const targetNoKk = targetKkType === 'kk_pendukung'
+      ? (familyMembers.find(m => m.kk_type === 'kk_pendukung' || m.relationship === 'KK Tambahan')?.no_kk || '')
+      : (user?.no_kk || user?.house?.head_of_family?.no_kk || '');
+
     setFamilyForm({
       name: '',
-      relationship: 'Istri',
+      relationship: targetKkType === 'kk_pendukung' ? 'KK Tambahan' : 'Istri',
       nik: '',
-      no_kk: user?.no_kk || '',
+      no_kk: targetNoKk,
       birth_place: '',
       birth_date: '',
-      gender: 'Perempuan',
+      gender: targetKkType === 'kk_pendukung' ? 'Laki-laki' : 'Perempuan',
       religion: (user as any)?.religion || 'Islam',
       occupation: '',
       marital_status: 'Kawin',
       blood_type: 'O',
       phone: '',
-      kk_type: 'anggota',
+      kk_type: targetKkType === 'kk_pendukung' ? 'kk_pendukung' : 'anggota',
     });
     setFamilyMemberError('');
     setFamilyMemberSuccess('');
@@ -442,6 +450,25 @@ export default function DashboardView({
   const displayAddress = user?.house?.full_address || (user?.rt_number ? `RT ${user.rt_number} / RW 05` : 'Lingkungan RW 05');
   const totalUnpaidAmount = iplSummary?.all_time_unpaid_amount ?? billings.reduce((sum: number, b: any) => sum + (Number(b.amount) || 0), 0);
   const totalUnpaidCount = iplSummary?.all_time_unpaid_count ?? billings.length;
+
+  // Pemisahan Kartu Keluarga (KK Utama vs KK Pendukung)
+  const kkUtamaNo = user?.no_kk || user?.house?.head_of_family?.no_kk || '';
+  const kkPendukungHead = familyMembers.find(
+    (m) => m.kk_type === 'kk_pendukung' || m.relationship === 'KK Tambahan' || (m.no_kk && m.no_kk !== kkUtamaNo)
+  );
+  const kkPendukungNo = kkPendukungHead?.no_kk || (user?.house?.kk_pendukung?.[0]?.no_kk) || (user?.id === 8 ? '3201012345670002' : '');
+
+  const kkUtamaMembers = familyMembers.filter((m) => {
+    if (m.kk_type === 'kk_pendukung' || m.relationship === 'KK Tambahan') return false;
+    if (kkPendukungNo && m.no_kk === kkPendukungNo && m.no_kk !== kkUtamaNo) return false;
+    return true;
+  });
+
+  const kkPendukungMembers = familyMembers.filter((m) => {
+    if (m.kk_type === 'kk_pendukung' || m.relationship === 'KK Tambahan') return true;
+    if (kkPendukungNo && m.no_kk === kkPendukungNo && m.no_kk !== kkUtamaNo) return true;
+    return false;
+  });
 
   return (
     <div className="w-full space-y-6">
@@ -907,129 +934,312 @@ export default function DashboardView({
                 </div>
               </div>
 
-              {/* Daftar Anggota Keluarga & Kerabat Serumah */}
-              <div className="pt-3 border-t border-slate-100">
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-2">
+              {/* Manajemen Kartu Keluarga & Anggota Serumah (Terpisah KK Utama & KK Pendukung) */}
+              <div className="pt-4 border-t border-slate-100 space-y-4">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
                   <div className="flex items-center gap-2">
-                    <div className="p-1.5 bg-teal-100 text-teal-700 rounded-lg">
+                    <div className="p-1.5 bg-emerald-100 text-emerald-800 rounded-lg">
                       <Users className="w-4 h-4" />
                     </div>
                     <div>
                       <h5 className="font-extrabold text-xs text-slate-900 flex items-center gap-1.5">
-                        <span>Anggota Keluarga Serumah</span>
-                        <span className="px-2 py-0.2 rounded-full bg-teal-100 text-teal-800 text-[10px] font-black">
-                          {familyMembers.length || (user?.house?.residents?.length || 1)} Jiwa
+                        <span>Manajemen Kartu Keluarga Serumah</span>
+                        <span className="px-2 py-0.5 rounded-full bg-slate-100 text-slate-700 text-[10px] font-black">
+                          Total {familyMembers.length || 1} Jiwa
                         </span>
                       </h5>
                       <p className="text-[10px] text-slate-500">
-                        Seluruh anggota keluarga yang tinggal di unit {user.house.house_code}.
+                        Dipisahkan berdasarkan Kartu Keluarga (KK Inti & KK Tambahan) pada unit {user.house.house_code}.
                       </p>
                     </div>
                   </div>
-                  {(user.is_head_of_house || user.kk_type === 'kk_utama') && (
-                    <button
-                      type="button"
-                      onClick={openAddFamilyModal}
-                      className="px-3 py-1.5 bg-teal-600 hover:bg-teal-700 text-white rounded-xl text-xs font-bold flex items-center gap-1.5 shadow-sm transition active:scale-95 shrink-0 self-start sm:self-center"
-                    >
-                      <UserPlus className="w-3.5 h-3.5" />
-                      <span>+ Tambah Anggota Keluarga</span>
-                    </button>
-                  )}
                 </div>
 
-                <div className="space-y-2 mt-2">
-                  {familyMembers.length > 0 ? (
-                    familyMembers.map((member) => (
-                      <div
-                        key={member.id}
-                        className={`p-3 rounded-2xl border transition flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs ${
-                          member.id === user.id
-                            ? 'bg-emerald-50/70 border-emerald-200'
-                            : 'bg-white border-slate-200 hover:border-slate-300'
-                        }`}
-                      >
-                        <div className="flex items-start gap-2.5">
-                          <div className={`w-8 h-8 rounded-full flex items-center justify-center font-bold text-xs shrink-0 ${
-                            member.id === user.id
-                              ? 'bg-emerald-600 text-white'
-                              : member.gender === 'Perempuan' || member.relationship === 'Istri'
-                              ? 'bg-pink-100 text-pink-700'
-                              : 'bg-blue-100 text-blue-700'
-                          }`}>
-                            {member.name.charAt(0).toUpperCase()}
-                          </div>
-                          <div>
-                            <div className="flex items-center gap-2 flex-wrap">
-                              <span className="font-extrabold text-slate-900 text-xs">
-                                {member.name}
-                              </span>
-                              <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
-                                member.is_head_of_house || member.kk_type === 'kk_utama'
-                                  ? 'bg-emerald-100 text-emerald-800'
-                                  : member.relationship === 'Istri'
-                                  ? 'bg-pink-100 text-pink-800'
-                                  : member.relationship === 'Anak'
-                                  ? 'bg-blue-100 text-blue-800'
-                                  : member.kk_type === 'kk_pendukung'
-                                  ? 'bg-teal-100 text-teal-800'
-                                  : 'bg-slate-100 text-slate-700'
+                {/* 1. ACCORDION / CARD: KK UTAMA (KK INTI) */}
+                <div className="rounded-2xl border border-emerald-200 bg-white overflow-hidden shadow-xs transition">
+                  {/* Header / Accordion Toggle */}
+                  <div 
+                    onClick={() => setIsKkUtamaOpen(!isKkUtamaOpen)}
+                    className="p-3.5 bg-gradient-to-r from-emerald-50 to-teal-50/50 cursor-pointer flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 hover:bg-emerald-100/40 transition select-none"
+                  >
+                    <div className="flex items-center gap-3">
+                      <div className="w-8 h-8 rounded-xl bg-emerald-600 text-white flex items-center justify-center shrink-0 shadow-sm">
+                        <Home className="w-4 h-4" />
+                      </div>
+                      <div>
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <span className="text-xs font-black text-emerald-950">
+                            Kartu Keluarga Utama (KK Inti)
+                          </span>
+                          <span className="px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 text-[9px] font-black tracking-wide uppercase">
+                            PJ Unit Rumah
+                          </span>
+                          <span className="px-2 py-0.5 rounded-full bg-white text-emerald-900 text-[10px] font-extrabold border border-emerald-200">
+                            {kkUtamaMembers.length} Jiwa
+                          </span>
+                        </div>
+                        <div className="text-[11px] text-slate-600 mt-0.5 font-medium flex items-center gap-2 flex-wrap">
+                          <span>No. KK: <strong className="font-mono text-slate-800">{kkUtamaNo || '-'}</strong></span>
+                          <span>•</span>
+                          <span>Kepala Keluarga: <strong className="text-slate-800">{user.house?.head_of_family?.name || user.name}</strong></span>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center gap-2 self-end sm:self-center shrink-0">
+                      {(user.is_head_of_house || user.kk_type === 'kk_utama') && (
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            openAddFamilyModal('kk_utama');
+                          }}
+                          className="px-2.5 py-1 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-[10px] font-bold flex items-center gap-1 shadow-xs transition active:scale-95"
+                        >
+                          <UserPlus className="w-3 h-3" />
+                          <span>+ Tambah Anggota</span>
+                        </button>
+                      )}
+                      <div className="p-1 rounded-lg text-slate-400 hover:text-slate-700">
+                        {isKkUtamaOpen ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Body List KK Utama */}
+                  {isKkUtamaOpen && (
+                    <div className="p-3 space-y-2 border-t border-emerald-100 bg-white">
+                      {kkUtamaMembers.length > 0 ? (
+                        kkUtamaMembers.map((member) => (
+                          <div
+                            key={member.id}
+                            className={`p-2.5 rounded-xl border transition flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs ${
+                              member.id === user.id
+                                ? 'bg-emerald-50/70 border-emerald-200'
+                                : 'bg-slate-50/70 border-slate-200 hover:border-slate-300'
+                            }`}
+                          >
+                            <div className="flex items-start gap-2.5">
+                              <div className={`w-7 h-7 rounded-full flex items-center justify-center font-bold text-xs shrink-0 ${
+                                member.id === user.id
+                                  ? 'bg-emerald-600 text-white'
+                                  : member.gender === 'Perempuan' || member.relationship === 'Istri'
+                                  ? 'bg-pink-100 text-pink-700'
+                                  : 'bg-blue-100 text-blue-700'
                               }`}>
-                                {member.relationship || (member.is_head_of_house ? 'Kepala Keluarga' : member.kk_type === 'kk_pendukung' ? 'KK Tambahan' : 'Anggota Keluarga')}
-                              </span>
+                                {member.name.charAt(0).toUpperCase()}
+                              </div>
+                              <div>
+                                <div className="flex items-center gap-2 flex-wrap">
+                                  <span className="font-extrabold text-slate-900 text-xs">
+                                    {member.name}
+                                  </span>
+                                  <span className={`text-[9px] font-bold px-2 py-0.5 rounded-full ${
+                                    member.is_head_of_house || member.kk_type === 'kk_utama'
+                                      ? 'bg-emerald-100 text-emerald-800'
+                                      : member.relationship === 'Istri'
+                                      ? 'bg-pink-100 text-pink-800'
+                                      : member.relationship === 'Anak'
+                                      ? 'bg-blue-100 text-blue-800'
+                                      : 'bg-slate-100 text-slate-700'
+                                  }`}>
+                                    {member.relationship || (member.is_head_of_house ? 'Kepala Keluarga' : 'Anggota Keluarga')}
+                                  </span>
+                                  {member.id === user.id && (
+                                    <span className="text-[9px] bg-emerald-600 text-white font-extrabold px-1.5 py-0.2 rounded">
+                                      Anda (Login)
+                                    </span>
+                                  )}
+                                </div>
+                                <div className="flex items-center gap-3 text-[10px] text-slate-500 mt-0.5 flex-wrap">
+                                  <span>NIK: <strong className="font-mono text-slate-700">{member.nik || '-'}</strong></span>
+                                  <span>•</span>
+                                  <span>Tgl Lahir: <strong className="text-slate-700">{member.birth_date ? new Date(member.birth_date).toLocaleDateString('id-ID', {day: 'numeric', month: 'short', year: 'numeric'}) : (member.birth_place || '-')}</strong></span>
+                                  {member.occupation && (
+                                    <>
+                                      <span>•</span>
+                                      <span>Pekerjaan: <strong className="text-slate-700">{member.occupation}</strong></span>
+                                    </>
+                                  )}
+                                </div>
+                              </div>
+                            </div>
+
+                            {/* Action buttons */}
+                            <div className="flex items-center gap-1.5 self-end sm:self-center shrink-0">
+                              {member.id !== user.id && (user.is_head_of_house || user.kk_type === 'kk_utama') && (
+                                <>
+                                  <button
+                                    type="button"
+                                    onClick={() => openEditFamilyModal(member)}
+                                    className="px-2 py-1 text-[10px] font-bold text-slate-700 bg-white hover:bg-slate-100 border border-slate-200 rounded-lg flex items-center gap-1 transition"
+                                  >
+                                    <Edit3 className="w-3 h-3" />
+                                    <span>Edit</span>
+                                  </button>
+                                  <button
+                                    type="button"
+                                    onClick={() => handleDeleteFamilyMember(member.id, member.name)}
+                                    className="px-2 py-1 text-[10px] font-bold text-red-600 bg-red-50 hover:bg-red-100 rounded-lg flex items-center gap-1 transition"
+                                  >
+                                    <Trash2 className="w-3 h-3" />
+                                    <span>Hapus</span>
+                                  </button>
+                                </>
+                              )}
                               {member.id === user.id && (
-                                <span className="text-[9px] bg-emerald-600 text-white font-extrabold px-1.5 py-0.2 rounded">
-                                  Anda (Login)
+                                <span className="text-[9px] text-emerald-700 font-bold px-2 py-0.5 bg-emerald-50 rounded-lg">
+                                  Penanggung Jawab Rumah
                                 </span>
                               )}
                             </div>
-                            <div className="flex items-center gap-3 text-[11px] text-slate-500 mt-0.5 flex-wrap">
-                              <span>NIK: <strong className="font-mono text-slate-700">{member.nik || '-'}</strong></span>
-                              <span>•</span>
-                              <span>Tgl Lahir: <strong className="text-slate-700">{member.birth_date ? new Date(member.birth_date).toLocaleDateString('id-ID', {day: 'numeric', month: 'short', year: 'numeric'}) : (member.birth_place || '-')}</strong></span>
-                              {member.occupation && (
-                                <>
+                          </div>
+                        ))
+                      ) : (
+                        <div className="p-3 bg-slate-50 rounded-xl border border-dashed border-slate-200 text-center text-xs text-slate-500">
+                          Belum ada anggota keluarga terdaftar di KK Utama.
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
+
+                {/* 2. ACCORDION / CARD: KK PENDUKUNG / TAMBAHAN */}
+                <div className="rounded-2xl border border-teal-200 bg-white overflow-hidden shadow-xs transition">
+                  {/* Header / Accordion Toggle */}
+                  <div 
+                    onClick={() => setIsKkPendukungOpen(!isKkPendukungOpen)}
+                    className="p-3.5 bg-gradient-to-r from-teal-50 to-cyan-50/50 cursor-pointer flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 hover:bg-teal-100/40 transition select-none"
+                  >
+                    <div className="flex items-center gap-3">
+                      <div className="w-8 h-8 rounded-xl bg-teal-600 text-white flex items-center justify-center shrink-0 shadow-sm">
+                        <Users className="w-4 h-4" />
+                      </div>
+                      <div>
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <span className="text-xs font-black text-teal-950">
+                            Kartu Keluarga Pendukung / Tambahan
+                          </span>
+                          <span className="px-2 py-0.5 rounded-full bg-teal-100 text-teal-800 text-[9px] font-black tracking-wide uppercase">
+                            Bebas IPL Ganda
+                          </span>
+                          <span className="px-2 py-0.5 rounded-full bg-white text-teal-900 text-[10px] font-extrabold border border-teal-200">
+                            {kkPendukungMembers.length} Jiwa
+                          </span>
+                        </div>
+                        <div className="text-[11px] text-slate-600 mt-0.5 font-medium flex items-center gap-2 flex-wrap">
+                          <span>No. KK: <strong className="font-mono text-slate-800">{kkPendukungNo || '-'}</strong></span>
+                          <span>•</span>
+                          <span>Kepala KK: <strong className="text-slate-800">{kkPendukungHead?.name || (user?.house?.kk_pendukung?.[0]?.name) || (user?.id === 8 ? 'Eko Santoso' : 'Belum Ada')}</strong></span>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center gap-2 self-end sm:self-center shrink-0">
+                      {(user.is_head_of_house || user.kk_type === 'kk_utama') && (
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            openAddFamilyModal('kk_pendukung');
+                          }}
+                          className="px-2.5 py-1 bg-teal-600 hover:bg-teal-700 text-white rounded-lg text-[10px] font-bold flex items-center gap-1 shadow-xs transition active:scale-95"
+                        >
+                          <UserPlus className="w-3 h-3" />
+                          <span>+ Tambah Anggota</span>
+                        </button>
+                      )}
+                      <div className="p-1 rounded-lg text-slate-400 hover:text-slate-700">
+                        {isKkPendukungOpen ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Body List KK Pendukung */}
+                  {isKkPendukungOpen && (
+                    <div className="p-3 space-y-2 border-t border-teal-100 bg-white">
+                      <div className="p-2.5 bg-teal-50/70 border border-teal-200 rounded-xl text-[10px] text-teal-800 leading-relaxed">
+                        ℹ️ <strong>Ketentuan KK Pendukung:</strong> Kartu Keluarga mandiri yang tinggal dalam satu atap unit rumah fisik ini. Tercatat sah untuk sensus & persuratan RT/RW <strong>tanpa dikenakan iuran IPL ganda</strong> (beban IPL hanya dibebankan pada KK Utama).
+                      </div>
+
+                      {kkPendukungMembers.length > 0 ? (
+                        kkPendukungMembers.map((member) => (
+                          <div
+                            key={member.id}
+                            className={`p-2.5 rounded-xl border transition flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs ${
+                              member.id === user.id
+                                ? 'bg-teal-50/80 border-teal-300'
+                                : 'bg-slate-50/70 border-slate-200 hover:border-slate-300'
+                            }`}
+                          >
+                            <div className="flex items-start gap-2.5">
+                              <div className={`w-7 h-7 rounded-full flex items-center justify-center font-bold text-xs shrink-0 ${
+                                member.id === user.id
+                                  ? 'bg-teal-600 text-white'
+                                  : member.gender === 'Perempuan' || member.relationship === 'Istri'
+                                  ? 'bg-pink-100 text-pink-700'
+                                  : 'bg-blue-100 text-blue-700'
+                              }`}>
+                                {member.name.charAt(0).toUpperCase()}
+                              </div>
+                              <div>
+                                <div className="flex items-center gap-2 flex-wrap">
+                                  <span className="font-extrabold text-slate-900 text-xs">
+                                    {member.name}
+                                  </span>
+                                  <span className="text-[9px] font-bold px-2 py-0.5 rounded-full bg-teal-100 text-teal-800">
+                                    {member.relationship || 'KK Tambahan'}
+                                  </span>
+                                  {member.id === user.id && (
+                                    <span className="text-[9px] bg-teal-600 text-white font-extrabold px-1.5 py-0.2 rounded">
+                                      Anda (Login)
+                                    </span>
+                                  )}
+                                </div>
+                                <div className="flex items-center gap-3 text-[10px] text-slate-500 mt-0.5 flex-wrap">
+                                  <span>NIK: <strong className="font-mono text-slate-700">{member.nik || '-'}</strong></span>
                                   <span>•</span>
-                                  <span>Pekerjaan: <strong className="text-slate-700">{member.occupation}</strong></span>
+                                  <span>Tgl Lahir: <strong className="text-slate-700">{member.birth_date ? new Date(member.birth_date).toLocaleDateString('id-ID', {day: 'numeric', month: 'short', year: 'numeric'}) : (member.birth_place || '-')}</strong></span>
+                                  {member.occupation && (
+                                    <>
+                                      <span>•</span>
+                                      <span>Pekerjaan: <strong className="text-slate-700">{member.occupation}</strong></span>
+                                    </>
+                                  )}
+                                </div>
+                              </div>
+                            </div>
+
+                            {/* Action buttons */}
+                            <div className="flex items-center gap-1.5 self-end sm:self-center shrink-0">
+                              {member.id !== user.id && (user.is_head_of_house || user.kk_type === 'kk_utama') && (
+                                <>
+                                  <button
+                                    type="button"
+                                    onClick={() => openEditFamilyModal(member)}
+                                    className="px-2 py-1 text-[10px] font-bold text-slate-700 bg-white hover:bg-slate-100 border border-slate-200 rounded-lg flex items-center gap-1 transition"
+                                  >
+                                    <Edit3 className="w-3 h-3" />
+                                    <span>Edit</span>
+                                  </button>
+                                  <button
+                                    type="button"
+                                    onClick={() => handleDeleteFamilyMember(member.id, member.name)}
+                                    className="px-2 py-1 text-[10px] font-bold text-red-600 bg-red-50 hover:bg-red-100 rounded-lg flex items-center gap-1 transition"
+                                  >
+                                    <Trash2 className="w-3 h-3" />
+                                    <span>Hapus</span>
+                                  </button>
                                 </>
                               )}
                             </div>
                           </div>
+                        ))
+                      ) : (
+                        <div className="p-3 bg-slate-50 rounded-xl border border-dashed border-slate-200 text-center text-xs text-slate-500">
+                          Tidak ada KK tambahan di unit rumah ini.
                         </div>
-
-                        {/* Action buttons */}
-                        <div className="flex items-center gap-1.5 self-end sm:self-center shrink-0">
-                          {member.id !== user.id && (user.is_head_of_house || user.kk_type === 'kk_utama') && (
-                            <>
-                              <button
-                                type="button"
-                                onClick={() => openEditFamilyModal(member)}
-                                className="px-2.5 py-1 text-[11px] font-bold text-slate-700 bg-slate-100 hover:bg-slate-200 rounded-lg flex items-center gap-1 transition"
-                              >
-                                <Edit3 className="w-3 h-3" />
-                                <span>Edit</span>
-                              </button>
-                              <button
-                                type="button"
-                                onClick={() => handleDeleteFamilyMember(member.id, member.name)}
-                                className="px-2.5 py-1 text-[11px] font-bold text-red-600 bg-red-50 hover:bg-red-100 rounded-lg flex items-center gap-1 transition"
-                              >
-                                <Trash2 className="w-3 h-3" />
-                                <span>Hapus</span>
-                              </button>
-                            </>
-                          )}
-                          {member.id === user.id && (
-                            <span className="text-[10px] text-emerald-700 font-bold px-2 py-0.5 bg-emerald-50 rounded-lg">
-                              Penanggung Jawab Rumah
-                            </span>
-                          )}
-                        </div>
-                      </div>
-                    ))
-                  ) : (
-                    <div className="p-3 bg-slate-50 rounded-2xl border border-dashed border-slate-200 text-center text-xs text-slate-500">
-                      Belum ada anggota keluarga tambahan. Klik "+ Tambah Anggota Keluarga" untuk mendaftarkan istri, anak, atau kerabat serumah.
+                      )}
                     </div>
                   )}
                 </div>

@@ -294,19 +294,19 @@ export default function AuthView() {
             </button>
 
             {/* Quick Demo Credentials & Dropdown Warga */}
-            <div className="pt-4 border-t border-slate-100 space-y-3">
+            <div className="pt-4 border-t border-slate-100 space-y-4">
               {/* Dropdown Fast Login 37 Warga */}
-              <div className="p-3 bg-emerald-50/80 rounded-2xl border border-emerald-200 shadow-sm">
-                <div className="flex items-center justify-between mb-1.5">
+              <div className="p-3.5 bg-emerald-50/90 rounded-2xl border border-emerald-200 shadow-sm space-y-2">
+                <div className="flex items-center justify-between">
                   <label className="text-[11px] font-black text-emerald-950 flex items-center gap-1.5">
-                    <Users className="w-3.5 h-3.5 text-emerald-600" />
-                    <span>Pilih Cepat Akun Warga (37 KK Terdaftar):</span>
+                    <Users className="w-3.5 h-3.5 text-emerald-700" />
+                    <span>Pilih Akun Warga (37 KK Terdaftar):</span>
                   </label>
-                  <span className="text-[10px] text-emerald-700 font-bold bg-emerald-200/70 px-2 py-0.5 rounded-full">
-                    Fast Login
+                  <span className="text-[9px] text-emerald-800 font-extrabold bg-emerald-200/80 px-2 py-0.5 rounded-full uppercase tracking-wider">
+                    Warga
                   </span>
                 </div>
-                <div className="flex gap-2">
+                <div className="space-y-2">
                   <select
                     value={selectedWargaEmail}
                     onChange={(e) => {
@@ -315,7 +315,7 @@ export default function AuthView() {
                         fillQuickAccount(e.target.value, false);
                       }
                     }}
-                    className="flex-1 text-xs font-semibold px-2.5 py-2 rounded-xl border border-emerald-300 bg-white text-slate-800 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                    className="w-full text-xs font-semibold px-3 py-2.5 rounded-xl border border-emerald-300 bg-white text-slate-800 focus:outline-none focus:ring-2 focus:ring-emerald-500 shadow-xs"
                   >
                     <option value="">-- Pilih Nama Warga Untuk Masuk Cepat --</option>
                     {wargaAccounts.map((w) => (
@@ -332,125 +332,37 @@ export default function AuthView() {
                         fillQuickAccount(selectedWargaEmail, true);
                       }
                     }}
-                    className="px-3.5 py-2 bg-emerald-600 hover:bg-emerald-700 disabled:opacity-40 text-white rounded-xl text-xs font-black shrink-0 transition flex items-center gap-1 shadow-sm active:scale-95"
+                    className="w-full py-2.5 bg-emerald-600 hover:bg-emerald-700 disabled:opacity-40 text-white rounded-xl text-xs font-black transition flex items-center justify-center gap-1.5 shadow-sm active:scale-95"
                   >
-                    <span>Masuk</span>
-                    <ArrowRight className="w-3.5 h-3.5" />
+                    <span>Masuk Sebagai Warga Terpilih</span>
+                    <ArrowRight className="w-4 h-4" />
                   </button>
                 </div>
               </div>
 
-              {/* Role-Based Quick Buttons (Pengurus & Struktur) */}
+              {/* Role-Based Quick Buttons (Khusus Pengurus & Struktur Lingkungan) */}
               <div>
-                <span className="text-[10px] uppercase font-extrabold tracking-wider text-slate-400 block mb-2">
-                  Pilih Cepat Pengurus Lingkungan & Warga Percontohan:
+                <span className="text-[10px] uppercase font-extrabold tracking-wider text-slate-500 block mb-2">
+                  Pilih Cepat Pengurus Lingkungan (Role-Based):
                 </span>
-                <div className="grid grid-cols-2 gap-1.5 sm:grid-cols-3">
+                <div className="grid grid-cols-2 gap-2">
                   <button
                     type="button"
-                    onClick={() => fillQuickAccount('budi@smartwarga.test', true)}
-                    className="px-2 py-1.5 bg-emerald-50 text-emerald-800 text-[10px] font-bold rounded-xl border border-emerald-200 hover:bg-emerald-100 flex items-center gap-1.5 text-left transition active:scale-95"
+                    onClick={() => fillQuickAccount('admin@smartwarga.test', true)}
+                    className="px-2.5 py-2 bg-slate-900 text-white text-[11px] font-bold rounded-xl hover:bg-slate-800 flex items-center gap-2 text-left transition active:scale-95 shadow-sm"
                   >
-                    <span className="w-2 h-2 rounded-full bg-emerald-500 shrink-0"></span>
+                    <span className="w-2.5 h-2.5 rounded-full bg-emerald-400 shrink-0"></span>
                     <div className="truncate">
-                      <div>Budi Santoso</div>
-                      <div className="text-[9px] font-normal text-emerald-600">RT01-A01 (PJ Unit)</div>
-                    </div>
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => fillQuickAccount('joko@smartwarga.test', true)}
-                    className="px-2 py-1.5 bg-teal-50 text-teal-800 text-[10px] font-bold rounded-xl border border-teal-200 hover:bg-teal-100 flex items-center gap-1.5 text-left transition active:scale-95"
-                  >
-                    <span className="w-2 h-2 rounded-full bg-teal-500 shrink-0"></span>
-                    <div className="truncate">
-                      <div>Joko Widodo</div>
-                      <div className="text-[9px] font-normal text-teal-600">RT01-A03 (PJ Unit)</div>
-                    </div>
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => fillQuickAccount('achmad.vickry@smartwarga.test', true)}
-                    className="px-2 py-1.5 bg-cyan-50 text-cyan-800 text-[10px] font-bold rounded-xl border border-cyan-200 hover:bg-cyan-100 flex items-center gap-1.5 text-left transition active:scale-95"
-                  >
-                    <span className="w-2 h-2 rounded-full bg-cyan-500 shrink-0"></span>
-                    <div className="truncate">
-                      <div>Achmad Vickry</div>
-                      <div className="text-[9px] font-normal text-cyan-600">RT01-A04 (Warga Baru)</div>
-                    </div>
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => fillQuickAccount('cikal.prayoga@smartwarga.test', true)}
-                    className="px-2 py-1.5 bg-sky-50 text-sky-800 text-[10px] font-bold rounded-xl border border-sky-200 hover:bg-sky-100 flex items-center gap-1.5 text-left transition active:scale-95"
-                  >
-                    <span className="w-2 h-2 rounded-full bg-sky-500 shrink-0"></span>
-                    <div className="truncate">
-                      <div>Cikal Prayoga</div>
-                      <div className="text-[9px] font-normal text-sky-600">RT01-A05 (Warga Baru)</div>
-                    </div>
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => fillQuickAccount('bendahara_rt01@smartwarga.test', true)}
-                    className="px-2 py-1.5 bg-emerald-50 text-emerald-900 text-[10px] font-bold rounded-xl border border-emerald-300 hover:bg-emerald-100 flex items-center gap-1.5 text-left transition active:scale-95"
-                  >
-                    <span className="w-2 h-2 rounded-full bg-emerald-600 shrink-0"></span>
-                    <div className="truncate">
-                      <div>Ibu Ratna (Bendahara)</div>
-                      <div className="text-[9px] font-normal text-emerald-700">Bendahara RT 01 (ACC Iuran)</div>
-                    </div>
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => fillQuickAccount('sekretaris_rt01@smartwarga.test', true)}
-                    className="px-2 py-1.5 bg-blue-50 text-blue-900 text-[10px] font-bold rounded-xl border border-blue-300 hover:bg-blue-100 flex items-center gap-1.5 text-left transition active:scale-95"
-                  >
-                    <span className="w-2 h-2 rounded-full bg-blue-600 shrink-0"></span>
-                    <div className="truncate">
-                      <div>Pak Danu (Sekretaris)</div>
-                      <div className="text-[9px] font-normal text-blue-700">Sekretaris RT 01 (Kegiatan)</div>
-                    </div>
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => fillQuickAccount('bendahara_rw@smartwarga.test', true)}
-                    className="px-2 py-1.5 bg-indigo-50 text-indigo-900 text-[10px] font-bold rounded-xl border border-indigo-300 hover:bg-indigo-100 flex items-center gap-1.5 text-left transition active:scale-95"
-                  >
-                    <span className="w-2 h-2 rounded-full bg-indigo-600 shrink-0"></span>
-                    <div className="truncate">
-                      <div>Pak Hendra (Bendahara)</div>
-                      <div className="text-[9px] font-normal text-indigo-700">Bendahara RW 05 (Kas RW)</div>
-                    </div>
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => fillQuickAccount('sekretaris_rw@smartwarga.test', true)}
-                    className="px-2 py-1.5 bg-purple-50 text-purple-900 text-[10px] font-bold rounded-xl border border-purple-300 hover:bg-purple-100 flex items-center gap-1.5 text-left transition active:scale-95"
-                  >
-                    <span className="w-2 h-2 rounded-full bg-purple-600 shrink-0"></span>
-                    <div className="truncate">
-                      <div>Ibu Maya (Sekretaris)</div>
-                      <div className="text-[9px] font-normal text-purple-700">Sekretaris RW 05 (Agenda RW)</div>
-                    </div>
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => fillQuickAccount('rt01@smartwarga.test', true)}
-                    className="px-2 py-1.5 bg-slate-100 text-slate-800 text-[10px] font-bold rounded-xl border border-slate-300 hover:bg-slate-200 flex items-center gap-1.5 text-left transition active:scale-95"
-                  >
-                    <span className="w-2 h-2 rounded-full bg-slate-600 shrink-0"></span>
-                    <div className="truncate">
-                      <div>Ketua RT 01</div>
-                      <div className="text-[9px] font-normal text-slate-500">Pengawasan Wilayah</div>
+                      <div>Super Admin</div>
+                      <div className="text-[9px] font-normal text-slate-400">Akses Penuh Sistem</div>
                     </div>
                   </button>
                   <button
                     type="button"
                     onClick={() => fillQuickAccount('rw@smartwarga.test', true)}
-                    className="px-2 py-1.5 bg-slate-100 text-slate-800 text-[10px] font-bold rounded-xl border border-slate-300 hover:bg-slate-200 flex items-center gap-1.5 text-left transition active:scale-95"
+                    className="px-2.5 py-2 bg-slate-100 text-slate-800 text-[11px] font-bold rounded-xl border border-slate-300 hover:bg-slate-200 flex items-center gap-2 text-left transition active:scale-95"
                   >
-                    <span className="w-2 h-2 rounded-full bg-slate-800 shrink-0"></span>
+                    <span className="w-2.5 h-2.5 rounded-full bg-slate-800 shrink-0"></span>
                     <div className="truncate">
                       <div>Ketua RW 05</div>
                       <div className="text-[9px] font-normal text-slate-500">Supervisi Lingkungan</div>
@@ -458,13 +370,57 @@ export default function AuthView() {
                   </button>
                   <button
                     type="button"
-                    onClick={() => fillQuickAccount('admin@smartwarga.test', true)}
-                    className="px-2 py-1.5 bg-slate-900 text-white text-[10px] font-bold rounded-xl hover:bg-slate-800 flex items-center gap-1.5 text-left transition active:scale-95"
+                    onClick={() => fillQuickAccount('sekretaris_rw@smartwarga.test', true)}
+                    className="px-2.5 py-2 bg-purple-50 text-purple-900 text-[11px] font-bold rounded-xl border border-purple-200 hover:bg-purple-100 flex items-center gap-2 text-left transition active:scale-95"
                   >
-                    <span className="w-2 h-2 rounded-full bg-emerald-400 shrink-0"></span>
+                    <span className="w-2.5 h-2.5 rounded-full bg-purple-600 shrink-0"></span>
                     <div className="truncate">
-                      <div>Super Admin</div>
-                      <div className="text-[9px] font-normal text-slate-400">Akses Penuh Sistem</div>
+                      <div>Ibu Maya (Sekretaris)</div>
+                      <div className="text-[9px] font-normal text-purple-700">Sekretaris RW 05</div>
+                    </div>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => fillQuickAccount('bendahara_rw@smartwarga.test', true)}
+                    className="px-2.5 py-2 bg-indigo-50 text-indigo-900 text-[11px] font-bold rounded-xl border border-indigo-200 hover:bg-indigo-100 flex items-center gap-2 text-left transition active:scale-95"
+                  >
+                    <span className="w-2.5 h-2.5 rounded-full bg-indigo-600 shrink-0"></span>
+                    <div className="truncate">
+                      <div>Pak Hendra (Bendahara)</div>
+                      <div className="text-[9px] font-normal text-indigo-700">Bendahara RW 05</div>
+                    </div>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => fillQuickAccount('rt01@smartwarga.test', true)}
+                    className="px-2.5 py-2 bg-slate-100 text-slate-800 text-[11px] font-bold rounded-xl border border-slate-300 hover:bg-slate-200 flex items-center gap-2 text-left transition active:scale-95"
+                  >
+                    <span className="w-2.5 h-2.5 rounded-full bg-slate-600 shrink-0"></span>
+                    <div className="truncate">
+                      <div>Ketua RT 01</div>
+                      <div className="text-[9px] font-normal text-slate-500">Pengawasan Wilayah RT</div>
+                    </div>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => fillQuickAccount('sekretaris_rt01@smartwarga.test', true)}
+                    className="px-2.5 py-2 bg-blue-50 text-blue-900 text-[11px] font-bold rounded-xl border border-blue-200 hover:bg-blue-100 flex items-center gap-2 text-left transition active:scale-95"
+                  >
+                    <span className="w-2.5 h-2.5 rounded-full bg-blue-600 shrink-0"></span>
+                    <div className="truncate">
+                      <div>Pak Danu (Sekretaris)</div>
+                      <div className="text-[9px] font-normal text-blue-700">Sekretaris RT 01</div>
+                    </div>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => fillQuickAccount('bendahara_rt01@smartwarga.test', true)}
+                    className="col-span-2 px-2.5 py-2 bg-emerald-50 text-emerald-900 text-[11px] font-bold rounded-xl border border-emerald-300 hover:bg-emerald-100 flex items-center gap-2 text-left transition active:scale-95"
+                  >
+                    <span className="w-2.5 h-2.5 rounded-full bg-emerald-600 shrink-0"></span>
+                    <div className="truncate">
+                      <div>Ibu Ratna (Bendahara)</div>
+                      <div className="text-[9px] font-normal text-emerald-700">Bendahara RT 01 (ACC Iuran & Keuangan)</div>
                     </div>
                   </button>
                 </div>

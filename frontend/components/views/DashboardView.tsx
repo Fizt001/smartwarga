@@ -411,8 +411,8 @@ export default function DashboardView({
       const blob = new Blob(['sample_proof'], { type: 'text/plain' });
       formData.append('proof_image', blob, 'bukti_donasi_swadaya.jpg');
 
-      const token = localStorage.getItem('token');
-      const res = await fetch(`http://smartwarga.test/api/announcements/${selectedEventDonate.id}/donate`, {
+      const token = localStorage.getItem('smartwarga_token') || localStorage.getItem('token');
+      const res = await fetch(`/api/announcements/${selectedEventDonate.id}/donate`, {
         method: 'POST',
         headers: {
           Authorization: `Bearer ${token}`,

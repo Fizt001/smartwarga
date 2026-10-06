@@ -440,7 +440,7 @@ export default function LayananView() {
                       <CheckCircle2 className="w-3.5 h-3.5" /> Surat Sah Elektronik Siap
                     </span>
                     <a
-                      href={`http://smartwarga.test/api/letters/${letItem.id}/download`}
+                      href={`/api/letters/${letItem.id}/download`}
                       target="_blank"
                       rel="noopener noreferrer"
                       className="px-3 py-1 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-xs font-bold flex items-center gap-1 shadow-sm transition"

@@ -163,3 +163,16 @@ Frontend siap diakses pada: `http://localhost:3000`
 ### 3. Firmware ESP32
 Buka sketsa pada direktori `firmware/` menggunakan Arduino IDE, sesuaikan SSID/Password WiFi dan IP host backend, lalu upload ke board ESP32 (Node 1 Gate/Panic, Node 2 Siren Relay, Node 3 Timbangan Bank Sampah).
 
+---
+
+## 🌐 Live Production Deployment
+
+Sistem telah aktif secara penuh pada server VPS Ubuntu 22.04 LTS:
+- **Domain Resmi Warga & Pengurus (SSL HTTPS):**  
+  👉 **[https://swarga.manajemensystem.my.id](https://swarga.manajemensystem.my.id)**
+- **Yatindo System Hub Portal:**  
+  👉 **[http://202.155.13.156](http://202.155.13.156)** (Kartu: 🏘️ SMART-WARGA)
+- **High-Speed IoT Dedicated Port:**  
+  👉 `http://202.155.13.156:8004` (ESP32 Gate RFID, Sirine, & Timbangan)
+- **Database Engine:** MariaDB `smartwarga_db`
+- **Sertifikat Keamanan:** Let's Encrypt Wildcard/SAN Valid TLS 1.3

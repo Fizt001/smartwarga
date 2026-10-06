@@ -221,20 +221,44 @@ export default function PengaduanView() {
             )}
 
             {/* Response History Timeline */}
-            {item.response_history && item.response_history.length > 0 && (
-              <div className="pt-2 border-t border-slate-100 space-y-1.5">
-                <span className="text-[10px] font-extrabold uppercase text-slate-400 block">Tanggapan Pengurus:</span>
-                {item.response_history.map((hist: any, hIdx: number) => (
-                  <div key={hIdx} className="text-xs bg-emerald-50/60 border border-emerald-100 rounded-xl p-2.5 space-y-0.5">
-                    <div className="flex items-center justify-between text-[11px] text-emerald-900 font-bold">
-                      <span>{hist.by}</span>
-                      <span className="text-[10px] text-emerald-600">{new Date(hist.timestamp).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })}</span>
-                    </div>
-                    <p className="text-xs text-slate-700">{hist.notes}</p>
-                  </div>
-                ))}
-              </div>
-            )}
+            {(() => {
+              let history: any[] = [];
+              if (Array.isArray(item.response_history)) {
+                history = item.response_history;
+              } else if (typeof item.response_history === 'string' && item.response_history.trim().startsWith('[')) {
+                try {
+                  const parsed = JSON.parse(item.response_history);
+                  if (Array.isArray(parsed)) history = parsed;
+                } catch {
+                  history = [];
+                }
+              }
+
+              if (!history || history.length === 0) return null;
+
+              return (
+                <div className="pt-2 border-t border-slate-100 space-y-1.5">
+                  <span className="text-[10px] font-extrabold uppercase text-slate-400 block">Tanggapan Pengurus:</span>
+                  {history.map((hist: any, hIdx: number) => {
+                    const timeValue = hist.timestamp || hist.at;
+                    const noteText = hist.notes || hist.text || 'Tanggapan pengurus tercatat.';
+                    return (
+                      <div key={hIdx} className="text-xs bg-emerald-50/60 border border-emerald-100 rounded-xl p-2.5 space-y-0.5">
+                        <div className="flex items-center justify-between text-[11px] text-emerald-900 font-bold">
+                          <span>{hist.by || 'Pengurus RT/RW'}</span>
+                          {timeValue && (
+                            <span className="text-[10px] text-emerald-600 font-medium">
+                              {new Date(timeValue).toLocaleString('id-ID', { hour: '2-digit', minute: '2-digit', day: 'numeric', month: 'short' })}
+                            </span>
+                          )}
+                        </div>
+                        <p className="text-xs text-slate-700 leading-relaxed">{noteText}</p>
+                      </div>
+                    );
+                  })}
+                </div>
+              );
+            })()}
 
             {/* Pengurus Action Button */}
             {isPengurus && item.status !== 'selesai' && (

@@ -510,9 +510,9 @@ class LiveCommunitySimulationSeeder extends Seeder
                 'description' => 'Lampu penerangan jalan umum depan rumah Blok B No. 4 padam sejak 2 hari lalu, kondisi jalan agak gelap saat malam hari.',
                 'status' => 'diproses',
                 'handled_by' => $rt1User?->id,
-                'response_history' => json_encode([
-                    ['by' => 'Ketua RT 01', 'at' => Carbon::now()->subHours(6)->toDateTimeString(), 'text' => 'Laporan diterima. Sudah dikoordinasikan dengan teknisi PJU warga, estimasi penggantian bohlam hari ini.']
-                ]),
+                'response_history' => [
+                    ['by' => 'Ketua RT 01', 'timestamp' => Carbon::now()->subHours(6)->toIso8601String(), 'notes' => 'Laporan diterima. Sudah dikoordinasikan dengan teknisi PJU warga, estimasi penggantian bohlam hari ini.']
+                ],
             ],
             [
                 'user_id' => $heads[1]?->id,
@@ -521,9 +521,9 @@ class LiveCommunitySimulationSeeder extends Seeder
                 'description' => 'Saluran drainase air di pertigaan taman tersumbat endapan daun kering dan lumpur, air meluap tipis saat hujan lebat kemarin.',
                 'status' => 'selesai',
                 'handled_by' => $rt1User?->id,
-                'response_history' => json_encode([
-                    ['by' => 'Ketua RT 01', 'at' => Carbon::now()->subDays(2)->toDateTimeString(), 'text' => 'Petugas kebersihan telah mengangkut endapan lumpur dan sampah. Saluran air kini kembali lancar.']
-                ]),
+                'response_history' => [
+                    ['by' => 'Ketua RT 01', 'timestamp' => Carbon::now()->subDays(2)->toIso8601String(), 'notes' => 'Petugas kebersihan telah mengangkut endapan lumpur dan sampah. Saluran air kini kembali lancar.']
+                ],
             ],
             [
                 'user_id' => $heads[2]?->id,
@@ -541,9 +541,9 @@ class LiveCommunitySimulationSeeder extends Seeder
                 'description' => 'Ada mobil tamu pengunjung sering parkir di tikungan jalan sehingga menyulitkan kendaraan warga lain yang ingin belok keluar.',
                 'status' => 'selesai',
                 'handled_by' => $rt1User?->id,
-                'response_history' => json_encode([
-                    ['by' => 'Satpam Pos 01', 'at' => Carbon::now()->subDays(1)->toDateTimeString(), 'text' => 'Petugas satpam sudah menegur pemilik kendaraan dan memindahkannya ke kantong parkir balai warga.']
-                ]),
+                'response_history' => [
+                    ['by' => 'Satpam Pos 01', 'timestamp' => Carbon::now()->subDays(1)->toIso8601String(), 'notes' => 'Petugas satpam sudah menegur pemilik kendaraan dan memindahkannya ke kantong parkir balai warga.']
+                ],
             ],
             [
                 'user_id' => $heads[4]?->id,
@@ -561,9 +561,9 @@ class LiveCommunitySimulationSeeder extends Seeder
                 'description' => 'Bak sampah depan gang 3 tutupnya pecah sehingga kucing liar sering membongkar kantong plastik sampah.',
                 'status' => 'diproses',
                 'handled_by' => $rt1User?->id,
-                'response_history' => json_encode([
-                    ['by' => 'Ketua RT 01', 'at' => Carbon::now()->subHours(12)->toDateTimeString(), 'text' => 'Pengurus telah memesan tong sampah baru dengan roda dan penutup rapat dari dana operasional kebersihan.']
-                ]),
+                'response_history' => [
+                    ['by' => 'Ketua RT 01', 'timestamp' => Carbon::now()->subHours(12)->toIso8601String(), 'notes' => 'Pengurus telah memesan tong sampah baru dengan roda dan penutup rapat dari dana operasional kebersihan.']
+                ],
             ],
             [
                 'user_id' => $heads[6]?->id,
@@ -572,9 +572,9 @@ class LiveCommunitySimulationSeeder extends Seeder
                 'description' => 'Mohon satpam dan regu ronda meningkatkan patroli jalan kaki sekitar pukul 02.00 - 04.00 WIB di gang buntu.',
                 'status' => 'selesai',
                 'handled_by' => $rt1User?->id,
-                'response_history' => json_encode([
-                    ['by' => 'Danru Satpam', 'at' => Carbon::now()->subDays(3)->toDateTimeString(), 'text' => 'Jadwal ronda telah disesuaikan dan checkpoint patroli dini hari sudah diwajibkan tiap 45 menit.']
-                ]),
+                'response_history' => [
+                    ['by' => 'Danru Satpam', 'timestamp' => Carbon::now()->subDays(3)->toIso8601String(), 'notes' => 'Jadwal ronda telah disesuaikan dan checkpoint patroli dini hari sudah diwajibkan tiap 45 menit.']
+                ],
             ],
         ];
 

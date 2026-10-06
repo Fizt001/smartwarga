@@ -29,9 +29,27 @@ import {
   Phone
 } from 'lucide-react';
 
-export default function LayananView() {
+interface LayananViewProps {
+  currentSubTab?: 'surat' | 'umkm' | 'koperasi' | 'aset' | 'rukam' | 'posyandu';
+  onSubTabChange?: (subTab: 'surat' | 'umkm' | 'koperasi' | 'aset' | 'rukam' | 'posyandu') => void;
+}
+
+export default function LayananView({ currentSubTab = 'surat', onSubTabChange }: LayananViewProps) {
   const { user } = useAuth();
-  const [subTab, setSubTab] = useState<'surat' | 'umkm' | 'koperasi' | 'aset' | 'rukam' | 'posyandu'>('surat');
+  const [internalSubTab, setInternalSubTab] = useState<'surat' | 'umkm' | 'koperasi' | 'aset' | 'rukam' | 'posyandu'>(currentSubTab);
+
+  useEffect(() => {
+    if (currentSubTab) {
+      setInternalSubTab(currentSubTab);
+    }
+  }, [currentSubTab]);
+
+  const subTab = currentSubTab || internalSubTab;
+
+  const setSubTab = (newTab: 'surat' | 'umkm' | 'koperasi' | 'aset' | 'rukam' | 'posyandu') => {
+    setInternalSubTab(newTab);
+    onSubTabChange?.(newTab);
+  };
 
   // Data states
   const [letters, setLetters] = useState<any[]>([]);

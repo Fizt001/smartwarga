@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '@/lib/auth-context';
 import Navbar from '@/components/Navbar';
 import Sidebar from '@/components/Sidebar';
@@ -27,33 +27,94 @@ export default function HomePage() {
     return 'sensus';
   };
 
-  const [activeTab, setActiveTab] = useState<string>('dashboard');
+  const [activeTab, setActiveTabState] = useState<string>('dashboard');
+  const [layananSubTab, setLayananSubTab] = useState<'surat' | 'umkm' | 'koperasi' | 'aset' | 'rukam' | 'posyandu'>('surat');
   const [pengurusSubTab, setPengurusSubTab] = useState<'sensus' | 'ipl' | 'kegiatan' | 'surat' | 'approval' | 'topup' | 'aset' | 'koperasi' | 'posyandu' | 'rukam'>('sensus');
   const [showPanicModal, setShowPanicModal] = useState(false);
   const [showTopupModal, setShowTopupModal] = useState(false);
 
-  // Sync tab with user role immediately when user data is ready
+  // Helper: construct URL path
+  const buildPath = (tab: string, sub?: string) => {
+    if (tab === 'layanan' && sub) return `/layanan/${sub}`;
+    if (tab === 'pengurus' && sub) return `/pengurus/${sub}`;
+    return `/${tab}`;
+  };
+
+  // Navigate function that pushes history state and updates URL in address bar
+  const handleNavigate = useCallback((tab: string, subTab?: string, push = true) => {
+    setActiveTabState(tab);
+    if (tab === 'layanan' && subTab) {
+      setLayananSubTab(subTab as any);
+    } else if (tab === 'pengurus' && subTab) {
+      setPengurusSubTab(subTab as any);
+    }
+
+    if (push && typeof window !== 'undefined') {
+      const targetPath = buildPath(tab, subTab);
+      if (window.location.pathname !== targetPath) {
+        window.history.pushState({ tab, subTab }, '', targetPath);
+      }
+    }
+  }, []);
+
+  // Sync from URL path (initial load and browser back/forward popstate)
+  const syncFromPath = useCallback(() => {
+    if (typeof window === 'undefined') return false;
+    const path = window.location.pathname.replace(/^\/+|\/+$/g, '');
+    if (!path) return false;
+
+    const parts = path.split('/');
+    const mainTab = parts[0]?.toLowerCase();
+    const subTab = parts[1]?.toLowerCase();
+
+    const validTabs = ['dashboard', 'ipl', 'layanan', 'pengaduan', 'iot', 'pengurus'];
+    if (validTabs.includes(mainTab)) {
+      setActiveTabState(mainTab);
+      if (mainTab === 'layanan' && subTab) {
+        setLayananSubTab(subTab as any);
+      } else if (mainTab === 'pengurus' && subTab) {
+        setPengurusSubTab(subTab as any);
+      }
+      return true;
+    }
+    return false;
+  }, []);
+
+  // Listen for browser popstate (back/forward navigation)
+  useEffect(() => {
+    syncFromPath();
+
+    const handlePopState = () => {
+      syncFromPath();
+    };
+
+    window.addEventListener('popstate', handlePopState);
+    return () => window.removeEventListener('popstate', handlePopState);
+  }, [syncFromPath]);
+
+  // Sync tab with user role immediately when user data is ready if at root
   useEffect(() => {
     if (user) {
-      if (isPengurus) {
-        if (activeTab === 'dashboard' || activeTab === 'ipl' || activeTab === 'layanan' || activeTab === 'pengaduan') {
-          setActiveTab('pengurus');
+      const hasSpecificPath = syncFromPath();
+
+      if (!hasSpecificPath) {
+        if (isPengurus) {
+          const initialSub = getInitialSubTab(user.role);
+          handleNavigate('pengurus', initialSub, true);
+        } else {
+          handleNavigate('dashboard', undefined, true);
         }
-        setPengurusSubTab(getInitialSubTab(user.role));
       } else {
-        if (activeTab === 'pengurus') {
-          setActiveTab('dashboard');
+        // Enforce pengurus / resident role routing constraints if needed
+        if (isPengurus && (activeTab === 'dashboard' || activeTab === 'ipl')) {
+          const initialSub = getInitialSubTab(user.role);
+          handleNavigate('pengurus', initialSub, true);
+        } else if (!isPengurus && activeTab === 'pengurus') {
+          handleNavigate('dashboard', undefined, true);
         }
       }
     }
   }, [user?.id, user?.role, isPengurus]);
-
-  const handleNavigate = (tab: string, subTab?: string) => {
-    setActiveTab(tab);
-    if (subTab) {
-      setPengurusSubTab(subTab as any);
-    }
-  };
 
   if (loading) {
     return (
@@ -72,7 +133,7 @@ export default function HomePage() {
         return (
           <PengurusView
             currentSubTab={pengurusSubTab}
-            onSubTabChange={(tab) => setPengurusSubTab(tab)}
+            onSubTabChange={(sub) => handleNavigate('pengurus', sub, true)}
           />
         );
       }
@@ -96,13 +157,17 @@ export default function HomePage() {
           <IplView
             onOpenTopup={() => setShowTopupModal(true)}
             onSwitchToPengurus={(subTab) => {
-              setActiveTab('pengurus');
-              setPengurusSubTab(subTab as any);
+              handleNavigate('pengurus', subTab, true);
             }}
           />
         );
       case 'layanan':
-        return <LayananView />;
+        return (
+          <LayananView
+            currentSubTab={layananSubTab}
+            onSubTabChange={(sub) => handleNavigate('layanan', sub, true)}
+          />
+        );
       case 'pengaduan':
         return <PengaduanView />;
       case 'iot':
@@ -111,7 +176,7 @@ export default function HomePage() {
         return (
           <PengurusView
             currentSubTab={pengurusSubTab}
-            onSubTabChange={(tab) => setPengurusSubTab(tab)}
+            onSubTabChange={(sub) => handleNavigate('pengurus', sub, true)}
           />
         );
       default:
@@ -142,9 +207,9 @@ export default function HomePage() {
             <div className="flex-1 flex w-full">
               <Sidebar
                 activeTab={activeTab}
-                setActiveTab={setActiveTab}
+                setActiveTab={(tab) => handleNavigate(tab, undefined, true)}
                 pengurusSubTab={pengurusSubTab}
-                onNavigateTab={handleNavigate}
+                onNavigateTab={(tab, sub) => handleNavigate(tab, sub, true)}
                 onOpenPanic={() => setShowPanicModal(true)}
                 onOpenTopup={() => setShowTopupModal(true)}
               />
@@ -164,9 +229,9 @@ export default function HomePage() {
           {/* Bottom Nav on Mobile Mode */}
           <BottomNav 
             activeTab={activeTab} 
-            setActiveTab={setActiveTab} 
+            setActiveTab={(tab) => handleNavigate(tab, undefined, true)} 
             pengurusSubTab={pengurusSubTab}
-            onNavigateTab={handleNavigate}
+            onNavigateTab={(tab, sub) => handleNavigate(tab, sub, true)}
           />
         </>
       )}

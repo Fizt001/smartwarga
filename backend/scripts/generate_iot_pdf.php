@@ -477,12 +477,12 @@ $html = <<<HTML
 const char* WIFI_SSID     = "NAMA_WIFI_RUMAH_ANDA";
 const char* WIFI_PASSWORD = "PASSWORD_WIFI_ANDA";
 
-// IP VPS Production SMART-WARGA (Yatindo System Hub - Port 8004)
-const char* API_BASE_URL  = "http://202.155.13.156:8004"; 
+// Alamat Server Production SMART-WARGA (Domain SSL Resmi)
+const char* API_BASE_URL  = "https://swarga.manajemensystem.my.id"; 
 </div>
 
 <div class="box-note">
-  <strong>Harmonisasi Multi-Aplikasi VPS:</strong> Pada VPS <code>202.155.13.156</code>, SMART-WARGA dialokasikan pada <strong>Port 8004</strong> agar berjalan berdampingan tanpa mengganggu aplikasi lain (SIAKAD SMP di Port 8001, SIAKAD SMK di Port 8002, dan Manager di Port 8003).
+  <strong>Konektivitas Cloud:</strong> ESP32 dapat terhubung langsung ke domain cloud resmi <code>https://swarga.manajemensystem.my.id</code> melalui koneksi aman terenkripsi TLS/SSL.
 </div>
 
 <!-- BAB 5 -->

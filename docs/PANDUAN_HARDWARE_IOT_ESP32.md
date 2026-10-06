@@ -30,8 +30,8 @@ Platform SMART-WARGA menggunakan arsitektur terdistribusi berbasis **3 Node ESP3
 [ ESP32 Node 2: Menara Sirine ] ------/                 |
 (Relay 5V + Horn Sirine 12V/220V)                      | (Jaringan LAN / WiFi)
                                                        v
-[ ESP32 Node 3: Sentra Terpadu ] ----> [ Server VPS SMART-WARGA Production ]
-(Load Cell + HC-SR04 + LCD 16x2)      (http://202.155.13.156:8004)
+[ ESP32 Node 3: Sentra Terpadu ] ----> [ Server Cloud SMART-WARGA Production ]
+(Load Cell + HC-SR04 + LCD 16x2)      (https://swarga.manajemensystem.my.id)
                                                        ^
                                                        | REST API & Reverb WebSockets
                                       [ Dashboard Web / Smartphone Warga ]
@@ -226,13 +226,12 @@ Buka file sketsa yang ingin Anda gunakan. Pada baris awal setiap file `.ino`, te
 const char* WIFI_SSID     = "NAMA_WIFI_RUMAH";   // Ganti dengan SSID WiFi yang aktif
 const char* WIFI_PASSWORD = "PASSWORD_WIFI";    // Ganti dengan Password WiFi Anda
 
-// Alamat Server Production VPS (Yatindo System Hub - Port 8004)
-const char* API_BASE_URL  = "http://202.155.13.156:8004"; 
+// Alamat Server Production (Domain SSL Resmi)
+const char* API_BASE_URL  = "https://swarga.manajemensystem.my.id"; 
 ```
 
-### Konfigurasi Port 8004 di VPS (Nginx):
-Agar SMART-WARGA dapat berjalan harmonis berdampingan dengan aplikasi lain yang sudah ada di VPS (seperti SIAKAD SMP Port 8001, SIAKAD SMK Port 8002, dan Manager Port 8003), SMART-WARGA dikonfigurasi pada **Port 8004**.
-ESP32 cukup terhubung ke jaringan internet apa saja dan otomatis mengirim data ke `http://202.155.13.156:8004`.
+### Konfigurasi Endpoint Server:
+ESP32 cukup terhubung ke jaringan internet (WiFi warga / tethering) dan otomatis mengirim data aman terenkripsi ke endpoint `https://swarga.manajemensystem.my.id`.
 
 ---
 

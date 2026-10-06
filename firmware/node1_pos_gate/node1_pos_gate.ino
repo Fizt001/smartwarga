@@ -43,8 +43,8 @@
 const char* WIFI_SSID     = "SMART_WARGA_WIFI";
 const char* WIFI_PASSWORD = "wargadigital2026";
 
-// IP VPS Production SMART-WARGA (Port 8004 - Bebas konflik dengan SIAKAD Hub)
-const char* API_BASE_URL  = "http://202.155.13.156:8004"; 
+// Domain Server Production SMART-WARGA (SSL)
+const char* API_BASE_URL  = "https://swarga.manajemensystem.my.id"; 
 const char* POST_ID       = "POS_01";
 
 // ====== PIN DEFINITIONS ======

@@ -54,6 +54,7 @@ export default function DashboardView({
   const { user, isApproved, refreshUser } = useAuth();
   const [announcements, setAnnouncements] = useState<any[]>([]);
   const [billings, setBillings] = useState<any[]>([]);
+  const [iplSummary, setIplSummary] = useState<any>(null);
   const [sirenStatus, setSirenStatus] = useState<any>(null);
   const [wasteRates, setWasteRates] = useState<any[]>([]);
   const [lastRonda, setLastRonda] = useState<any>(null);
@@ -156,7 +157,10 @@ export default function DashboardView({
         ]);
 
         if (annRes.success) setAnnouncements(annRes.data?.data || []);
-        if (billRes.success) setBillings(billRes.data?.data || []);
+        if (billRes.success) {
+          setBillings(billRes.data?.data || []);
+          setIplSummary(billRes.summary || null);
+        }
         if (devRes.success) setSirenStatus(devRes.data?.siren_status || null);
         if (wasteRes.success) setWasteRates(wasteRes.data || []);
         if (rondaRes.success && rondaRes.data?.data?.length > 0) setLastRonda(rondaRes.data.data[0]);
@@ -436,6 +440,8 @@ export default function DashboardView({
   };
 
   const displayAddress = user?.house?.full_address || (user?.rt_number ? `RT ${user.rt_number} / RW 05` : 'Lingkungan RW 05');
+  const totalUnpaidAmount = iplSummary?.all_time_unpaid_amount ?? billings.reduce((sum: number, b: any) => sum + (Number(b.amount) || 0), 0);
+  const totalUnpaidCount = iplSummary?.all_time_unpaid_count ?? billings.length;
 
   return (
     <div className="w-full space-y-6">
@@ -526,22 +532,26 @@ export default function DashboardView({
           </div>
         </div>
 
-        {/* Card 2: Status Tagihan IPL */}
+        {/* Card 2: Status Tagihan IPL Akumulatif */}
         <div className="bg-white rounded-3xl p-5 border border-slate-200 shadow-sm flex flex-col justify-between hover:border-blue-500/50 hover:shadow-md transition">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">Iuran IPL Bulan Ini</span>
+            <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">
+              {totalUnpaidCount > 1 ? 'Total Tagihan IPL' : 'Iuran IPL Warga'}
+            </span>
             <div className={`w-9 h-9 rounded-xl flex items-center justify-center ${
-              billings.length > 0 ? 'bg-amber-100 text-amber-700' : 'bg-blue-100 text-blue-700'
+              totalUnpaidCount > 0 ? 'bg-amber-100 text-amber-700' : 'bg-emerald-100 text-emerald-700'
             }`}>
               <CreditCard className="w-5 h-5" />
             </div>
           </div>
           <div className="mt-3">
             <div className="text-xl font-black text-slate-900 tracking-tight flex items-center gap-2">
-              {billings.length > 0 ? (
+              {totalUnpaidCount > 0 ? (
                 <>
-                  <span className="text-amber-600">Rp {Number(billings[0].amount).toLocaleString('id-ID')}</span>
-                  <span className="text-[10px] bg-amber-100 text-amber-800 font-bold px-2 py-0.5 rounded-full">Belum Lunas</span>
+                  <span className="text-amber-600">Rp {Number(totalUnpaidAmount).toLocaleString('id-ID')}</span>
+                  <span className="text-[10px] bg-amber-100 text-amber-800 font-bold px-2 py-0.5 rounded-full whitespace-nowrap">
+                    {totalUnpaidCount === 1 ? 'Belum Lunas' : `${totalUnpaidCount} Bulan Belum Lunas`}
+                  </span>
                 </>
               ) : (
                 <>
@@ -551,10 +561,16 @@ export default function DashboardView({
               )}
             </div>
             <div className="flex items-center justify-between mt-2 pt-2 border-t border-slate-100">
-              <span className="text-[11px] text-slate-400">Kas RT 01-03 & Rutin RW</span>
+              <span className="text-[11px] text-slate-400 truncate max-w-[180px]">
+                {totalUnpaidCount > 1 
+                  ? `Akumulasi ${totalUnpaidCount} bulan terbit` 
+                  : totalUnpaidCount === 1 && billings[0]?.master
+                  ? `Periode ${billings[0].master.period_month}/${billings[0].master.period_year}`
+                  : 'Kas RT 01-03 & Rutin RW'}
+              </span>
               <button
                 onClick={() => onNavigateTab('ipl')}
-                className="text-xs font-extrabold text-blue-600 hover:text-blue-700"
+                className="text-xs font-extrabold text-blue-600 hover:text-blue-700 whitespace-nowrap"
               >
                 Lihat Tagihan
               </button>
@@ -1022,19 +1038,27 @@ export default function DashboardView({
           )}
 
           {/* Unpaid IPL Alert banner if any */}
-          {isApproved && billings.length > 0 && (
+          {isApproved && totalUnpaidCount > 0 && (
             <div className="bg-amber-50 border border-amber-200 rounded-3xl p-5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 shadow-sm">
               <div className="flex items-center gap-3">
                 <div className="p-3 bg-amber-200/80 text-amber-800 rounded-2xl">
                   <CreditCard className="w-6 h-6" />
                 </div>
                 <div>
-                  <div className="text-xs font-bold text-amber-900 uppercase tracking-wide">Tagihan IPL Belum Lunas</div>
+                  <div className="text-xs font-bold text-amber-900 uppercase tracking-wide">
+                    {totalUnpaidCount > 1 
+                      ? `Tagihan IPL Tertunggak (${totalUnpaidCount} Periode Bulan)` 
+                      : 'Tagihan IPL Belum Lunas'}
+                  </div>
                   <div className="text-sm font-extrabold text-slate-900 mt-0.5">
-                    Periode {billings[0].master?.period_month} / {billings[0].master?.period_year} — Rp {Number(billings[0].amount).toLocaleString('id-ID')}
+                    {totalUnpaidCount > 1
+                      ? `Total Akumulasi Tagihan: Rp ${Number(totalUnpaidAmount).toLocaleString('id-ID')}`
+                      : `Periode ${billings[0]?.master?.period_month} / ${billings[0]?.master?.period_year} — Rp ${Number(totalUnpaidAmount).toLocaleString('id-ID')}`}
                   </div>
                   <div className="text-xs text-amber-700 mt-0.5">
-                    Dapat dibayar instan menggunakan Saldo Dompet Warga Anda.
+                    {totalUnpaidCount > 1
+                      ? `Terdapat ${totalUnpaidCount} bulan tagihan yang belum dilunasi lintas periode. Dapat dibayar langsung dari Saldo Dompet Warga.`
+                      : 'Dapat dibayar instan menggunakan Saldo Dompet Warga Anda.'}
                   </div>
                 </div>
               </div>

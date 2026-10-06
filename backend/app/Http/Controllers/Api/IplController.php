@@ -210,15 +210,29 @@ class IplController extends Controller
             }
         }
 
+        // Clone base query sebelum filter status untuk menghitung akumulasi total (lintas bulan & tahun)
+        $summaryBase = clone $query;
+
         if ($request->has('status') && $request->status) {
             $query->where('status', $request->status);
         }
 
         $billings = $query->latest()->paginate(20);
 
+        $allTimeUnpaidAmount = (float) (clone $summaryBase)->where('status', 'unpaid')->sum('amount');
+        $allTimeUnpaidCount = (int) (clone $summaryBase)->where('status', 'unpaid')->count();
+        $allTimePaidAmount = (float) (clone $summaryBase)->where('status', 'paid')->sum('amount');
+        $allTimePaidCount = (int) (clone $summaryBase)->where('status', 'paid')->count();
+
         return response()->json([
             'success' => true,
             'data' => $billings,
+            'summary' => [
+                'all_time_unpaid_amount' => $allTimeUnpaidAmount,
+                'all_time_unpaid_count' => $allTimeUnpaidCount,
+                'all_time_paid_amount' => $allTimePaidAmount,
+                'all_time_paid_count' => $allTimePaidCount,
+            ],
         ]);
     }
 
@@ -512,6 +526,12 @@ class IplController extends Controller
             ];
         }
 
+        // Hitung juga akumulasi lintas tahun (seluruh waktu) untuk unit rumah ini
+        $allTimeUnpaidAmount = (float) IplBilling::where('house_id', $house->id)->where('status', 'unpaid')->sum('amount');
+        $allTimeUnpaidMonths = (int) IplBilling::where('house_id', $house->id)->where('status', 'unpaid')->count();
+        $allTimePaidAmount = (float) IplBilling::where('house_id', $house->id)->where('status', 'paid')->sum('amount');
+        $allTimePaidMonths = (int) IplBilling::where('house_id', $house->id)->where('status', 'paid')->count();
+
         return response()->json([
             'success' => true,
             'year' => $year,
@@ -530,6 +550,10 @@ class IplController extends Controller
                 'not_generated_months' => $notGeneratedCount,
                 'total_paid' => $totalPaid,
                 'total_unpaid' => $totalUnpaid,
+                'all_time_unpaid_amount' => $allTimeUnpaidAmount,
+                'all_time_unpaid_months' => $allTimeUnpaidMonths,
+                'all_time_paid_amount' => $allTimePaidAmount,
+                'all_time_paid_months' => $allTimePaidMonths,
             ],
             'data' => $calendar,
         ]);

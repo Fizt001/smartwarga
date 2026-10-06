@@ -367,7 +367,14 @@ export default function IplView({
             <div className="text-xl font-black text-rose-400 mt-0.5">
               {stats.unpaid_months} <span className="text-xs font-semibold text-slate-400">Bulan</span>
             </div>
-            <span className="text-[10px] text-rose-400/80 font-medium">Rp {Number(stats.total_unpaid).toLocaleString('id-ID')}</span>
+            <div className="flex flex-col">
+              <span className="text-[10px] text-rose-400/80 font-medium">Rp {Number(stats.total_unpaid).toLocaleString('id-ID')} ({selectedYear})</span>
+              {Number(stats.all_time_unpaid_months || 0) > Number(stats.unpaid_months || 0) && (
+                <span className="text-[9px] text-amber-300 font-semibold mt-0.5">
+                  Total Lintas Tahun: Rp {Number(stats.all_time_unpaid_amount).toLocaleString('id-ID')} ({stats.all_time_unpaid_months} Bln)
+                </span>
+              )}
+            </div>
           </div>
 
           <div className="p-3 rounded-2xl bg-slate-800/60 border border-slate-700/50">

@@ -61,14 +61,14 @@ foreach ($names as $index => $name) {
     $emailPrefix = $first . '.' . $second;
     $email = $emailPrefix . '@smartwarga.test';
     
-    // Assign to house: RT 01, start from Blok A No 2 (No 1 is Budi)
-    // Blok A has 25 houses (No 1-25), Blok B has 25 houses (No 1-25)
-    if ($num <= 24) {
+    // Assign to house: RT 01, start from Blok A No 4 (No 1 is Budi, No 2 is Siti, No 3 is Joko)
+    // Blok A has 25 houses (No 4-25 = 22 unit), sisa 12 unit dialokasikan ke Blok B No 1-12
+    if ($num <= 22) {
         $block = 'A';
-        $houseNum = $num + 1; // 2..25
+        $houseNum = $num + 3; // 1..22 -> 4..25
     } else {
         $block = 'B';
-        $houseNum = ($num - 24); // 1..10
+        $houseNum = ($num - 22); // 23..34 -> 1..12
     }
     
     $house = House::firstOrCreate(
@@ -92,7 +92,7 @@ foreach ($names as $index => $name) {
         }
     }
 
-    $rfid = 'RFID_WARGA_' . str_pad($num + 1, 3, '0', STR_PAD_LEFT);
+    $rfid = 'RFID_WARGA_' . str_pad($num + 3, 3, '0', STR_PAD_LEFT);
     $phone = '0812' . str_pad(77000000 + $num, 8, '0', STR_PAD_LEFT);
     $nik = '327601' . '12059' . str_pad($num, 5, '0', STR_PAD_LEFT);
     $noKk = '327601' . '20011' . str_pad($num, 5, '0', STR_PAD_LEFT);
@@ -128,6 +128,12 @@ foreach ($names as $index => $name) {
         $createdCount++;
     }
 
+    // Set house head of family and occupied
+    $house->update([
+        'is_occupied' => true,
+        'head_of_family_id' => $user->id,
+    ]);
+
     // Auto-create / topup wallet
     Wallet::firstOrCreate(
         ['user_id' => $user->id],
@@ -147,6 +153,20 @@ foreach ($names as $index => $name) {
         $rfid
     );
 }
+
+// Pastikan Rumah Percontohan 1, 2, 3 tetap bersih & terhubung ke pemilik aslinya
+$budi = User::where('email', 'budi@smartwarga.test')->first();
+$siti = User::where('email', 'siti@smartwarga.test')->first();
+$joko = User::where('email', 'joko@smartwarga.test')->first();
+
+$h1 = House::where('rt_number', '01')->where('block', 'A')->where('number', 1)->first();
+$h2 = House::where('rt_number', '01')->where('block', 'A')->where('number', 2)->first();
+$h3 = House::where('rt_number', '01')->where('block', 'A')->where('number', 3)->first();
+
+if ($h1 && $budi) $h1->update(['head_of_family_id' => $budi->id, 'is_occupied' => true]);
+if ($h2 && $siti) $h2->update(['head_of_family_id' => $siti->id, 'is_occupied' => false]);
+if ($h3 && $joko) $h3->update(['head_of_family_id' => $joko->id, 'is_occupied' => true]);
+
 
 echo "\n=== SEEDING SELESAI ===\n";
 echo "Total Baru Dibuat: {$createdCount}\n";

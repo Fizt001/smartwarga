@@ -768,14 +768,14 @@ export default function DashboardView({
                   <div>
                     <div className="flex items-center gap-1.5">
                       <span className="font-mono text-xs font-black px-2 py-0.5 rounded bg-slate-900 text-white">
-                        {user.house.house_code || `RT${user.house.rt_number}-${user.house.block}${user.house.number}`}
+                        {user?.house?.house_code || (user?.house ? `RT${user.house.rt_number}-${user.house.block}${user.house.number}` : 'RW 05')}
                       </span>
                       <h4 className="font-black text-sm text-slate-900">
-                        {user.house.full_address}
+                        {user?.house?.full_address || 'Alamat Unit Belum Terdata'}
                       </h4>
                     </div>
                     <span className="text-[11px] text-slate-500">
-                      Entitas Utama Penagihan IPL & Hak Akses Administrasi RT {user.house.rt_number}
+                      Entitas Utama Penagihan IPL & Hak Akses Administrasi RT {user?.house?.rt_number || user?.rt_number || '01'}
                     </span>
                   </div>
                 </div>
@@ -792,17 +792,17 @@ export default function DashboardView({
                     <span className="text-[10px] font-black uppercase text-emerald-800 flex items-center gap-1">
                       <UserCheck className="w-3.5 h-3.5" /> KK Utama (PJ Rumah)
                     </span>
-                    {(user.is_head_of_house || user.kk_type === 'kk_utama') && (
+                    {(user?.is_head_of_house || user?.kk_type === 'kk_utama') && (
                       <span className="text-[9px] bg-emerald-600 text-white font-extrabold px-1.5 py-0.5 rounded">
                         Anda
                       </span>
                     )}
                   </div>
                   <div className="font-black text-sm text-slate-900">
-                    {user.house.head_of_family?.name || (user.is_head_of_house ? user.name : 'Budi Santoso')}
+                    {user?.house?.head_of_family?.name || (user?.is_head_of_house ? user?.name : 'Kepala Keluarga')}
                   </div>
                   <div className="text-[11px] text-slate-600">
-                    No. KK: <strong className="font-mono">{user.house.head_of_family?.no_kk || user.no_kk || '3201012345670001'}</strong>
+                    No. KK: <strong className="font-mono">{user?.house?.head_of_family?.no_kk || user?.no_kk || '-'}</strong>
                   </div>
                   <div className="text-[10px] text-emerald-700 font-semibold pt-0.5">
                     * Bertanggung jawab atas pembayaran iuran IPL per unit rumah.
@@ -815,13 +815,13 @@ export default function DashboardView({
                     <span className="text-[10px] font-black uppercase text-teal-800 flex items-center gap-1">
                       <Users className="w-3.5 h-3.5" /> KK Pendukung / Tambahan
                     </span>
-                    {user.kk_type === 'kk_pendukung' && (
+                    {user?.kk_type === 'kk_pendukung' && (
                       <span className="text-[9px] bg-teal-600 text-white font-extrabold px-1.5 py-0.5 rounded">
                         Anda
                       </span>
                     )}
                   </div>
-                  {user.house.kk_pendukung && user.house.kk_pendukung.length > 0 ? (
+                  {user?.house?.kk_pendukung && user.house.kk_pendukung.length > 0 ? (
                     <div className="space-y-1">
                       {user.house.kk_pendukung.map((kk: any) => (
                         <div key={kk.id} className="text-[11px]">
@@ -830,9 +830,9 @@ export default function DashboardView({
                         </div>
                       ))}
                     </div>
-                  ) : user.kk_type === 'kk_pendukung' ? (
+                  ) : user?.kk_type === 'kk_pendukung' ? (
                     <div>
-                      <div className="font-black text-sm text-slate-900">{user.name}</div>
+                      <div className="font-black text-sm text-slate-900">{user?.name}</div>
                       <div className="text-[11px] text-slate-600 font-mono">No. KK: {user.no_kk || '3201012345670002'}</div>
                     </div>
                   ) : (
@@ -949,7 +949,7 @@ export default function DashboardView({
                         </span>
                       </h5>
                       <p className="text-[10px] text-slate-500">
-                        Dipisahkan berdasarkan Kartu Keluarga (KK Inti & KK Tambahan) pada unit {user.house.house_code}.
+                        Dipisahkan berdasarkan Kartu Keluarga (KK Inti & KK Tambahan) pada unit {user?.house?.house_code || 'Hunian Warga'}.
                       </p>
                     </div>
                   </div>
@@ -981,13 +981,13 @@ export default function DashboardView({
                         <div className="text-[11px] text-slate-600 mt-0.5 font-medium flex items-center gap-2 flex-wrap">
                           <span>No. KK: <strong className="font-mono text-slate-800">{kkUtamaNo || '-'}</strong></span>
                           <span>•</span>
-                          <span>Kepala Keluarga: <strong className="text-slate-800">{user.house?.head_of_family?.name || user.name}</strong></span>
+                          <span>Kepala Keluarga: <strong className="text-slate-800">{user?.house?.head_of_family?.name || user?.name || '-'}</strong></span>
                         </div>
                       </div>
                     </div>
 
                     <div className="flex items-center gap-2 self-end sm:self-center shrink-0">
-                      {(user.is_head_of_house || user.kk_type === 'kk_utama') && (
+                      {(user?.is_head_of_house || user?.kk_type === 'kk_utama') && (
                         <button
                           type="button"
                           onClick={(e) => {
@@ -1014,14 +1014,14 @@ export default function DashboardView({
                           <div
                             key={member.id}
                             className={`p-2.5 rounded-xl border transition flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs ${
-                              member.id === user.id
+                              member.id === user?.id
                                 ? 'bg-emerald-50/70 border-emerald-200'
                                 : 'bg-slate-50/70 border-slate-200 hover:border-slate-300'
                             }`}
                           >
                             <div className="flex items-start gap-2.5">
                               <div className={`w-7 h-7 rounded-full flex items-center justify-center font-bold text-xs shrink-0 ${
-                                member.id === user.id
+                                member.id === user?.id
                                   ? 'bg-emerald-600 text-white'
                                   : member.gender === 'Perempuan' || member.relationship === 'Istri'
                                   ? 'bg-pink-100 text-pink-700'
@@ -1036,16 +1036,16 @@ export default function DashboardView({
                                   </span>
                                   <span className={`text-[9px] font-bold px-2 py-0.5 rounded-full ${
                                     member.is_head_of_house || member.kk_type === 'kk_utama'
-                                      ? 'bg-emerald-100 text-emerald-800'
-                                      : member.relationship === 'Istri'
-                                      ? 'bg-pink-100 text-pink-800'
-                                      : member.relationship === 'Anak'
-                                      ? 'bg-blue-100 text-blue-800'
-                                      : 'bg-slate-100 text-slate-700'
+                                       ? 'bg-emerald-100 text-emerald-800'
+                                       : member.relationship === 'Istri'
+                                       ? 'bg-pink-100 text-pink-800'
+                                       : member.relationship === 'Anak'
+                                       ? 'bg-blue-100 text-blue-800'
+                                       : 'bg-slate-100 text-slate-700'
                                   }`}>
                                     {member.relationship || (member.is_head_of_house ? 'Kepala Keluarga' : 'Anggota Keluarga')}
                                   </span>
-                                  {member.id === user.id && (
+                                  {member.id === user?.id && (
                                     <span className="text-[9px] bg-emerald-600 text-white font-extrabold px-1.5 py-0.2 rounded">
                                       Anda (Login)
                                     </span>
@@ -1067,7 +1067,7 @@ export default function DashboardView({
 
                             {/* Action buttons */}
                             <div className="flex items-center gap-1.5 self-end sm:self-center shrink-0">
-                              {member.id !== user.id && (user.is_head_of_house || user.kk_type === 'kk_utama') && (
+                              {member.id !== user?.id && (user?.is_head_of_house || user?.kk_type === 'kk_utama') && (
                                 <>
                                   <button
                                     type="button"
@@ -1087,7 +1087,7 @@ export default function DashboardView({
                                   </button>
                                 </>
                               )}
-                              {member.id === user.id && (
+                              {member.id === user?.id && (
                                 <span className="text-[9px] text-emerald-700 font-bold px-2 py-0.5 bg-emerald-50 rounded-lg">
                                   Penanggung Jawab Rumah
                                 </span>
@@ -1136,7 +1136,7 @@ export default function DashboardView({
                     </div>
 
                     <div className="flex items-center gap-2 self-end sm:self-center shrink-0">
-                      {(user.is_head_of_house || user.kk_type === 'kk_utama') && (
+                      {(user?.is_head_of_house || user?.kk_type === 'kk_utama') && (
                         <button
                           type="button"
                           onClick={(e) => {
@@ -1167,14 +1167,14 @@ export default function DashboardView({
                           <div
                             key={member.id}
                             className={`p-2.5 rounded-xl border transition flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs ${
-                              member.id === user.id
+                              member.id === user?.id
                                 ? 'bg-teal-50/80 border-teal-300'
                                 : 'bg-slate-50/70 border-slate-200 hover:border-slate-300'
                             }`}
                           >
                             <div className="flex items-start gap-2.5">
                               <div className={`w-7 h-7 rounded-full flex items-center justify-center font-bold text-xs shrink-0 ${
-                                member.id === user.id
+                                member.id === user?.id
                                   ? 'bg-teal-600 text-white'
                                   : member.gender === 'Perempuan' || member.relationship === 'Istri'
                                   ? 'bg-pink-100 text-pink-700'
@@ -1190,7 +1190,7 @@ export default function DashboardView({
                                   <span className="text-[9px] font-bold px-2 py-0.5 rounded-full bg-teal-100 text-teal-800">
                                     {member.relationship || 'KK Tambahan'}
                                   </span>
-                                  {member.id === user.id && (
+                                  {member.id === user?.id && (
                                     <span className="text-[9px] bg-teal-600 text-white font-extrabold px-1.5 py-0.2 rounded">
                                       Anda (Login)
                                     </span>
@@ -1212,7 +1212,7 @@ export default function DashboardView({
 
                             {/* Action buttons */}
                             <div className="flex items-center gap-1.5 self-end sm:self-center shrink-0">
-                              {member.id !== user.id && (user.is_head_of_house || user.kk_type === 'kk_utama') && (
+                              {member.id !== user?.id && (user?.is_head_of_house || user?.kk_type === 'kk_utama') && (
                                 <>
                                   <button
                                     type="button"

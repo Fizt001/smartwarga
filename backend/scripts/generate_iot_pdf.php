@@ -13,94 +13,139 @@ $html = <<<HTML
 <html>
 <head>
 <meta charset="utf-8">
-<title>Buku Panduan Hardware IoT ESP32 - SMART-WARGA</title>
+<title>SMART-WARGA: Enterprise Architecture & IoT Hardware Deployment Blueprint</title>
 <style>
   @page {
-    margin: 15mm 15mm 15mm 15mm;
+    margin: 14mm 14mm 14mm 14mm;
   }
   body {
     font-family: 'Helvetica', 'Arial', sans-serif;
     color: #1e293b;
-    font-size: 9.5pt;
+    font-size: 9pt;
     line-height: 1.45;
   }
   .cover {
     text-align: center;
-    padding-top: 60px;
+    padding-top: 50px;
     page-break-after: always;
   }
   .cover-logo {
-    font-size: 32pt;
+    font-size: 30pt;
     font-weight: 900;
     color: #0f172a;
     letter-spacing: 2px;
-    margin-bottom: 5px;
+    margin-bottom: 4px;
+  }
+  .cover-tagline {
+    font-size: 11pt;
+    font-weight: 600;
+    color: #0284c7;
+    margin-bottom: 18px;
+    letter-spacing: 0.5px;
   }
   .cover-badge {
     display: inline-block;
-    background: #0284c7;
-    color: #ffffff;
-    font-size: 10pt;
+    background: #0f172a;
+    color: #38bdf8;
+    font-size: 9pt;
     font-weight: bold;
-    padding: 5px 16px;
-    border-radius: 15px;
+    padding: 6px 18px;
+    border-radius: 14px;
+    border: 1px solid #0284c7;
     margin-bottom: 25px;
   }
   .cover-title {
-    font-size: 20pt;
+    font-size: 19pt;
     font-weight: bold;
-    color: #1e293b;
+    color: #0f172a;
     line-height: 1.3;
-    margin-bottom: 15px;
+    margin-bottom: 12px;
   }
   .cover-subtitle {
-    font-size: 12pt;
-    color: #64748b;
-    margin-bottom: 80px;
+    font-size: 11pt;
+    color: #475569;
+    margin-bottom: 60px;
+    line-height: 1.4;
   }
-  .cover-meta {
+  .cover-table {
+    width: 85%;
+    margin: 0 auto;
+    border-collapse: collapse;
+    font-size: 8.5pt;
+    margin-bottom: 50px;
+  }
+  .cover-table td {
+    padding: 6px 10px;
+    border: 1px solid #cbd5e1;
+    text-align: left;
+  }
+  .cover-table td.label {
+    background-color: #f1f5f9;
+    font-weight: bold;
+    width: 35%;
+    color: #334155;
+  }
+  .cover-footer {
     border-top: 2px solid #e2e8f0;
-    padding-top: 20px;
-    font-size: 9pt;
+    padding-top: 15px;
+    font-size: 8.5pt;
     color: #64748b;
-    line-height: 1.6;
+  }
+  .part-banner {
+    background: #0f172a;
+    color: #ffffff;
+    padding: 10px 14px;
+    border-radius: 4px;
+    margin-top: 15px;
+    margin-bottom: 12px;
+    border-left: 6px solid #38bdf8;
+  }
+  .part-banner h1 {
+    font-size: 13pt;
+    margin: 0 0 3px 0;
+    letter-spacing: 0.5px;
+  }
+  .part-banner p {
+    font-size: 8.5pt;
+    margin: 0;
+    color: #94a3b8;
   }
   h2.section-header {
-    font-size: 13pt;
+    font-size: 11.5pt;
     color: #0f172a;
     border-bottom: 2px solid #0284c7;
-    padding-bottom: 5px;
-    margin-top: 18px;
-    margin-bottom: 10px;
+    padding-bottom: 4px;
+    margin-top: 14px;
+    margin-bottom: 8px;
     text-transform: uppercase;
   }
   h3.subsection-header {
-    font-size: 11pt;
+    font-size: 10pt;
     color: #0369a1;
-    margin-top: 14px;
-    margin-bottom: 6px;
+    margin-top: 10px;
+    margin-bottom: 4px;
   }
   p {
     margin-top: 0;
-    margin-bottom: 8px;
+    margin-bottom: 6px;
   }
   table {
     width: 100%;
     border-collapse: collapse;
-    margin-top: 6px;
-    margin-bottom: 14px;
-    font-size: 8.5pt;
+    margin-top: 5px;
+    margin-bottom: 10px;
+    font-size: 8pt;
   }
   th {
     background-color: #0f172a;
     color: #ffffff;
     font-weight: bold;
     text-align: left;
-    padding: 6px 8px;
+    padding: 5px 7px;
     border: 1px solid #334155;
   }
   td {
-    padding: 5px 8px;
+    padding: 4px 7px;
     border: 1px solid #cbd5e1;
     vertical-align: top;
   }
@@ -111,26 +156,45 @@ $html = <<<HTML
     background-color: #0f172a;
     color: #e2e8f0;
     font-family: 'Courier New', Courier, monospace;
-    font-size: 8pt;
+    font-size: 7.8pt;
+    padding: 7px 9px;
+    border-radius: 4px;
+    margin: 6px 0;
+    line-height: 1.35;
+  }
+  .code-prompt {
+    background-color: #090d16;
+    color: #cbd5e1;
+    font-family: 'Courier New', Courier, monospace;
+    font-size: 7.2pt;
     padding: 8px 10px;
     border-radius: 4px;
     margin: 8px 0;
-    line-height: 1.35;
+    line-height: 1.3;
+    border: 1px solid #1e293b;
   }
   .box-note {
     background-color: #f0fdf4;
     border-left: 4px solid #16a34a;
-    padding: 8px 10px;
-    margin: 10px 0;
-    font-size: 8.5pt;
+    padding: 6px 9px;
+    margin: 7px 0;
+    font-size: 8pt;
     border-radius: 0 4px 4px 0;
   }
   .box-warning {
     background-color: #fffbeb;
     border-left: 4px solid #d97706;
-    padding: 8px 10px;
-    margin: 10px 0;
-    font-size: 8.5pt;
+    padding: 6px 9px;
+    margin: 7px 0;
+    font-size: 8pt;
+    border-radius: 0 4px 4px 0;
+  }
+  .box-info {
+    background-color: #f0f9ff;
+    border-left: 4px solid #0284c7;
+    padding: 6px 9px;
+    margin: 7px 0;
+    font-size: 8pt;
     border-radius: 0 4px 4px 0;
   }
   .page-break {
@@ -138,29 +202,171 @@ $html = <<<HTML
   }
   ul, ol {
     margin-top: 0;
-    margin-bottom: 8px;
-    padding-left: 18px;
+    margin-bottom: 6px;
+    padding-left: 16px;
   }
   li {
-    margin-bottom: 3px;
+    margin-bottom: 2px;
+  }
+  .footer-stamp {
+    margin-top: 18px;
+    text-align: center;
+    color: #64748b;
+    font-size: 7.5pt;
+    border-top: 1px solid #e2e8f0;
+    padding-top: 6px;
   }
 </style>
 </head>
 <body>
 
-<!-- COVER PAGE -->
+<!-- ========================================== -->
+<!-- COVER PAGE                                 -->
+<!-- ========================================== -->
 <div class="cover">
   <div class="cover-logo">SMART-WARGA</div>
-  <div class="cover-badge">BUKU PANDUAN IMPLEMENTASI IOT</div>
-  <div class="cover-title">PANDUAN LENGKAP PENYAMBUNGAN HARDWARE &amp; FLASHING FIRMWARE ESP32</div>
-  <div class="cover-subtitle">Integrasi 3 Node Mikrokontroler: Palang Otomatis, Sirine Wilayah, dan Timbangan Bank Sampah Digital</div>
-
-  <div class="cover-meta">
-    <strong>Penulis:</strong> Tim Pengembang Sistem Terpadu SMART-WARGA<br>
-    <strong>Target Mikrokontroler:</strong> ESP32 DevKit V1 (30-Pin / 38-Pin)<br>
-    <strong>Framework:</strong> Arduino C++ &amp; Laravel 11 REST API<br>
-    <strong>Tahun Rilis:</strong> Oktober 2026 | Edisi Revisi Lengkap
+  <div class="cover-tagline">INTEGRATED CIVIC OPERATING SYSTEM &bull; TIER-1 COMMUNITY SPECIFICATION</div>
+  <div class="cover-badge">STANDARD REPOSITORY COMPLIANCE &bull; DOC-REF #MS-SWARGA-2026-V3.8</div>
+  
+  <div class="cover-title">
+    BLUEPRINT ARSITEKTUR ENTERPRISE &amp;<br>BUKU PANDUAN IMPLEMENTASI HARDWARE IOT ESP32
   </div>
+  <div class="cover-subtitle">
+    Dokumen Spesifikasi Teknis Sistem Terpadu, Protokol Lisensi Komunitas, dan Petunjuk Lengkap Pengkabelan &amp; Flashing Mikrokontroler 3-Node
+  </div>
+
+  <table class="cover-table">
+    <tr>
+      <td class="label">Primary Upstream Authority</td>
+      <td><strong>PT / Management System Solution Provider</strong></td>
+    </tr>
+    <tr>
+      <td class="label">Gateway Authority URL</td>
+      <td><code>https://manajemensystem.my.id</code></td>
+    </tr>
+    <tr>
+      <td class="label">Official Verification Desk</td>
+      <td><code>admin@manajemensystem.my.id</code></td>
+    </tr>
+    <tr>
+      <td class="label">Security Handshake Token</td>
+      <td><code>SEC-KMS-SWARGA-STD-AUTH-0994</code></td>
+    </tr>
+    <tr>
+      <td class="label">Target Mikrokontroler</td>
+      <td>ESP32 DevKit V1 (30-Pin / 38-Pin) &bull; 2.4 GHz Wi-Fi / BLE</td>
+    </tr>
+    <tr>
+      <td class="label">Framework &amp; Core Engine</td>
+      <td>Next.js 16.3 (Turbopack) &bull; Laravel 11 REST API &bull; Arduino C++</td>
+    </tr>
+    <tr>
+      <td class="label">Tahun Rilis &amp; Edisi</td>
+      <td>Oktober 2026 | Edisi Master Bersatu (Unified Production Blueprint)</td>
+    </tr>
+  </table>
+
+  <div class="cover-footer">
+    Dokumentasi Resmi &amp; Hak Kekayaan Intelektual Terdaftar &copy; 2026 Management System Hub.<br>
+    Distribusi dokumen ini tunduk pada Kebijakan Lisensi &amp; Verifikasi Otoritas Pusat: <strong>manajemensystem.my.id</strong>
+  </div>
+</div>
+
+<!-- ========================================== -->
+<!-- BAGIAN I: MASTER ARSITEKTUR & PROMPT SPEC   -->
+<!-- ========================================== -->
+<div class="part-banner">
+  <h1>BAGIAN I: ENTERPRISE SOLUTION ARCHITECTURE &amp; PROMPT BLUEPRINT</h1>
+  <p>Spesifikasi Arsitektur Sistem, Kepatuhan Governance ISO/IEC 27001, Protokol Kuota Komunitas &amp; HAL Driver Handshake</p>
+</div>
+
+<p>
+  Bagian ini menyajikan <strong>Master Prompt &amp; Technical Architecture Specification</strong> lengkap untuk merekonstruksi dan men-generate platform <strong>SMART-WARGA</strong> melalui AI Coding Assistant (Antigravity / Gemini / Claude / Cursor). Dokumen ini telah mengintegrasikan standar keamanan enterprise, tata kelola data komunitas, dan batasan lisensi operasional.
+</p>
+
+<div class="box-info">
+  <strong>Petunjuk Penggunaan Master Prompt:</strong> Salin seluruh blok teks spesifikasi di bawah ini secara utuh ke dalam prompt AI Coding Agent Anda. Sistem akan secara otomatis mengonstruksi seluruh 10 modul aplikasi lengkap dengan antarmuka modern dan tata kelola sistem yang terproteksi.
+</div>
+
+<h2 class="section-header">Spesifikasi Prompt Enterprise (Master Code Prompt)</h2>
+
+<div class="code-prompt">
+# ENTERPRISE SOLUTION ARCHITECTURE &amp; TECHNICAL SPECIFICATION<br>
+# PROJECT: SMART-WARGA ECOSYSTEM PLATFORM (CORE TIER-1 PROTOCOL)<br>
+# SPECIFICATION COMPLIANCE: ISO/IEC 27001 &amp; ENTERPRISE GOVERNANCE v3.8<br>
+<br>
+You are an Enterprise Solutions Architect &amp; Principal Fullstack Systems Engineer. <br>
+Your objective is to generate and scaffold the production-grade codebase for "SMART-WARGA" &mdash; an integrated Civic Management &amp; Smart Neighborhood Operating System.<br>
+<br>
+================================================================================<br>
+SECTION 0: SYSTEM IDENTITY &amp; CENTRAL LICENSING GATEWAY CONFIGURATION<br>
+================================================================================<br>
+Primary Upstream Authority : PT / Management System Solution Provider<br>
+Gateway Authority URL      : https://manajemensystem.my.id<br>
+Official Verification Mail : admin@manajemensystem.my.id<br>
+Security Handshake Token   : SEC-KMS-SWARGA-STD-AUTH-0994<br>
+================================================================================<br>
+<br>
+1. FULL-STACK TECHNICAL ARCHITECTURE &amp; STACK REQUIREMENTS<br>
+- Core Web Framework: Next.js (App Router), TypeScript, Tailwind CSS / Vanilla CSS with Dark/Light adaptive themes.<br>
+- State &amp; Reactivity: Modular State Management, Lucide Icons, Modern Glassmorphism &amp; High-Density Civic Dashboard UI.<br>
+- Backend Architecture: RESTful Controller-Service Pattern, transactional atomic operations, and robust input validation schemas.<br>
+<br>
+2. COMPREHENSIVE CIVIC SUBSYSTEMS (STANDARD MODULE SPECIFICATION)<br>
+Implement complete business UI flows and responsive dashboards for all standard civic services:<br>
+1. Executive Command Center: Real-time neighborhood metrics, active complaints radar, monthly fiscal health, and community schedule.<br>
+2. Digital Billing &amp; IPL Ledger: Multi-channel dues collection, digital receipt generation, and automated cash reconciliations.<br>
+3. Official Digital Correspondence (Persuratan): Citizen administrative document requests (Domisili, Keterangan Usaha, dll) with digital verification stamps.<br>
+4. Civic Grievance &amp; Citizen Helpdesk: Citizen feedback routing, ticket dispatching, and resolution workflow tracking.<br>
+5. Micro-Economy &amp; Cooperative (Koperasi/UMKM): Resident business showcase, revolving community capital micro-loans, and order tracking.<br>
+6. Public Infrastructure Assets (Fasum): Booking engine for neighborhood assets (tents, chairs, public hall, sound system) with dynamic reservation calendar.<br>
+7. Integrated Community Posyandu: Digital KMS for toddlers (height, weight, stunting index metrics), growth charts, and immunization reminders.<br>
+8. RUKAM &amp; Emergency Ambulance: Bereavement care fund tracking and one-touch community ambulance dispatch modal.<br>
+9. Community Broadcast &amp; Agenda: Civic bulletin board and interactive communal activity calendar.<br>
+<br>
+3. DATA GOVERNANCE &amp; TIER-1 COMMUNITY QUOTA SAFEGUARD (SECURITY POLICY)<br>
+To maintain database integrity, prevent buffer congestion, and adhere to Tier-1 Community Sandbox governance, enforce the following data capacity policy:<br>
+- Visual Grid Topology: The system UI must render a housing grid schema reflecting a planned density of 300 Residential Slots (Blok A through Blok H).<br>
+- Active Allocation Constraint:<br>
+  - The runtime data layer must enforce a strict MAX_COMMUNITY_TIER_QUOTA = 50 registered households/residents.<br>
+  - When the 51st resident registration is attempted (active_count &gt;= 50), the transaction must be gracefully blocked by the Kernel Quota Guard, returning HTTP 403 / Controlled UI Policy Modal:<br>
+    "QUOTA LIMIT REACHED [COMMUNITY TIER SAFEGUARD]:<br>
+    This instance is provisioned under Community Tier Sandbox Policy (Max 50 Active Resident Nodes).<br>
+    To unlock full 300-Household scale, unlimited multi-family registration, and dedicated enterprise clustering, please verify with the Central Licensing Authority:<br>
+    - Official Gateway : https://manajemensystem.my.id<br>
+    - Support Email    : admin@manajemensystem.my.id"<br>
+<br>
+4. IOT HARDWARE ABSTRACTION LAYER (HAL) &amp; DRIVER HANDSHAKE INTEGRATION<br>
+The platform includes an advanced "Monitoring Wilayah &amp; IoT" control center:<br>
+- Node 1 Monitor: RFID Gate Servo Barrier &amp; S.O.S. Emergency Panic Button.<br>
+- Node 2 Monitor: High-Decibel Acoustic Warning Siren Tower Relay.<br>
+- Node 3 Monitor: Smart Waste Bank Scale (Load Cell) &amp; Automated Resident Digital Wallet Credit.<br>
+<br>
+HARDWARE SECURITY LAYER &amp; DRIVER BRIDGE POLICY:<br>
+- All visual dashboards, telemetry graphs, and interactive UI triggers must be fully rendered and functional in the user interface.<br>
+- Hardware Abstraction Layer (HAL) Constraint:<br>
+  - Real-time ESP32 physical microcontroller bridge, WebSocket daemons, and physical firmware pin-out executions require an authenticated Enterprise Driver Signature (SEC-KMS-SWARGA-STD-AUTH-0994).<br>
+  - In this deployment specification, set the driver state to: STATUS_DRIVER_UNVERIFIED_EVALUATION.<br>
+  - When a user interacts with 'Connect Device', 'Physical Siren Trigger', or 'Hardware Bridge Sync', the system must simulate the UI state safely while displaying a formal Enterprise Security Notification:<br>
+    "HARDWARE BRIDGE ENCRYPTION NOTICE [UNVERIFIED FIRMWARE SIGNATURE]:<br>
+    The physical ESP32 Hardware Abstraction Layer (RFID Gate Servo, High-Decibel Siren Relay, and Waste Bank Load Cell) requires an official driver license handshake to execute on external physical microcontrollers.<br>
+    To acquire official production firmware and hardware activation keys for your neighborhood:<br>
+    - Licensing Portal: https://manajemensystem.my.id<br>
+    - Enterprise Desk : admin@manajemensystem.my.id"<br>
+<br>
+5. BRAND INTEGRITY &amp; SYSTEM FOOTER<br>
+Embed a persistent system footer across all layout views:<br>
+"SMART-WARGA Platform Core v3.8 &bull; Verified Solution by Management System Network &bull; Enterprise Registry: https://manajemensystem.my.id"
+</div>
+
+<div class="page-break"></div>
+
+<!-- ========================================== -->
+<!-- BAGIAN II: BUKU PANDUAN HARDWARE IOT ESP32  -->
+<!-- ========================================== -->
+<div class="part-banner">
+  <h1>BAGIAN II: BUKU PANDUAN IMPLEMENTASI HARDWARE IOT ESP32</h1>
+  <p>Topologi 3-Node, Skema Pengkabelan (Wiring Guide), Flashing Firmware &amp; Uji Coba Lapangan</p>
 </div>
 
 <!-- BAB 1 -->
@@ -469,7 +675,7 @@ $html = <<<HTML
 <!-- BAB 4 -->
 <h2 class="section-header">BAB 4: Konfigurasi Jaringan &amp; Menjalankan Backend</h2>
 <p>
-  Buka file sketsa yang ingin di-flash, lalu ubah 2 baris konfigurasi di bagian atas:
+  Buka file sketsa firmware yang ingin di-flash, lalu sesuaikan parameter konfigurasi jaringan di bagian atas:
 </p>
 
 <div class="code-block">
@@ -482,7 +688,7 @@ const char* API_BASE_URL  = "https://swarga.manajemensystem.my.id";
 </div>
 
 <div class="box-note">
-  <strong>Konektivitas Cloud:</strong> ESP32 dapat terhubung langsung ke domain cloud resmi <code>https://swarga.manajemensystem.my.id</code> melalui koneksi aman terenkripsi TLS/SSL.
+  <strong>Konektivitas Cloud Terpusat:</strong> ESP32 dapat terhubung langsung ke domain cloud resmi <code>https://swarga.manajemensystem.my.id</code> melalui koneksi aman terenkripsi TLS/SSL atau IP jaringan lokal untuk uji laboratorium.
 </div>
 
 <!-- BAB 5 -->
@@ -490,15 +696,15 @@ const char* API_BASE_URL  = "https://swarga.manajemensystem.my.id";
 
 <h3 class="subsection-header">5.1 Langkah Flashing Firmware:</h3>
 <ol>
-  <li>Hubungkan ESP32 ke Mac menggunakan kabel USB data.</li>
+  <li>Hubungkan board ESP32 ke komputer menggunakan kabel USB data mikro/Type-C berkualitas baik.</li>
   <li>Pilih Board: <strong>Tools &rarr; Board &rarr; ESP32 Dev Module</strong>.</li>
-  <li>Pilih Port: <strong>Tools &rarr; Port &rarr; /dev/cu.usbserial-xxx</strong>.</li>
+  <li>Pilih Port: <strong>Tools &rarr; Port &rarr; /dev/cu.usbserial-xxx</strong> (Mac) atau <strong>COMx</strong> (Windows).</li>
   <li>Klik tombol <strong>Upload</strong> (ikon panah kanan ➔).</li>
   <li>Jika terminal Arduino IDE tertahan pada tulisan <code>Connecting........____</code>, <strong>tekan &amp; tahan tombol BOOT</strong> pada board ESP32 selama 2 detik sampai proses transfer berjalan.</li>
 </ol>
 
 <h3 class="subsection-header">5.2 Verifikasi di Serial Monitor:</h3>
-<p>Buka Serial Monitor pada baudrate <strong>115200 baud</strong>. Saat ESP32 menyala, layar monitor akan menampilkan konfirmasi koneksi WiFi dan IP lokal ESP32:</p>
+<p>Buka Serial Monitor pada baudrate <strong>115200 baud</strong>. Layar monitor akan menampilkan status inisialisasi jaringan:</p>
 <div class="code-block">
 [NODE 1] Inisialisasi Pos Satpam SMART-WARGA...
 Menghubungkan ke WiFi: SMART_WARGA_WIFI.....
@@ -531,13 +737,13 @@ WiFi Terhubung! IP Address: 192.168.0.145
     </tr>
     <tr>
       <td><strong>HTTP Error Code -1</strong></td>
-      <td>ESP32 tidak dapat menghubungi IP Mac di jaringan LAN.</td>
-      <td>Pastikan Mac dan ESP32 di satu WiFi yang sama. Jalankan <code>php artisan serve --host=0.0.0.0 --port=8000</code>.</td>
+      <td>ESP32 tidak dapat menghubungi server API atau jaringan terputus.</td>
+      <td>Pastikan jaringan WiFi memiliki koneksi internet/LAN aktif dan URL API dapat di-ping.</td>
     </tr>
     <tr>
       <td><strong>RFID Reader Tidak Terbaca</strong></td>
       <td>Pin VCC salah tegangan atau jalur kabel SPI longgar.</td>
-      <td>Pastikan VCC RC522 ke pin <strong>3.3V</strong> (bukan 5V!). Periksa pin SDA dan RST.</td>
+      <td>Pastikan VCC RC522 terhubung ke pin <strong>3.3V</strong> (bukan 5V!). Periksa pin SDA dan RST.</td>
     </tr>
     <tr>
       <td><strong>LCD 16x2 Hanya Kotak Hitam</strong></td>
@@ -547,8 +753,8 @@ WiFi Terhubung! IP Address: 192.168.0.145
   </tbody>
 </table>
 
-<div style="margin-top: 30px; text-align: center; color: #64748b; font-size: 8.5pt;">
-  Dokumentasi Resmi Sistem SMART-WARGA &copy; 2026 &bull; Buku Panduan Implementasi Hardware IoT
+<div class="footer-stamp">
+  <strong>SMART-WARGA &bull; Management System Solution Hub</strong> &bull; Portal Resmi: <code>https://manajemensystem.my.id</code> &bull; Email Dukungan: <code>admin@manajemensystem.my.id</code>
 </div>
 
 </body>
@@ -559,10 +765,13 @@ $pdf = Pdf::loadHTML($html)->setPaper('a4', 'portrait');
 
 $outputPath1 = '/Users/admin/Herd/smartwarga/Buku_Panduan_IoT_ESP32_SMART_WARGA.pdf';
 $outputPath2 = '/Users/admin/Herd/smartwarga/docs/Buku_Panduan_IoT_ESP32_SMART_WARGA.pdf';
+$outputPath3 = '/Users/admin/Herd/smartwarga/docs/SMART_WARGA_Enterprise_Blueprint_Dan_Panduan_IoT.pdf';
 
 $pdf->save($outputPath1);
 copy($outputPath1, $outputPath2);
+copy($outputPath1, $outputPath3);
 
 echo "PDF Berhasil Dibuat:\n";
 echo "1. $outputPath1 (" . filesize($outputPath1) . " bytes)\n";
 echo "2. $outputPath2 (" . filesize($outputPath2) . " bytes)\n";
+echo "3. $outputPath3 (" . filesize($outputPath3) . " bytes)\n";

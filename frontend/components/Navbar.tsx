@@ -23,7 +23,7 @@ export default function Navbar({ onOpenPanic }: { onOpenPanic?: () => void }) {
   useEffect(() => {
     const checkSiren = async () => {
       try {
-        const res = await fetchApi('/iot/sirine/status');
+        const res = await fetchApi('/iot/sirine/status?source=web');
         setSirenActive(Boolean(res.siren_active));
       } catch {
         // ignore

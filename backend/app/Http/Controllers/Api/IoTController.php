@@ -155,15 +155,23 @@ class IoTController extends Controller
      * Node 2: Polling Sirine Status for ESP32
      * GET /api/iot/sirine/status
      */
-    public function sirineStatus()
+    public function sirineStatus(Request $request)
     {
         $siren = SirenStatus::firstOrCreate(['id' => 1], [
             'is_active' => false,
             'reason' => 'Kondisi Normal Aman',
         ]);
 
-        // Update Node 2 ping
-        IotDevice::where('device_type', 'siren')->update(['last_ping' => now()]);
+        // Cek apakah request berasal dari browser (Navbar polling)
+        $userAgent = (string) $request->header('User-Agent', '');
+        $isBrowser = str_contains($userAgent, 'Mozilla')
+            || $request->hasHeader('Authorization')
+            || $request->query('source') === 'web';
+
+        // Update Node 2 ping HANYA jika dipanggil oleh hardware ESP32, BUKAN oleh browser
+        if (! $isBrowser) {
+            IotDevice::where('device_type', 'siren')->update(['last_ping' => now()]);
+        }
 
         return response()->json([
             'siren_active' => (bool) $siren->is_active,

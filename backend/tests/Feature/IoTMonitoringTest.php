@@ -671,5 +671,29 @@ class IoTMonitoringTest extends TestCase
         $this->assertFalse($devices['gate']['is_online'], 'Gate with 2-minute old ping should be offline');
         $this->assertFalse($devices['waste_terminal']['is_online'], 'Waste terminal with null ping should be offline');
     }
+
+    /**
+     * White-Box 20: Polling sirine dari browser (Navbar) tidak boleh memperbarui last_ping hardware,
+     * namun polling dari hardware ESP32 harus memperbarui last_ping.
+     */
+    public function test_whitebox_siren_polling_distinguishes_browser_from_hardware()
+    {
+        $oldPing = Carbon::now()->subMinutes(10);
+        $this->sirenDevice->update(['last_ping' => $oldPing]);
+
+        // 1. Browser polling dengan User-Agent Mozilla -> last_ping TIDAK BOLEH berubah
+        $this->withHeaders(['User-Agent' => 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7)'])
+            ->getJson('/api/iot/sirine/status?source=web');
+
+        $this->assertEquals($oldPing->toIso8601String(), $this->sirenDevice->fresh()->last_ping->toIso8601String());
+
+        // 2. Hardware ESP32 polling dengan User-Agent ESP32HTTPClient -> last_ping HARUS diperbarui
+        $this->withHeaders(['User-Agent' => 'ESP32HTTPClient'])
+            ->getJson('/api/iot/sirine/status');
+
+        $this->assertNotEquals($oldPing->toIso8601String(), $this->sirenDevice->fresh()->last_ping->toIso8601String());
+        $this->assertTrue($this->sirenDevice->fresh()->last_ping->diffInSeconds(now()) <= 2);
+    }
 }
+
 

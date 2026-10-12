@@ -58,6 +58,8 @@ export default function DashboardView({
   const [billings, setBillings] = useState<any[]>([]);
   const [iplSummary, setIplSummary] = useState<any>(null);
   const [sirenStatus, setSirenStatus] = useState<any>(null);
+  const [iotOnlineCount, setIotOnlineCount] = useState<number | null>(null);
+  const [iotTotalCount, setIotTotalCount] = useState<number>(3);
   const [wasteRates, setWasteRates] = useState<any[]>([]);
   const [lastRonda, setLastRonda] = useState<any>(null);
   const [loading, setLoading] = useState(true);
@@ -165,7 +167,11 @@ export default function DashboardView({
           setBillings(billRes.data?.data || []);
           setIplSummary(billRes.summary || null);
         }
-        if (devRes.success) setSirenStatus(devRes.data?.siren_status || null);
+        if (devRes.success) {
+          setSirenStatus(devRes.data?.siren_status || null);
+          setIotOnlineCount(devRes.data?.online_count ?? devRes.data?.devices?.filter((d: any) => d.is_online).length ?? 0);
+          setIotTotalCount(devRes.data?.total_count ?? devRes.data?.devices?.length ?? 3);
+        }
         if (wasteRes.success) setWasteRates(wasteRes.data || []);
         if (rondaRes.success && rondaRes.data?.data?.length > 0) setLastRonda(rondaRes.data.data[0]);
 
@@ -685,7 +691,21 @@ export default function DashboardView({
               </span>
             </div>
             <div className="flex items-center justify-between mt-2 pt-2 border-t border-slate-100">
-              <span className="text-[11px] text-slate-500">3 Node ESP32 Online</span>
+              <span className={`text-[11px] font-bold ${
+                iotOnlineCount === null
+                  ? 'text-slate-500'
+                  : iotOnlineCount === 0
+                  ? 'text-rose-600'
+                  : iotOnlineCount < iotTotalCount
+                  ? 'text-amber-600'
+                  : 'text-emerald-600'
+              }`}>
+                {iotOnlineCount === null
+                  ? 'Memeriksa IoT...'
+                  : iotOnlineCount === 0
+                  ? 'Semua Node ESP32 Offline'
+                  : `${iotOnlineCount} dari ${iotTotalCount} Node Online`}
+              </span>
               <button
                 onClick={onOpenPanic}
                 className="text-xs font-extrabold text-red-600 hover:text-red-700"

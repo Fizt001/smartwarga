@@ -50,6 +50,7 @@ Route::prefix('iot')->group(function () {
     Route::post('/bank-sampah/setor', [IoTController::class, 'bankSampahSetor']);
     Route::post('/posyandu/catat', [IoTController::class, 'posyanduCatat']);
     Route::get('/devices', [IoTController::class, 'listDevices']);
+    Route::post('/heartbeat', [IoTController::class, 'heartbeat']);
 });
 
 /*

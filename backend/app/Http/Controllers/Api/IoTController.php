@@ -358,18 +358,69 @@ class IoTController extends Controller
      * IoT Devices Management & Health Status
      * GET /api/iot/devices
      */
-    public function listDevices()
+     public function listDevices()
+     {
+         $now = now();
+         $rawDevices = IotDevice::all();
+         $siren = SirenStatus::first();
+
+         $devices = $rawDevices->map(function ($device) use ($now) {
+             // Siren polls every 3s (threshold: 15s), others threshold: 45s
+             $timeout = match($device->device_type) {
+                 'siren' => 15,
+                 default => 45,
+             };
+
+             $secondsAgo = $device->last_ping ? (int) abs($device->last_ping->diffInSeconds($now, false)) : null;
+             $isOnline = ($secondsAgo !== null && $secondsAgo <= $timeout);
+
+             return [
+                 'id' => $device->id,
+                 'device_key' => $device->device_key,
+                 'device_type' => $device->device_type,
+                 'location' => $device->location,
+                 'last_ping' => $device->last_ping?->toIso8601String(),
+                 'is_active' => (bool) $device->is_active,
+                 'is_online' => $isOnline,
+                 'seconds_ago' => $secondsAgo,
+             ];
+         });
+
+         $onlineCount = $devices->where('is_online', true)->count();
+         $totalCount = $devices->count();
+
+         return response()->json([
+             'success' => true,
+             'data' => [
+                 'devices' => $devices,
+                 'online_count' => $onlineCount,
+                 'total_count' => $totalCount,
+                 'siren_status' => $siren,
+                 'server_time' => now()->toIso8601String(),
+             ]
+         ]);
+     }
+
+    /**
+     * IoT Node Heartbeat Ping
+     * POST /api/iot/heartbeat
+     */
+    public function heartbeat(Request $request)
     {
-        $devices = IotDevice::all();
-        $siren = SirenStatus::first();
+        $validated = $request->validate([
+            'device_type' => 'required|string',
+            'device_key' => 'nullable|string',
+        ]);
+
+        $device = IotDevice::where('device_type', $validated['device_type'])->first();
+        if ($device) {
+            $device->update(['last_ping' => now()]);
+        }
 
         return response()->json([
             'success' => true,
-            'data' => [
-                'devices' => $devices,
-                'siren_status' => $siren,
-                'server_time' => now()->toIso8601String(),
-            ]
+            'message' => 'Heartbeat acknowledged',
+            'timestamp' => now()->toIso8601String(),
         ]);
     }
 

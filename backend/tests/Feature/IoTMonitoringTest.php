@@ -621,4 +621,55 @@ class IoTMonitoringTest extends TestCase
         $wasteRes = $this->actingAs($this->wargaBudi)->getJson('/api/iot/waste-bank/logs');
         $wasteRes->assertStatus(200)->assertJsonStructure(['success', 'data' => ['data']]);
     }
+
+    /**
+     * White-Box 10: IoT Heartbeat Ping Updates Last Ping Timestamp
+     */
+    public function test_whitebox_iot_heartbeat_updates_device_last_ping()
+    {
+        $oldPing = Carbon::now()->subMinutes(10);
+        $this->gateDevice->update(['last_ping' => $oldPing]);
+
+        $response = $this->postJson('/api/iot/heartbeat', [
+            'device_type' => 'gate',
+            'device_key' => 'DEVICE_GATE_POS01',
+        ]);
+
+        $response->assertStatus(200)
+            ->assertJson([
+                'success' => true,
+                'message' => 'Heartbeat acknowledged',
+            ]);
+
+        $this->gateDevice->refresh();
+        $this->assertGreaterThan($oldPing, $this->gateDevice->last_ping);
+    }
+
+    /**
+     * White-Box 11: Dynamic is_online Calculation based on Heartbeat Timeout
+     */
+    public function test_whitebox_iot_list_devices_calculates_is_online_status_based_on_heartbeat_timeout()
+    {
+        // 1. Siren active (pinged 5 seconds ago) -> Online
+        $this->sirenDevice->update(['last_ping' => Carbon::now()->subSeconds(5)]);
+
+        // 2. Gate device expired (pinged 2 minutes ago) -> Offline
+        $this->gateDevice->update(['last_ping' => Carbon::now()->subMinutes(2)]);
+
+        // 3. Waste terminal never pinged -> Offline
+        $this->wasteTerminalDevice->update(['last_ping' => null]);
+
+        $response = $this->getJson('/api/iot/devices');
+        $response->assertStatus(200);
+
+        $data = $response->json('data');
+        $this->assertEquals(1, $data['online_count']);
+        $this->assertEquals(3, $data['total_count']);
+
+        $devices = collect($data['devices'])->keyBy('device_type');
+        $this->assertTrue($devices['siren']['is_online'], 'Siren with recent ping should be online');
+        $this->assertFalse($devices['gate']['is_online'], 'Gate with 2-minute old ping should be offline');
+        $this->assertFalse($devices['waste_terminal']['is_online'], 'Waste terminal with null ping should be offline');
+    }
 }
+

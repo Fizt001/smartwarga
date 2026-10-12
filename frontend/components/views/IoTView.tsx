@@ -204,8 +204,12 @@ export default function IoTView() {
               Simulasi Hardware IoT (Live Demonstration Panel)
             </h4>
           </div>
-          <span className="text-[10px] bg-slate-800 text-emerald-400 px-2 py-0.5 rounded font-mono">
-            3 Nodes Active
+          <span className={`text-[10px] px-2 py-0.5 rounded font-mono font-bold ${
+            devices.filter((d: any) => d.is_online).length > 0 
+              ? 'bg-slate-800 text-emerald-400' 
+              : 'bg-rose-950/80 text-rose-400 border border-rose-800/60'
+          }`}>
+            {devices.filter((d: any) => d.is_online).length} / {devices.length || 3} Nodes Online
           </span>
         </div>
 
@@ -276,11 +280,19 @@ export default function IoTView() {
                 <div className="text-[9px] text-slate-400 mt-1 font-mono">{dev.device_key}</div>
               </div>
               <div className="text-right">
-                <span className="inline-flex items-center gap-1 text-[10px] font-bold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200">
-                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-ping"></span> Online
-                </span>
+                {dev.is_online ? (
+                  <span className="inline-flex items-center gap-1 text-[10px] font-bold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200">
+                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-ping"></span> Online
+                  </span>
+                ) : (
+                  <span className="inline-flex items-center gap-1 text-[10px] font-bold text-rose-600 bg-rose-50 px-2 py-0.5 rounded-full border border-rose-200">
+                    <span className="w-1.5 h-1.5 rounded-full bg-rose-500"></span> Offline
+                  </span>
+                )}
                 <div className="text-[9px] text-slate-400 mt-1">
-                  Ping: {dev.last_ping ? new Date(dev.last_ping).toLocaleTimeString('id-ID') : 'Baru saja'}
+                  {dev.is_online 
+                    ? `Ping: ${dev.seconds_ago !== null ? `${dev.seconds_ago}s lalu` : 'Aktif'}`
+                    : (dev.last_ping ? `Mati: ${new Date(dev.last_ping).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })}` : 'Tidak aktif')}
                 </div>
               </div>
             </div>

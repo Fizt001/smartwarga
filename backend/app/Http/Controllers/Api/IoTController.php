@@ -37,6 +37,24 @@ class IoTController extends Controller
         $postId = $validated['post_id'] ?? 'POS_01';
         $rfidUid = trim($validated['rfid_uid']);
 
+        $gateDevice = IotDevice::where('device_type', 'gate')->first();
+        $userAgent = (string) $request->header('User-Agent', '');
+        $isHardware = (str_contains($userAgent, 'ESP32') || str_contains($userAgent, 'ESP8266')) && ! str_contains($userAgent, 'Mozilla');
+        $isGateOnline = $gateDevice && $gateDevice->last_ping && abs($gateDevice->last_ping->diffInSeconds(now(), false)) <= 15;
+
+        // Jika request BUKAN dari ESP32 fisik (misal dari web browser) dan hardware sedang offline
+        if (! $isHardware && ! $isGateOnline) {
+            return response()->json([
+                'success' => false,
+                'gate_open' => false,
+                'servo_angle' => 0,
+                'message' => 'Gagal: Node 1 (Pos Gerbang) sedang OFFLINE. Palang servo fisik tidak dapat digerakkan.',
+                'lcd_line1' => 'GATE OFFLINE!   ',
+                'lcd_line2' => 'PERIKSA PERANGKAT',
+                'is_online' => false,
+            ], 422);
+        }
+
         // 1. Find user by RFID UID
         $user = User::with('house')->where('rfid_uid', $rfidUid)->first();
 
@@ -77,8 +95,10 @@ class IoTController extends Controller
             'status' => $status,
         ]);
 
-        // Update IoT device last ping
-        IotDevice::where('device_type', 'gate')->update(['last_ping' => now()]);
+        // Update IoT device last ping HANYA jika dipanggil langsung oleh hardware fisik ESP32
+        if ($isHardware) {
+            IotDevice::where('device_type', 'gate')->update(['last_ping' => now()]);
+        }
 
         return response()->json([
             'success' => true,
@@ -108,6 +128,10 @@ class IoTController extends Controller
         $triggerType = $request->input('trigger_type', 'hardware_button');
 
         $device = IotDevice::where('device_type', 'gate')->first();
+        $sirenDevice = IotDevice::where('device_type', 'siren')->first();
+        $userAgent = (string) $request->header('User-Agent', '');
+        $isHardware = (str_contains($userAgent, 'ESP32') || str_contains($userAgent, 'ESP8266')) && ! str_contains($userAgent, 'Mozilla');
+        $isSirenOnline = $sirenDevice && $sirenDevice->last_ping && abs($sirenDevice->last_ping->diffInSeconds(now(), false)) <= 15;
 
         // 1. Create emergency log
         $emergency = IotEmergencyLog::create([
@@ -117,35 +141,42 @@ class IoTController extends Controller
             'status' => 'active',
         ]);
 
-        // 2. Activate siren state
+        // 2. Activate siren state HANYA jika hardware Node 2 sedang ONLINE
         $siren = SirenStatus::firstOrCreate(['id' => 1]);
-        $siren->update([
-            'is_active' => true,
-            'activated_at' => now(),
-            'reason' => "Tombol Panik Ditekan di {$location} ({$triggerType})",
-        ]);
+        if ($isSirenOnline) {
+            $siren->update([
+                'is_active' => true,
+                'activated_at' => now(),
+                'reason' => "Tombol Panik Ditekan di {$location} ({$triggerType})",
+            ]);
+        }
 
         // 3. Broadcast real-time events via Reverb (wrapped for fault tolerance)
         try {
             broadcast(new PanicButtonTriggered($location, $triggerType, $emergency->id))->toOthers();
-            broadcast(new SireneStatusChanged(true, $siren->reason))->toOthers();
+            if ($isSirenOnline) {
+                broadcast(new SireneStatusChanged(true, $siren->reason))->toOthers();
+            }
         } catch (\Throwable $e) {
             \Illuminate\Support\Facades\Log::warning('IoT broadcast skipped (WebSocket server offline): ' . $e->getMessage());
         }
 
-        // Update last ping
-        if ($device) {
+        // Update last ping HANYA jika pemicunya adalah hardware fisik
+        if ($isHardware && $device) {
             $device->update(['last_ping' => now()]);
         }
 
         return response()->json([
             'success' => true,
-            'siren_triggered' => true,
-            'message' => 'ALARM DARURAT DIAKTIFKAN! Notifikasi real-time dan sirine wilayah telah berbunyi.',
+            'siren_triggered' => (bool) $isSirenOnline,
+            'message' => $isSirenOnline
+                ? 'ALARM DARURAT DIAKTIFKAN! Notifikasi real-time dan sirine wilayah telah berbunyi.'
+                : 'Panggilan darurat tercatat! Namun perangkat fisik Sirine (Node 2) sedang OFFLINE sehingga speaker lokasi tidak berbunyi.',
             'data' => [
                 'log_id' => $emergency->id,
                 'location' => $location,
-                'siren_active' => true,
+                'siren_active' => (bool) $isSirenOnline,
+                'hardware_online' => (bool) $isSirenOnline,
                 'timestamp' => now()->toIso8601String(),
             ]
         ], 201);
@@ -190,6 +221,19 @@ class IoTController extends Controller
             'is_active' => 'required|boolean',
             'reason' => 'nullable|string|max:255',
         ]);
+
+        $sirenDevice = IotDevice::where('device_type', 'siren')->first();
+        $isSirenOnline = $sirenDevice && $sirenDevice->last_ping && abs($sirenDevice->last_ping->diffInSeconds(now(), false)) <= 15;
+
+        // Jika pengurus mencoba menyalakan sirine padahal hardware Node 2 OFFLINE
+        if ($validated['is_active'] && ! $isSirenOnline) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Gagal membunyikan sirine: Perangkat fisik Sirine (ESP32 Node 2) sedang OFFLINE. Relay fisik tidak terhubung sehingga sirine tidak dapat dibunyikan.',
+                'error' => 'DEVICE_OFFLINE',
+                'is_online' => false,
+            ], 422);
+        }
 
         $siren = SirenStatus::firstOrCreate(['id' => 1]);
         $user = $request->user();
@@ -242,6 +286,22 @@ class IoTController extends Controller
         $rfidUid = trim($validated['rfid_uid']);
         $kategori = strtolower(trim($validated['kategori']));
         $beratGram = (float) $validated['berat_gram'];
+
+        $terminalDevice = IotDevice::where('device_type', 'waste_terminal')->first();
+        $userAgent = (string) $request->header('User-Agent', '');
+        $isHardware = (str_contains($userAgent, 'ESP32') || str_contains($userAgent, 'ESP8266')) && ! str_contains($userAgent, 'Mozilla');
+        $isTerminalOnline = $terminalDevice && $terminalDevice->last_ping && abs($terminalDevice->last_ping->diffInSeconds(now(), false)) <= 15;
+
+        // Jika request BUKAN dari ESP32 fisik dan hardware terminal sedang offline
+        if (! $isHardware && ! $isTerminalOnline) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Gagal: Terminal Timbangan (Node 3) sedang OFFLINE. Sensor Load Cell tidak terhubung.',
+                'lcd_line1' => 'TERMINAL OFFLINE',
+                'lcd_line2' => 'PERIKSA DAYA IOT',
+                'is_online' => false,
+            ], 422);
+        }
 
         // 1. Find user by RFID
         $user = User::with('house')->where('rfid_uid', $rfidUid)->first();
@@ -299,8 +359,10 @@ class IoTController extends Controller
             ]);
         });
 
-        // Update IoT Terminal device ping
-        IotDevice::where('device_type', 'waste_terminal')->update(['last_ping' => now()]);
+        // Update IoT Terminal device ping HANYA jika dipanggil langsung oleh hardware fisik
+        if ($isHardware) {
+            IotDevice::where('device_type', 'waste_terminal')->update(['last_ping' => now()]);
+        }
 
         $formattedRp = number_format($totalNominal, 0, ',', '.');
         $newBalance = number_format($wallet->fresh()->balance, 0, ',', '.');
@@ -350,8 +412,13 @@ class IoTController extends Controller
             'measured_at' => now(),
         ]);
 
-        // Update IoT Terminal device ping
-        IotDevice::where('device_type', 'waste_terminal')->update(['last_ping' => now()]);
+        $userAgent = (string) $request->header('User-Agent', '');
+        $isHardware = (str_contains($userAgent, 'ESP32') || str_contains($userAgent, 'ESP8266')) && ! str_contains($userAgent, 'Mozilla');
+
+        // Update IoT Terminal device ping HANYA jika dipanggil langsung oleh hardware fisik
+        if ($isHardware) {
+            IotDevice::where('device_type', 'waste_terminal')->update(['last_ping' => now()]);
+        }
 
         return response()->json([
             'success' => true,

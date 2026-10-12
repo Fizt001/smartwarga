@@ -678,16 +678,30 @@ export default function DashboardView({
           <div className="flex items-center justify-between">
             <span className="text-xs font-bold uppercase tracking-wider text-slate-500">Keamanan IoT Wilayah</span>
             <div className={`w-9 h-9 rounded-xl flex items-center justify-center ${
-              sirenStatus?.is_active ? 'bg-red-500 text-white animate-bounce' : 'bg-emerald-100 text-emerald-700'
+              sirenStatus?.is_active 
+                ? 'bg-red-500 text-white animate-bounce' 
+                : iotOnlineCount === 0
+                ? 'bg-slate-100 text-slate-400'
+                : 'bg-emerald-100 text-emerald-700'
             }`}>
               <ShieldAlert className="w-5 h-5" />
             </div>
           </div>
           <div className="mt-3">
             <div className="flex items-center gap-2">
-              <span className={`w-2.5 h-2.5 rounded-full ${sirenStatus?.is_active ? 'bg-red-600 animate-ping' : 'bg-emerald-500'}`}></span>
+              <span className={`w-2.5 h-2.5 rounded-full ${
+                sirenStatus?.is_active 
+                  ? 'bg-red-600 animate-ping' 
+                  : iotOnlineCount === 0
+                  ? 'bg-rose-500'
+                  : 'bg-emerald-500'
+              }`}></span>
               <span className="text-base font-black tracking-tight">
-                {sirenStatus?.is_active ? 'ALARM SIRINE AKTIF!' : 'Kondisi Aman Siaga'}
+                {sirenStatus?.is_active 
+                  ? 'ALARM SIRINE AKTIF!' 
+                  : iotOnlineCount === 0
+                  ? 'Hardware Sirine Offline'
+                  : 'Kondisi Aman Siaga'}
               </span>
             </div>
             <div className="flex items-center justify-between mt-2 pt-2 border-t border-slate-100">
@@ -1498,12 +1512,20 @@ export default function DashboardView({
             {/* Siren state mini */}
             <div className="p-3 bg-slate-800/80 rounded-2xl border border-slate-700 flex items-center justify-between text-xs">
               <div className="flex items-center gap-2.5">
-                <div className={`p-2 rounded-xl ${sirenStatus?.is_active ? 'bg-red-500 text-white animate-bounce' : 'bg-slate-700 text-slate-300'}`}>
+                <div className={`p-2 rounded-xl ${
+                  sirenStatus?.is_active 
+                    ? 'bg-red-500 text-white animate-bounce' 
+                    : iotOnlineCount === 0
+                    ? 'bg-rose-500/20 text-rose-400'
+                    : 'bg-slate-700 text-slate-300'
+                }`}>
                   {sirenStatus?.is_active ? <Volume2 className="w-4 h-4" /> : <VolumeX className="w-4 h-4" />}
                 </div>
                 <div>
                   <div className="font-bold text-slate-100">Sirine RT 01-03</div>
-                  <div className="text-[10px] text-slate-400">{sirenStatus?.is_active ? 'BERBUNYI' : 'Siaga Aman'}</div>
+                  <div className={`text-[10px] ${iotOnlineCount === 0 ? 'text-rose-400 font-semibold' : 'text-slate-400'}`}>
+                    {sirenStatus?.is_active ? 'BERBUNYI' : iotOnlineCount === 0 ? '🔴 Offline (Terputus)' : 'Siaga Aman'}
+                  </div>
                 </div>
               </div>
               <button
@@ -1517,18 +1539,18 @@ export default function DashboardView({
             {/* Last Ronda tap mini */}
             <div className="p-3 bg-slate-800/80 rounded-2xl border border-slate-700 flex items-center justify-between text-xs">
               <div className="flex items-center gap-2.5">
-                <div className="p-2 rounded-xl bg-blue-500/20 text-blue-400">
+                <div className={`p-2 rounded-xl ${iotOnlineCount === 0 ? 'bg-rose-500/20 text-rose-400' : 'bg-blue-500/20 text-blue-400'}`}>
                   <DoorOpen className="w-4 h-4" />
                 </div>
                 <div>
                   <div className="font-bold text-slate-100">Pos Gerbang Utama</div>
-                  <div className="text-[10px] text-slate-400 truncate max-w-[130px]">
-                    {lastRonda ? `Tap: ${lastRonda.user?.name}` : 'Servo Otomatis Normal'}
+                  <div className={`text-[10px] truncate max-w-[130px] ${iotOnlineCount === 0 ? 'text-rose-400 font-semibold' : 'text-slate-400'}`}>
+                    {iotOnlineCount === 0 ? '🔴 Gate Offline' : (lastRonda ? `Tap: ${lastRonda.user?.name}` : 'Servo Otomatis Normal')}
                   </div>
                 </div>
               </div>
-              <span className="text-[10px] text-slate-400">
-                {lastRonda ? new Date(lastRonda.tapped_at).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }) : 'Aktif'}
+              <span className={`text-[10px] ${iotOnlineCount === 0 ? 'text-rose-400 font-mono' : 'text-slate-400'}`}>
+                {iotOnlineCount === 0 ? 'Offline' : (lastRonda ? new Date(lastRonda.tapped_at).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }) : 'Aktif')}
               </span>
             </div>
 

@@ -141,18 +141,31 @@ export default function IoTView() {
     }
   };
 
+  const sirenDevice = devices.find((d: any) => d.device_type === 'siren');
+  const gateDevice = devices.find((d: any) => d.device_type === 'gate');
+  const wasteDevice = devices.find((d: any) => d.device_type === 'waste_terminal');
+  const isSirenOnline = Boolean(sirenDevice?.is_online);
+  const isGateOnline = Boolean(gateDevice?.is_online);
+  const isWasteOnline = Boolean(wasteDevice?.is_online);
+
   return (
     <div className="space-y-4">
       {/* 1. Sirene Wilayah Master Control Card */}
       <div className={`p-5 rounded-3xl border-2 transition-all shadow-xl ${
         sirenActive 
           ? 'bg-gradient-to-r from-red-600 to-rose-600 text-white border-red-700 animate-pulse'
+          : !isSirenOnline
+          ? 'bg-slate-50 text-slate-700 border-slate-300'
           : 'bg-white text-slate-800 border-slate-200'
       }`}>
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
             <div className={`p-3 rounded-2xl ${
-              sirenActive ? 'bg-white/20 text-white animate-bounce' : 'bg-slate-100 text-slate-600'
+              sirenActive 
+                ? 'bg-white/20 text-white animate-bounce' 
+                : !isSirenOnline
+                ? 'bg-rose-100 text-rose-600'
+                : 'bg-slate-100 text-slate-600'
             }`}>
               {sirenActive ? <Volume2 className="w-8 h-8" /> : <VolumeX className="w-8 h-8" />}
             </div>
@@ -161,13 +174,36 @@ export default function IoTView() {
                 <span className="text-xs uppercase font-extrabold tracking-wider opacity-80">
                   Node 2: Sirine Wilayah RT
                 </span>
-                <span className={`w-2 h-2 rounded-full ${sirenActive ? 'bg-white animate-ping' : 'bg-emerald-500'}`}></span>
+                <span className={`w-2 h-2 rounded-full ${
+                  sirenActive 
+                    ? 'bg-white animate-ping' 
+                    : !isSirenOnline 
+                    ? 'bg-rose-500' 
+                    : 'bg-emerald-500'
+                }`}></span>
+                {!isSirenOnline && (
+                  <span className="text-[10px] font-bold text-rose-600 bg-rose-100/80 px-2 py-0.5 rounded-full border border-rose-200">
+                    Offline
+                  </span>
+                )}
               </div>
               <h3 className="text-xl font-black mt-0.5 tracking-tight">
-                {sirenActive ? 'ALARM SIRINE AKTIF!' : 'Sirine Wilayah Siaga (Aman)'}
+                {sirenActive 
+                  ? 'ALARM SIRINE AKTIF!' 
+                  : !isSirenOnline 
+                  ? 'Sirine Wilayah Terputus (Hardware Offline)' 
+                  : 'Sirine Wilayah Siaga (Aman)'}
               </h3>
-              <p className={`text-xs mt-0.5 ${sirenActive ? 'text-red-100 font-semibold' : 'text-slate-500'}`}>
-                {sirenReason || 'Tidak ada ancaman bahaya yang terdeteksi.'}
+              <p className={`text-xs mt-0.5 ${
+                sirenActive 
+                  ? 'text-red-100 font-semibold' 
+                  : !isSirenOnline 
+                  ? 'text-rose-600 font-medium' 
+                  : 'text-slate-500'
+              }`}>
+                {!isSirenOnline 
+                  ? 'Perangkat keras ESP32 Sirine di Balai Warga sedang mati atau tidak terhubung ke listrik/WiFi.' 
+                  : (sirenReason || 'Tidak ada ancaman bahaya yang terdeteksi.')}
               </p>
             </div>
           </div>
@@ -184,11 +220,16 @@ export default function IoTView() {
             ) : (
               <button
                 onClick={() => handleToggleSiren(true)}
-                disabled={toggleLoading}
-                className="px-4 py-2.5 bg-red-600 hover:bg-red-700 text-white font-black text-xs rounded-2xl shadow-md shadow-red-500/30 transition active:scale-95 flex items-center gap-1.5"
+                disabled={toggleLoading || !isSirenOnline}
+                title={!isSirenOnline ? 'Perangkat keras ESP32 Sirine sedang offline' : undefined}
+                className={`px-4 py-2.5 font-black text-xs rounded-2xl shadow-md transition flex items-center gap-1.5 ${
+                  !isSirenOnline
+                    ? 'bg-slate-200 text-slate-400 cursor-not-allowed border border-slate-300 shadow-none'
+                    : 'bg-red-600 hover:bg-red-700 text-white shadow-red-500/30 active:scale-95'
+                }`}
               >
                 <ShieldAlert className="w-4 h-4" />
-                <span>BUNYIKAN SIRINE</span>
+                <span>{isSirenOnline ? 'BUNYIKAN SIRINE' : 'HARDWARE OFFLINE'}</span>
               </button>
             )}
           </div>
@@ -221,43 +262,91 @@ export default function IoTView() {
           <button
             onClick={simulateRondaTap}
             disabled={simLoading}
-            className="p-2.5 bg-slate-800 hover:bg-slate-700 text-white rounded-xl text-xs font-bold flex flex-col items-center justify-center gap-1 border border-slate-700 active:scale-95 transition"
+            className={`p-2.5 rounded-xl text-xs font-bold flex flex-col items-center justify-center gap-1 border active:scale-95 transition ${
+              isGateOnline
+                ? 'bg-slate-800 hover:bg-slate-700 text-white border-slate-700'
+                : 'bg-slate-900/90 hover:bg-slate-800 text-slate-400 border-rose-900/60'
+            }`}
           >
-            <DoorOpen className="w-4 h-4 text-blue-400" />
+            <div className="flex items-center gap-1">
+              <DoorOpen className={`w-4 h-4 ${isGateOnline ? 'text-blue-400' : 'text-slate-500'}`} />
+              <span className={`w-1.5 h-1.5 rounded-full ${isGateOnline ? 'bg-emerald-400' : 'bg-rose-500'}`}></span>
+            </div>
             <span>Tap Ronda & Palang</span>
+            <span className={`text-[9px] font-mono ${isGateOnline ? 'text-emerald-400' : 'text-rose-400'}`}>
+              {isGateOnline ? 'Gate Ready' : 'Gate Offline'}
+            </span>
           </button>
 
           <button
             onClick={() => simulateWasteDeposit('kaleng', 2500)}
             disabled={simLoading}
-            className="p-2.5 bg-slate-800 hover:bg-slate-700 text-white rounded-xl text-xs font-bold flex flex-col items-center justify-center gap-1 border border-slate-700 active:scale-95 transition"
+            className={`p-2.5 rounded-xl text-xs font-bold flex flex-col items-center justify-center gap-1 border active:scale-95 transition ${
+              isWasteOnline
+                ? 'bg-slate-800 hover:bg-slate-700 text-white border-slate-700'
+                : 'bg-slate-900/90 hover:bg-slate-800 text-slate-400 border-rose-900/60'
+            }`}
           >
-            <Recycle className="w-4 h-4 text-emerald-400" />
+            <div className="flex items-center gap-1">
+              <Recycle className={`w-4 h-4 ${isWasteOnline ? 'text-emerald-400' : 'text-slate-500'}`} />
+              <span className={`w-1.5 h-1.5 rounded-full ${isWasteOnline ? 'bg-emerald-400' : 'bg-rose-500'}`}></span>
+            </div>
             <span>Timbang Kaleng 2.5kg</span>
+            <span className={`text-[9px] font-mono ${isWasteOnline ? 'text-emerald-400' : 'text-rose-400'}`}>
+              {isWasteOnline ? 'Scale Ready' : 'Scale Offline'}
+            </span>
           </button>
 
           <button
             onClick={() => simulateWasteDeposit('plastik', 5000)}
             disabled={simLoading}
-            className="p-2.5 bg-slate-800 hover:bg-slate-700 text-white rounded-xl text-xs font-bold flex flex-col items-center justify-center gap-1 border border-slate-700 active:scale-95 transition"
+            className={`p-2.5 rounded-xl text-xs font-bold flex flex-col items-center justify-center gap-1 border active:scale-95 transition ${
+              isWasteOnline
+                ? 'bg-slate-800 hover:bg-slate-700 text-white border-slate-700'
+                : 'bg-slate-900/90 hover:bg-slate-800 text-slate-400 border-rose-900/60'
+            }`}
           >
-            <Recycle className="w-4 h-4 text-teal-400" />
+            <div className="flex items-center gap-1">
+              <Recycle className={`w-4 h-4 ${isWasteOnline ? 'text-teal-400' : 'text-slate-500'}`} />
+              <span className={`w-1.5 h-1.5 rounded-full ${isWasteOnline ? 'bg-emerald-400' : 'bg-rose-500'}`}></span>
+            </div>
             <span>Timbang Plastik 5kg</span>
+            <span className={`text-[9px] font-mono ${isWasteOnline ? 'text-emerald-400' : 'text-rose-400'}`}>
+              {isWasteOnline ? 'Scale Ready' : 'Scale Offline'}
+            </span>
           </button>
 
           <button
             onClick={simulatePanicButton}
             disabled={simLoading}
-            className="p-2.5 bg-red-900/60 hover:bg-red-800 text-white rounded-xl text-xs font-bold flex flex-col items-center justify-center gap-1 border border-red-700 active:scale-95 transition"
+            className={`p-2.5 rounded-xl text-xs font-bold flex flex-col items-center justify-center gap-1 border active:scale-95 transition ${
+              isSirenOnline
+                ? 'bg-red-900/60 hover:bg-red-800 text-white border-red-700'
+                : 'bg-slate-900/90 hover:bg-slate-800 text-slate-400 border-rose-900/60'
+            }`}
           >
-            <ShieldAlert className="w-4 h-4 text-red-400 animate-pulse" />
+            <div className="flex items-center gap-1">
+              <ShieldAlert className={`w-4 h-4 ${isSirenOnline ? 'text-red-400 animate-pulse' : 'text-slate-500'}`} />
+              <span className={`w-1.5 h-1.5 rounded-full ${isSirenOnline ? 'bg-emerald-400' : 'bg-rose-500'}`}></span>
+            </div>
             <span>Panic Button Pos</span>
+            <span className={`text-[9px] font-mono ${isSirenOnline ? 'text-red-400' : 'text-rose-400'}`}>
+              {isSirenOnline ? 'Siren Ready' : 'Siren Offline'}
+            </span>
           </button>
         </div>
 
         {simMsg && (
-          <div className="p-2.5 bg-emerald-950/70 border border-emerald-500/40 text-emerald-300 text-xs rounded-xl font-medium animate-fade-in flex items-center gap-2">
-            <CheckCircle2 className="w-4 h-4 shrink-0 text-emerald-400" />
+          <div className={`p-2.5 border text-xs rounded-xl font-medium animate-fade-in flex items-center gap-2 ${
+            simMsg.includes('Gagal') || simMsg.includes('❌') || simMsg.includes('OFFLINE')
+              ? 'bg-rose-950/80 border-rose-500/50 text-rose-300'
+              : 'bg-emerald-950/70 border-emerald-500/40 text-emerald-300'
+          }`}>
+            <CheckCircle2 className={`w-4 h-4 shrink-0 ${
+              simMsg.includes('Gagal') || simMsg.includes('❌') || simMsg.includes('OFFLINE')
+                ? 'text-rose-400'
+                : 'text-emerald-400'
+            }`} />
             <span>{simMsg}</span>
           </div>
         )}

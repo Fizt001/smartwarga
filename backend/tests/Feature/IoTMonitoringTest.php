@@ -100,7 +100,7 @@ class IoTMonitoringTest extends TestCase
             'device_type' => 'gate',
             'location' => 'Pos Gerbang Utama RT 01',
             'is_active' => true,
-            'last_ping' => now()->subMinutes(10),
+            'last_ping' => now(),
         ]);
 
         $this->sirenDevice = IotDevice::create([
@@ -108,7 +108,7 @@ class IoTMonitoringTest extends TestCase
             'device_type' => 'siren',
             'location' => 'Menara Sirine RW',
             'is_active' => true,
-            'last_ping' => now()->subMinutes(10),
+            'last_ping' => now(),
         ]);
 
         $this->wasteTerminalDevice = IotDevice::create([
@@ -116,7 +116,7 @@ class IoTMonitoringTest extends TestCase
             'device_type' => 'waste_terminal',
             'location' => 'Gedung Serbaguna',
             'is_active' => true,
-            'last_ping' => now()->subMinutes(10),
+            'last_ping' => now(),
         ]);
 
         // Setup Waste Rates
@@ -385,11 +385,14 @@ class IoTMonitoringTest extends TestCase
      */
     public function test_whitebox_device_heartbeat_last_ping_updates()
     {
-        $oldPing = $this->gateDevice->last_ping;
+        $oldPing = Carbon::now()->subSeconds(5);
+        $this->gateDevice->update(['last_ping' => $oldPing]);
 
-        $this->postJson('/api/iot/ronda/tap', [
-            'rfid_uid' => 'RFID_BUDI_01',
-        ]);
+        // Dipanggil langsung oleh hardware ESP32
+        $this->withHeaders(['User-Agent' => 'ESP32HTTPClient'])
+            ->postJson('/api/iot/ronda/tap', [
+                'rfid_uid' => 'RFID_BUDI_01',
+            ]);
 
         $this->assertTrue($this->gateDevice->fresh()->last_ping->greaterThan($oldPing));
     }
@@ -694,6 +697,87 @@ class IoTMonitoringTest extends TestCase
         $this->assertNotEquals($oldPing->toIso8601String(), $this->sirenDevice->fresh()->last_ping->toIso8601String());
         $this->assertTrue($this->sirenDevice->fresh()->last_ping->diffInSeconds(now()) <= 2);
     }
+
+    /**
+     * White-Box 21: Palang gerbang menolak dibuka via simulasi web jika perangkat Node 1 offline.
+     */
+    public function test_whitebox_gate_rejects_simulation_when_hardware_is_offline()
+    {
+        $this->gateDevice->update(['last_ping' => Carbon::now()->subMinutes(10)]);
+
+        $response = $this->withHeaders(['User-Agent' => 'Mozilla/5.0 WebBrowser'])
+            ->postJson('/api/iot/ronda/tap', [
+                'rfid_uid' => 'RFID_BUDI_01',
+            ]);
+
+        $response->assertStatus(422)
+            ->assertJson([
+                'success' => false,
+                'gate_open' => false,
+                'is_online' => false,
+            ]);
+    }
+
+    /**
+     * White-Box 22: Pengurus ditolak membunyikan sirine jika perangkat Node 2 sedang offline.
+     */
+    public function test_whitebox_toggle_sirine_rejects_activation_when_hardware_is_offline()
+    {
+        $this->sirenDevice->update(['last_ping' => Carbon::now()->subMinutes(10)]);
+
+        $response = $this->actingAs($this->ketuaRt)->postJson('/api/iot/sirine/toggle', [
+            'is_active' => true,
+        ]);
+
+        $response->assertStatus(422)
+            ->assertJson([
+                'success' => false,
+                'error' => 'DEVICE_OFFLINE',
+                'is_online' => false,
+            ]);
+    }
+
+    /**
+     * White-Box 23: Terminal timbangan bank sampah menolak simulasi timbang jika Node 3 offline.
+     */
+    public function test_whitebox_waste_terminal_rejects_simulation_when_hardware_is_offline()
+    {
+        $this->wasteTerminalDevice->update(['last_ping' => Carbon::now()->subMinutes(10)]);
+
+        $response = $this->withHeaders(['User-Agent' => 'Mozilla/5.0 WebBrowser'])
+            ->postJson('/api/iot/bank-sampah/setor', [
+                'rfid_uid' => 'RFID_BUDI_01',
+                'kategori' => 'kaleng',
+                'berat_gram' => 1500,
+            ]);
+
+        $response->assertStatus(422)
+            ->assertJson([
+                'success' => false,
+                'is_online' => false,
+            ]);
+    }
+
+    /**
+     * White-Box 24: Panic button tetap mencatat log darurat tetapi sirine fisik tidak diaktifkan jika offline.
+     */
+    public function test_whitebox_panic_button_does_not_activate_siren_when_siren_hardware_is_offline()
+    {
+        $this->sirenDevice->update(['last_ping' => Carbon::now()->subMinutes(10)]);
+
+        $response = $this->postJson('/api/iot/panic-button', [
+            'location' => 'Pos Gerbang Utama',
+        ]);
+
+        $response->assertStatus(201)
+            ->assertJson([
+                'success' => true,
+                'siren_triggered' => false,
+            ]);
+
+        $this->assertFalse((bool) SirenStatus::first()->is_active);
+    }
 }
+
 
 

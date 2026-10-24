@@ -28,6 +28,7 @@ import {
   Siren,
   Phone
 } from 'lucide-react';
+import ConfirmModal from '@/components/ConfirmModal';
 
 interface LayananViewProps {
   currentSubTab?: 'surat' | 'umkm' | 'koperasi' | 'aset' | 'rukam' | 'posyandu';
@@ -37,6 +38,24 @@ interface LayananViewProps {
 export default function LayananView({ currentSubTab = 'surat', onSubTabChange }: LayananViewProps) {
   const { user } = useAuth();
   const [internalSubTab, setInternalSubTab] = useState<'surat' | 'umkm' | 'koperasi' | 'aset' | 'rukam' | 'posyandu'>(currentSubTab);
+
+  const [confirmDialog, setConfirmDialog] = useState<{
+    isOpen: boolean;
+    title: string;
+    message: string;
+    confirmText?: string;
+    cancelText?: string;
+    variant?: 'danger' | 'warning' | 'info' | 'success';
+    onConfirm: () => void | Promise<void>;
+  }>({
+    isOpen: false,
+    title: '',
+    message: '',
+    confirmText: 'Konfirmasi',
+    cancelText: 'Batal',
+    variant: 'danger',
+    onConfirm: () => {},
+  });
 
   useEffect(() => {
     if (currentSubTab) {
@@ -338,24 +357,34 @@ export default function LayananView({ currentSubTab = 'surat', onSubTabChange }:
     }
   };
 
-  const handleCancelAmbulanceBooking = async (id: number) => {
-    if (!confirm('Apakah Anda yakin ingin membatalkan booking ambulans ini?')) return;
-    try {
-      const res = await fetchApi(`/ambulances/bookings/${id}/cancel`, {
-        method: 'POST',
-      });
-      if (res.success) {
-        setAlert({ type: 'success', text: res.message });
-        const [bRes, aRes] = await Promise.all([
-          fetchApi('/ambulances/bookings'),
-          fetchApi('/ambulances'),
-        ]);
-        if (bRes.success) setAmbulanceBookings(bRes.data?.data || []);
-        if (aRes.success) setAmbulances(aRes.data || []);
-      }
-    } catch (err: any) {
-      setAlert({ type: 'error', text: err.message });
-    }
+  const handleCancelAmbulanceBooking = (id: number) => {
+    setConfirmDialog({
+      isOpen: true,
+      title: 'Batalkan Booking Ambulans?',
+      message: 'Apakah Anda yakin ingin membatalkan pemesanan armada ambulans ini?',
+      confirmText: 'Ya, Batalkan Booking',
+      cancelText: 'Kembali',
+      variant: 'danger',
+      onConfirm: async () => {
+        setConfirmDialog((prev) => ({ ...prev, isOpen: false }));
+        try {
+          const res = await fetchApi(`/ambulances/bookings/${id}/cancel`, {
+            method: 'POST',
+          });
+          if (res.success) {
+            setAlert({ type: 'success', text: res.message });
+            const [bRes, aRes] = await Promise.all([
+              fetchApi('/ambulances/bookings'),
+              fetchApi('/ambulances'),
+            ]);
+            if (bRes.success) setAmbulanceBookings(bRes.data?.data || []);
+            if (aRes.success) setAmbulances(aRes.data || []);
+          }
+        } catch (err: any) {
+          setAlert({ type: 'error', text: err.message });
+        }
+      },
+    });
   };
 
   const menuTabs = [
@@ -1981,6 +2010,18 @@ export default function LayananView({ currentSubTab = 'surat', onSubTabChange }:
           </div>
         </div>
       )}
+
+      {/* Modern In-App Confirmation Modal */}
+      <ConfirmModal
+        isOpen={confirmDialog.isOpen}
+        onClose={() => setConfirmDialog((prev) => ({ ...prev, isOpen: false }))}
+        onConfirm={confirmDialog.onConfirm}
+        title={confirmDialog.title}
+        message={confirmDialog.message}
+        confirmText={confirmDialog.confirmText}
+        cancelText={confirmDialog.cancelText}
+        variant={confirmDialog.variant}
+      />
     </div>
   );
 }

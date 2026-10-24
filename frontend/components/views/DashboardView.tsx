@@ -43,6 +43,8 @@ import {
   ChevronDown,
   ChevronUp
 } from 'lucide-react';
+import ConfirmModal from '@/components/ConfirmModal';
+import { ToastContainer, ToastItem } from '@/components/Toast';
 
 export default function DashboardView({
   onNavigateTab,
@@ -63,6 +65,38 @@ export default function DashboardView({
   const [wasteRates, setWasteRates] = useState<any[]>([]);
   const [lastRonda, setLastRonda] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+
+  // Toast notifications state
+  const [toasts, setToasts] = useState<ToastItem[]>([]);
+  const addToast = (type: 'success' | 'error' | 'warning' | 'info', message: string, title?: string) => {
+    const id = Date.now().toString() + Math.random().toString().slice(2, 6);
+    setToasts((prev) => [...prev, { id, type, message, title }]);
+    setTimeout(() => {
+      setToasts((prev) => prev.filter((t) => t.id !== id));
+    }, 4500);
+  };
+  const dismissToast = (id: string) => {
+    setToasts((prev) => prev.filter((t) => t.id !== id));
+  };
+
+  // Custom Confirmation Dialog state
+  const [confirmDialog, setConfirmDialog] = useState<{
+    isOpen: boolean;
+    title: string;
+    message: string;
+    confirmText?: string;
+    cancelText?: string;
+    variant?: 'danger' | 'warning' | 'info' | 'success';
+    onConfirm: () => void | Promise<void>;
+  }>({
+    isOpen: false,
+    title: '',
+    message: '',
+    confirmText: 'Konfirmasi',
+    cancelText: 'Batal',
+    variant: 'danger',
+    onConfirm: () => {},
+  });
 
   // RSVP & Gotong Royong Modal State
   const [selectedEventRsvp, setSelectedEventRsvp] = useState<any | null>(null);
@@ -214,22 +248,32 @@ export default function DashboardView({
     }
   };
 
-  const handleUnpairKtp = async () => {
-    if (!confirm('Apakah Anda yakin ingin melepas tautan fisik e-KTP dari akun Anda? Palang gerbang otomatis dan kios bank sampah tidak akan mengenali kartu ini sampai ditautkan kembali.')) return;
-    setKtpLoading(true);
-    try {
-      const res = await fetchApi('/warga/ktp/unpair', {
-        method: 'DELETE',
-      });
-      if (res.success) {
-        alert(res.message);
-        await refreshUser();
-      }
-    } catch (err: any) {
-      alert(err.message || 'Gagal melepas tautan e-KTP.');
-    } finally {
-      setKtpLoading(false);
-    }
+  const promptUnpairKtp = () => {
+    setConfirmDialog({
+      isOpen: true,
+      title: 'Lepas Tautan Fisik e-KTP?',
+      message: 'Apakah Anda yakin ingin melepas tautan fisik e-KTP dari akun Anda? Palang gerbang otomatis dan kios bank sampah tidak akan mengenali kartu ini sampai ditautkan kembali.',
+      confirmText: 'Ya, Lepas Tautan',
+      cancelText: 'Batal',
+      variant: 'danger',
+      onConfirm: async () => {
+        setConfirmDialog((prev) => ({ ...prev, isOpen: false }));
+        setKtpLoading(true);
+        try {
+          const res = await fetchApi('/warga/ktp/unpair', {
+            method: 'DELETE',
+          });
+          if (res.success) {
+            addToast('success', res.message || 'Tautan e-KTP berhasil dilepas.', 'e-KTP Dilepas');
+            await refreshUser();
+          }
+        } catch (err: any) {
+          addToast('error', err.message || 'Gagal melepas tautan e-KTP.', 'Gagal Melepas');
+        } finally {
+          setKtpLoading(false);
+        }
+      },
+    });
   };
 
   const loadFamilyMembers = async () => {
@@ -412,21 +456,30 @@ export default function DashboardView({
     }
   };
 
-  const handleDeleteFamilyMember = async (memberId: number, memberName: string) => {
-    if (!confirm(`Hapus data anggota keluarga "${memberName}" dari unit rumah ini?`)) {
-      return;
-    }
-    try {
-      const res = await fetchApi(`/warga/family-members/${memberId}`, {
-        method: 'DELETE',
-      });
-      if (res.success) {
-        await loadFamilyMembers();
-        await refreshUser();
-      }
-    } catch (err: any) {
-      alert(err.message || 'Gagal menghapus data.');
-    }
+  const handleDeleteFamilyMember = (memberId: number, memberName: string) => {
+    setConfirmDialog({
+      isOpen: true,
+      title: 'Hapus Anggota Keluarga?',
+      message: `Apakah Anda yakin ingin menghapus data "${memberName}" dari daftar anggota keluarga rumah ini? Tindakan ini tidak dapat dibatalkan.`,
+      confirmText: 'Hapus Anggota',
+      cancelText: 'Batal',
+      variant: 'danger',
+      onConfirm: async () => {
+        setConfirmDialog((prev) => ({ ...prev, isOpen: false }));
+        try {
+          const res = await fetchApi(`/warga/family-members/${memberId}`, {
+            method: 'DELETE',
+          });
+          if (res.success) {
+            addToast('success', `Anggota keluarga "${memberName}" berhasil dihapus.`, 'Berhasil Dihapus');
+            await loadFamilyMembers();
+            await refreshUser();
+          }
+        } catch (err: any) {
+          addToast('error', err.message || 'Gagal menghapus data.', 'Gagal');
+        }
+      },
+    });
   };
 
   const handleAddKkSubmit = async (e: React.FormEvent) => {
@@ -498,7 +551,7 @@ export default function DashboardView({
         }, 1200);
       }
     } catch (err: any) {
-      alert(err.message || 'Gagal menyimpan konfirmasi kehadiran.');
+      addToast('error', err.message || 'Gagal menyimpan konfirmasi kehadiran.', 'Gagal');
     } finally {
       setRsvpLoading(false);
     }
@@ -533,6 +586,7 @@ export default function DashboardView({
 
       if (res.success) {
         setDonationSuccessMsg(res.message);
+        addToast('success', 'Donasi Anda berhasil disalurkan. Terima kasih!', 'Donasi Berhasil');
         const annRes = await fetchApi('/announcements');
         if (annRes.success) setAnnouncements(annRes.data?.data || []);
         setTimeout(() => {
@@ -540,10 +594,10 @@ export default function DashboardView({
           setDonationSuccessMsg('');
         }, 1500);
       } else {
-        alert(res.message || 'Gagal mengirim donasi.');
+        addToast('error', res.message || 'Gagal mengirim donasi.', 'Donasi Gagal');
       }
     } catch (err: any) {
-      alert(err.message || 'Gagal mengirim donasi.');
+      addToast('error', err.message || 'Gagal mengirim donasi.', 'Donasi Gagal');
     } finally {
       setDonationLoading(false);
     }
@@ -888,7 +942,7 @@ export default function DashboardView({
                   </button>
                   <button
                     type="button"
-                    onClick={handleUnpairKtp}
+                    onClick={promptUnpairKtp}
                     disabled={ktpLoading}
                     className="px-3.5 py-2 rounded-xl bg-rose-500/20 hover:bg-rose-500/30 text-rose-300 text-xs font-bold transition border border-rose-500/30 disabled:opacity-50"
                   >
@@ -2784,6 +2838,22 @@ export default function DashboardView({
           </div>
         </div>
       )}
+
+      {/* Floating Modern Toast Notification Container */}
+      <ToastContainer toasts={toasts} onDismiss={dismissToast} />
+
+      {/* Modern In-App Confirmation Modal */}
+      <ConfirmModal
+        isOpen={confirmDialog.isOpen}
+        onClose={() => setConfirmDialog((prev) => ({ ...prev, isOpen: false }))}
+        onConfirm={confirmDialog.onConfirm}
+        title={confirmDialog.title}
+        message={confirmDialog.message}
+        confirmText={confirmDialog.confirmText}
+        cancelText={confirmDialog.cancelText}
+        variant={confirmDialog.variant}
+        loading={ktpLoading}
+      />
     </div>
   );
 }

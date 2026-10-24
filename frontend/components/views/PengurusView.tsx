@@ -48,6 +48,7 @@ import {
   Siren,
   Phone
 } from 'lucide-react';
+import ConfirmModal from '@/components/ConfirmModal';
 
 interface PengurusViewProps {
   currentSubTab?: 'sensus' | 'ipl' | 'kegiatan' | 'surat' | 'approval' | 'topup' | 'aset' | 'koperasi' | 'posyandu' | 'rukam';
@@ -76,6 +77,24 @@ export default function PengurusView({ currentSubTab, onSubTabChange }: Pengurus
       onSubTabChange(tab);
     }
   };
+
+  const [confirmDialog, setConfirmDialog] = useState<{
+    isOpen: boolean;
+    title: string;
+    message: string;
+    confirmText?: string;
+    cancelText?: string;
+    variant?: 'danger' | 'warning' | 'info' | 'success';
+    onConfirm: () => void | Promise<void>;
+  }>({
+    isOpen: false,
+    title: '',
+    message: '',
+    confirmText: 'Konfirmasi',
+    cancelText: 'Batal',
+    variant: 'danger',
+    onConfirm: () => {},
+  });
 
   useEffect(() => {
     if (currentSubTab && currentSubTab !== internalSubTab) {
@@ -907,20 +926,30 @@ export default function PengurusView({ currentSubTab, onSubTabChange }: Pengurus
     }
   };
 
-  const handleCompleteAmbulanceBooking = async (id: number) => {
-    if (!confirm('Apakah tugas ambulans ini sudah selesai dan armada kembali siap siaga?')) return;
-    setActionLoading(true);
-    try {
-      const res = await fetchApi(`/ambulances/bookings/${id}/complete`, { method: 'POST' });
-      if (res.success) {
-        setAlertMsg({ type: 'success', text: res.message });
-        await loadData();
-      }
-    } catch (err: any) {
-      setAlertMsg({ type: 'error', text: err.message || 'Gagal menyelesaikan tugas ambulans.' });
-    } finally {
-      setActionLoading(false);
-    }
+  const handleCompleteAmbulanceBooking = (id: number) => {
+    setConfirmDialog({
+      isOpen: true,
+      title: 'Selesaikan Tugas Ambulans?',
+      message: 'Apakah tugas pelayanan ambulans ini sudah selesai dan armada siap disiagakan kembali?',
+      confirmText: 'Ya, Selesaikan & Siagakan',
+      cancelText: 'Batal',
+      variant: 'success',
+      onConfirm: async () => {
+        setConfirmDialog((prev) => ({ ...prev, isOpen: false }));
+        setActionLoading(true);
+        try {
+          const res = await fetchApi(`/ambulances/bookings/${id}/complete`, { method: 'POST' });
+          if (res.success) {
+            setAlertMsg({ type: 'success', text: res.message });
+            await loadData();
+          }
+        } catch (err: any) {
+          setAlertMsg({ type: 'error', text: err.message || 'Gagal menyelesaikan tugas ambulans.' });
+        } finally {
+          setActionLoading(false);
+        }
+      },
+    });
   };
 
   return (
@@ -4607,6 +4636,19 @@ export default function PengurusView({ currentSubTab, onSubTabChange }: Pengurus
           </div>
         </div>
       )}
+
+      {/* Modern In-App Confirmation Modal */}
+      <ConfirmModal
+        isOpen={confirmDialog.isOpen}
+        onClose={() => setConfirmDialog((prev) => ({ ...prev, isOpen: false }))}
+        onConfirm={confirmDialog.onConfirm}
+        title={confirmDialog.title}
+        message={confirmDialog.message}
+        confirmText={confirmDialog.confirmText}
+        cancelText={confirmDialog.cancelText}
+        variant={confirmDialog.variant}
+        loading={actionLoading}
+      />
     </div>
   );
 }

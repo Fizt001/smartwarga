@@ -77,7 +77,7 @@ export default function IoTView() {
         await loadIoTData();
       }
     } catch (err: any) {
-      alert(err.message);
+      setSimMsg(err.message || 'Gagal mengubah status sirine.');
     } finally {
       setToggleLoading(false);
     }

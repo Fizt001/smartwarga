@@ -26,12 +26,18 @@ Backend sistem informasi manajemen lingkungan warga berbasis **Laravel 11+ REST 
    - Koperasi simpan pinjam (simulasi tenor dan pencairan ke dompet warga).
    - Peminjaman aset lingkungan (tenda, sound system, kursi).
    - Rukun Kematian (RUKAM) dan pencairan santunan duka.
-5. **Gateway Integrasi IoT (3 Node ESP32):**
-   - `POST /api/iot/ronda/tap`: Absensi ronda malam dan buka palang pintu gerbang (servo).
-   - `POST /api/iot/panic-button`: Tombol darurat fisik dengan broadcast real-time ke web.
-   - `GET /api/iot/sirine/status`: Polling status sirine wilayah untuk aktuator relay.
-   - `POST /api/iot/bank-sampah/setor`: Timbangan digital sampah daur ulang dengan kalkulasi otomatis dan kredit instan ke saldo dompet warga.
-   - `POST /api/iot/posyandu/catat`: Pencatatan mandiri berat & tinggi badan balita.
+5. **Gateway Integrasi IoT (Single ESP32 AIO Controller):**
+   - `POST /api/iot/ronda/tap`: Absensi ronda malam dan buka palang pintu gerbang (servo 90° selama 4 detik).
+   - `POST /api/iot/panic-button`: Tombol darurat fisik dengan broadcast real-time ke web dan aktivasi sirine.
+   - `GET /api/iot/sirine/status`: Polling status sirine wilayah untuk aktuator horn sirine.
+   - `POST /api/iot/sirine/toggle`: Kontrol sirine manual dari dashboard web pengurus (auto-resolves active emergency logs).
+   - `POST /api/iot/bank-sampah/setor`: Timbangan digital sampah daur ulang dengan kalkulasi otomatis dan kredit instan ke saldo dompet warga (`lockForUpdate` ACID transaction).
+   - `POST /api/iot/posyandu/catat`: Pencatatan mandiri berat & tinggi badan balita untuk KMS digital.
+   - `POST /api/iot/ktp/scan`: Perekaman scan fisik e-KTP dari ESP32 (Mode 4 Kios: `MD:DAFTAR-KTP >`).
+   - `GET /api/warga/ktp/latest-scan`: Polling live radar aplikasi web warga untuk menangkap kartu yang baru saja di-tap.
+   - `POST /api/warga/ktp/pair`: Mengikat kartu e-KTP ke akun warga terautentikasi (dengan validasi anti-duplikasi kepemilikan).
+   - `DELETE /api/warga/ktp/unpair`: Pelepasan tautan kartu fisik jika kartu hilang atau diganti.
+   - `POST /api/iot/heartbeat`: Liveness ping tunggal dari 1 ESP32 untuk memperbarui status online seluruh node di web.
 
 ---
 
@@ -121,11 +127,29 @@ php artisan reverb:start
 - `PATCH /api/admin/complaints/{id}/status` — Perbarui status pengaduan
 - `POST /api/admin/rukam/{id}/disburse` — Pencairan santunan duka
 
-### Integrasi IoT ESP32 (`/api/iot/...`)
-- `POST /api/iot/ronda/tap` — Absensi tap kartu ronda + buka servo gerbang
-- `POST /api/iot/panic-button` — Pemicu tombol panik darurat
+### Integrasi IoT ESP32 (`/api/iot/...` & `/api/warga/ktp/...`)
+- `POST /api/iot/ronda/tap` — Absensi tap kartu ronda + buka servo gerbang (90°)
+- `POST /api/iot/panic-button` — Pemicu tombol panik darurat + sirine
 - `GET /api/iot/sirine/status` — Cek status sirine untuk aktuator relay
-- `POST /api/iot/sirine/toggle` — Saklar manual sirine dari web
-- `POST /api/iot/bank-sampah/setor` — Timbang sampah & kredit saldo dompet
-- `POST /api/iot/posyandu/catat` — Rekam timbangan balita posyandu
-- `GET /api/iot/devices` — Status kesehatan hardware (last ping)
+- `POST /api/iot/sirine/toggle` — Saklar manual sirine dari web (auto-resolve emergency logs)
+- `POST /api/iot/bank-sampah/setor` — Timbang sampah & auto-kredit saldo dompet (`lockForUpdate`)
+- `POST /api/iot/posyandu/catat` — Rekam timbangan balita posyandu mandiri
+- `POST /api/iot/ktp/scan` — Perekaman scan fisik e-KTP dari ESP32 (Mode 4 Kios)
+- `GET /api/warga/ktp/latest-scan` — Polling live radar aplikasi web warga
+- `POST /api/warga/ktp/pair` — Tautkan e-KTP fisik ke profil warga terautentikasi
+- `DELETE /api/warga/ktp/unpair` — Lepas tautan fisik e-KTP warga
+- `POST /api/iot/heartbeat` — Single ping liveness update untuk seluruh node perangkat
+- `GET /api/iot/devices` — Status kesehatan hardware (last ping & online status)
+
+---
+
+## 🧪 Status Uji Coba Otomatis (PHPUnit Feature Tests)
+
+```
+Tests:    119 passed (554 assertions)
+Duration: 2.12s
+Status:   100% PASS
+```
+
+Semua 119 pengujian Black-Box dan White-Box berjalan sempurna di lingkungan database lokal.
+

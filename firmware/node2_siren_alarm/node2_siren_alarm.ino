@@ -23,8 +23,8 @@
 #include <ArduinoJson.h>
 
 // ====== KONFIGURASI WIFI & SERVER ======
-const char* WIFI_SSID     = "SMART_WARGA_WIFI";
-const char* WIFI_PASSWORD = "wargadigital2026";
+const char* WIFI_SSID     = "Sumsang";
+const char* WIFI_PASSWORD = "123456789";
 
 // Domain Server Production SMART-WARGA (SSL)
 const char* API_BASE_URL  = "https://swarga.manajemensystem.my.id"; 

@@ -18,6 +18,7 @@ use App\Models\WasteBankTransaction;
 use App\Models\WasteRate;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 
 class IoTController extends Controller
@@ -483,19 +484,80 @@ class IoTController extends Controller
     public function heartbeat(Request $request)
     {
         $validated = $request->validate([
-            'device_type' => 'required|string',
+            'device_type' => 'nullable|string',
             'device_key' => 'nullable|string',
         ]);
 
-        $device = IotDevice::where('device_type', $validated['device_type'])->first();
-        if ($device) {
-            $device->update(['last_ping' => now()]);
+        $deviceType = $validated['device_type'] ?? 'all';
+
+        if (in_array($deviceType, ['all', 'aio', 'smartwarga_all'])) {
+            IotDevice::query()->update(['last_ping' => now()]);
+        } else {
+            $device = IotDevice::where('device_type', $deviceType)->first();
+            if ($device) {
+                $device->update(['last_ping' => now()]);
+            }
         }
 
         return response()->json([
             'success' => true,
             'message' => 'Heartbeat acknowledged',
             'timestamp' => now()->toIso8601String(),
+        ]);
+    }
+
+    /**
+     * Reader 2: Kiosk Tap (Service Dispatcher / Balance & Context Check)
+     * POST /api/iot/kiosk/tap
+     * Payload: {"rfid_uid": "STRING", "requested_mode": "nullable|string"}
+     */
+    public function kioskTap(Request $request)
+    {
+        $validated = $request->validate([
+            'rfid_uid' => 'required|string',
+            'requested_mode' => 'nullable|string|in:auto,posyandu,bank_sampah,info',
+        ]);
+
+        $rfidUid = trim($validated['rfid_uid']);
+        $requestedMode = $validated['requested_mode'] ?? 'auto';
+
+        $user = User::with(['house', 'wallet'])->where('rfid_uid', $rfidUid)->first();
+
+        if (!$user) {
+            return response()->json([
+                'success' => false,
+                'mode' => 'rejected',
+                'message' => "Kartu e-KTP/RFID [{$rfidUid}] tidak terdaftar di sistem SMART-WARGA.",
+                'lcd_line1' => 'KARTU DITOLAK   ',
+                'lcd_line2' => 'TIDAK TERDAFTAR ',
+            ], 404);
+        }
+
+        $userAgent = (string) $request->header('User-Agent', '');
+        $isHardware = (str_contains($userAgent, 'ESP32') || str_contains($userAgent, 'ESP8266')) && ! str_contains($userAgent, 'Mozilla');
+        if ($isHardware) {
+            IotDevice::where('device_type', 'waste_terminal')->update(['last_ping' => now()]);
+        }
+
+        $wallet = $user->wallet ?? Wallet::firstOrCreate(['user_id' => $user->id], ['balance' => 0.00]);
+        $balanceFormatted = number_format($wallet->balance, 0, ',', '.');
+
+        $mode = $requestedMode === 'auto' ? 'bank_sampah' : $requestedMode;
+        $nameShort = substr($user->name, 0, 16);
+
+        return response()->json([
+            'success' => true,
+            'mode' => $mode,
+            'user' => [
+                'id' => $user->id,
+                'name' => $user->name,
+                'house' => $user->house?->full_address,
+                'rt' => $user->rt_number,
+                'wallet_balance' => (float) $wallet->balance,
+            ],
+            'message' => "Halo {$user->name}, sesi kios layanan siap.",
+            'lcd_line1' => str_pad($nameShort, 16, ' '),
+            'lcd_line2' => str_pad('Saldo:Rp' . $balanceFormatted, 16, ' '),
         ]);
     }
 
@@ -552,4 +614,150 @@ class IoTController extends Controller
             'data' => $logs,
         ]);
     }
+
+    /**
+     * Scan KTP from ESP32 (Single AIO Mode REG-KTP or Dedicated Enroller)
+     * POST /api/iot/ktp/scan
+     * Payload: {"rfid_uid": "04A1B2C3", "device_id": "ENROLLER_01"}
+     */
+    public function scanKtp(Request $request)
+    {
+        $validated = $request->validate([
+            'rfid_uid' => 'required|string',
+            'device_id' => 'nullable|string',
+        ]);
+
+        $rfidUid = strtoupper(trim($validated['rfid_uid']));
+        $deviceId = $validated['device_id'] ?? 'AIO_KIOSK';
+
+        $existingUser = User::with('house')->where('rfid_uid', $rfidUid)->first();
+
+        $scanData = [
+            'rfid_uid' => $rfidUid,
+            'device_id' => $deviceId,
+            'scanned_at' => now()->toIso8601String(),
+            'timestamp' => now()->timestamp,
+            'already_registered' => (bool) $existingUser,
+            'owner_id' => $existingUser?->id,
+            'owner_name' => $existingUser?->name,
+            'owner_house' => $existingUser?->house?->house_code,
+        ];
+
+        // Simpan ke Cache selama 2 menit untuk ditangkap oleh web warga
+        Cache::put('latest_ktp_scan', $scanData, 120);
+
+        if ($existingUser) {
+            $ownerShort = strtoupper(substr($existingUser->name, 0, 9));
+            $lcdLine1 = str_pad(substr("UID:" . $rfidUid, 0, 16), 16, ' ');
+            $lcdLine2 = str_pad(substr("MILIK:" . $ownerShort, 0, 16), 16, ' ');
+            $message = "KTP [{$rfidUid}] sudah terdaftar milik {$existingUser->name} ({$existingUser->house?->house_code}).";
+        } else {
+            $lcdLine1 = str_pad(substr("UID:" . $rfidUid, 0, 16), 16, ' ');
+            $lcdLine2 = str_pad("SIAP DIDAFTAR", 16, ' ');
+            $message = "KTP [{$rfidUid}] berhasil discan! Buka aplikasi SMART-WARGA untuk menautkan.";
+        }
+
+        return response()->json([
+            'success' => true,
+            'rfid_uid' => $rfidUid,
+            'device_id' => $deviceId,
+            'already_registered' => (bool) $existingUser,
+            'owner' => $existingUser ? [
+                'id' => $existingUser->id,
+                'name' => $existingUser->name,
+                'house' => $existingUser->house?->house_code,
+            ] : null,
+            'message' => $message,
+            'lcd_line1' => $lcdLine1,
+            'lcd_line2' => $lcdLine2,
+        ]);
+    }
+
+    /**
+     * Get Latest Scanned KTP (Polled by Web Warga during pairing modal)
+     * GET /api/warga/ktp/latest-scan
+     */
+    public function getLatestKtpScan(Request $request)
+    {
+        $scan = Cache::get('latest_ktp_scan');
+
+        if (! $scan) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Belum ada kartu e-KTP yang di-tap pada perangkat scanner.',
+                'data' => null,
+            ]);
+        }
+
+        // Cek apakah scan masih segar (maksimal 90 detik yang lalu)
+        $isFresh = (now()->timestamp - ($scan['timestamp'] ?? 0)) <= 90;
+
+        return response()->json([
+            'success' => $isFresh,
+            'message' => $isFresh ? 'Kartu e-KTP terdeteksi dari scanner!' : 'Data scan KTP kedaluwarsa. Silakan tap kembali.',
+            'data' => $isFresh ? $scan : null,
+        ]);
+    }
+
+    /**
+     * Pair Scanned KTP to Authenticated Citizen Profile
+     * POST /api/warga/ktp/pair
+     * Payload: {"rfid_uid": "04A1B2C3"}
+     */
+    public function pairKtp(Request $request)
+    {
+        $validated = $request->validate([
+            'rfid_uid' => 'required|string|max:50',
+        ]);
+
+        $user = $request->user();
+        if (! $user) {
+            return response()->json(['success' => false, 'message' => 'Unauthorized'], 401);
+        }
+
+        $rfidUid = strtoupper(trim($validated['rfid_uid']));
+
+        // Cek apakah UID sudah dipakai warga lain
+        $conflict = User::with('house')->where('rfid_uid', $rfidUid)->where('id', '!=', $user->id)->first();
+        if ($conflict) {
+            return response()->json([
+                'success' => false,
+                'message' => "Kartu e-KTP [{$rfidUid}] sudah ditautkan ke warga lain ({$conflict->name} - {$conflict->house?->house_code}). Gunakan kartu Anda sendiri.",
+            ], 422);
+        }
+
+        $user->rfid_uid = $rfidUid;
+        $user->save();
+
+        // Bersihkan cache scan
+        Cache::forget('latest_ktp_scan');
+
+        return response()->json([
+            'success' => true,
+            'message' => "Selamat! e-KTP fisik Anda [{$rfidUid}] berhasil didaftarkan dan ditautkan ke akun SMART-WARGA.",
+            'user' => $user->fresh(['house']),
+        ]);
+    }
+
+    /**
+     * Unpair KTP from Authenticated Citizen Profile
+     * DELETE /api/warga/ktp/unpair
+     */
+    public function unpairKtp(Request $request)
+    {
+        $user = $request->user();
+        if (! $user) {
+            return response()->json(['success' => false, 'message' => 'Unauthorized'], 401);
+        }
+
+        $user->rfid_uid = null;
+        $user->save();
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Tautan kartu e-KTP fisik berhasil dilepas.',
+            'user' => $user->fresh(['house']),
+        ]);
+    }
 }
+

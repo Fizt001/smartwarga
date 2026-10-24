@@ -15,7 +15,8 @@ import {
   CheckCircle2,
   AlertTriangle,
   Clock,
-  DoorOpen
+  DoorOpen,
+  IdCard
 } from 'lucide-react';
 
 export default function IoTView() {
@@ -130,6 +131,29 @@ export default function IoTView() {
         body: JSON.stringify({
           location: 'Pos Gerbang Utama RT 01-03',
           trigger_type: 'hardware_button',
+        }),
+      });
+      setSimMsg(res.message);
+      await loadIoTData();
+    } catch (err: any) {
+      setSimMsg(err.message);
+    } finally {
+      setSimLoading(false);
+    }
+  };
+
+  const [simKtpUid, setSimKtpUid] = useState('KTP_DEMO_01');
+
+  const simulateKtpScan = async (uid?: string) => {
+    setSimLoading(true);
+    setSimMsg('');
+    const targetUid = (uid || simKtpUid || 'KTP_DEMO_01').trim();
+    try {
+      const res = await fetchApi('/iot/ktp/scan', {
+        method: 'POST',
+        body: JSON.stringify({
+          rfid_uid: targetUid,
+          device_id: 'AIO_KIOSK_SIM',
         }),
       });
       setSimMsg(res.message);
@@ -258,7 +282,7 @@ export default function IoTView() {
           Uji coba payload perangkat fisik ESP32 secara instan: tap absensi ronda, timbangan sampah otomatis (kredit dompet), atau tombol panik hardware.
         </p>
 
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 pt-1">
+        <div className="grid grid-cols-2 sm:grid-cols-5 gap-2 pt-1">
           <button
             onClick={simulateRondaTap}
             disabled={simLoading}
@@ -317,6 +341,21 @@ export default function IoTView() {
           </button>
 
           <button
+            onClick={() => simulateKtpScan(simKtpUid)}
+            disabled={simLoading}
+            className="p-2.5 rounded-xl text-xs font-bold flex flex-col items-center justify-center gap-1 border active:scale-95 transition bg-slate-800 hover:bg-slate-700 text-white border-indigo-500/60"
+          >
+            <div className="flex items-center gap-1">
+              <IdCard className="w-4 h-4 text-indigo-400" />
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400"></span>
+            </div>
+            <span>Scan e-KTP Mandiri</span>
+            <span className="text-[9px] font-mono text-indigo-400">
+              Mode 4: REG-KTP
+            </span>
+          </button>
+
+          <button
             onClick={simulatePanicButton}
             disabled={simLoading}
             className={`p-2.5 rounded-xl text-xs font-bold flex flex-col items-center justify-center gap-1 border active:scale-95 transition ${
@@ -334,6 +373,30 @@ export default function IoTView() {
               {isSirenOnline ? 'Siren Ready' : 'Siren Offline'}
             </span>
           </button>
+        </div>
+
+        {/* Baris Input UID Simulasi KTP */}
+        <div className="pt-2 border-t border-slate-800 flex flex-wrap items-center justify-between gap-2 text-xs">
+          <div className="flex items-center gap-2">
+            <span className="text-[11px] text-slate-400 font-medium">Uji UID e-KTP Simulasi:</span>
+            <input
+              type="text"
+              value={simKtpUid}
+              onChange={(e) => setSimKtpUid(e.target.value.toUpperCase())}
+              placeholder="Contoh: 04A1B2C3"
+              className="text-xs font-mono font-bold px-2 py-1 bg-slate-800 text-white rounded-lg border border-slate-700 focus:outline-none focus:border-indigo-400 uppercase w-32"
+            />
+            <button
+              onClick={() => simulateKtpScan(simKtpUid)}
+              disabled={simLoading}
+              className="px-2.5 py-1 bg-indigo-600 hover:bg-indigo-700 text-white text-[11px] font-bold rounded-lg transition"
+            >
+              Simulasikan Tap
+            </button>
+          </div>
+          <span className="text-[10px] text-slate-400">
+            Arsitektur: <strong className="text-emerald-400">Single ESP32 AIO (4 Mode Operasional)</strong>
+          </span>
         </div>
 
         {simMsg && (

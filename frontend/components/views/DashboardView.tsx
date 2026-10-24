@@ -136,6 +136,102 @@ export default function DashboardView({
   const [modalError, setModalError] = useState('');
   const [modalSuccess, setModalSuccess] = useState('');
 
+  // Modal Perekaman e-KTP Mandiri (RFID Scan)
+  const [showKtpModal, setShowKtpModal] = useState(false);
+  const [ktpPolling, setKtpPolling] = useState(false);
+  const [detectedUid, setDetectedUid] = useState<string>('');
+  const [detectedOwner, setDetectedOwner] = useState<string | null>(null);
+  const [detectedOwnerHouse, setDetectedOwnerHouse] = useState<string | null>(null);
+  const [ktpManualUid, setKtpManualUid] = useState<string>('');
+  const [ktpLoading, setKtpLoading] = useState(false);
+  const [ktpError, setKtpError] = useState('');
+  const [ktpSuccess, setKtpSuccess] = useState('');
+
+  useEffect(() => {
+    let interval: any = null;
+    if (showKtpModal) {
+      setKtpPolling(true);
+      setKtpError('');
+      setKtpSuccess('');
+      const pollScan = async () => {
+        try {
+          const res = await fetchApi('/warga/ktp/latest-scan');
+          if (res.success && res.data?.rfid_uid) {
+            setDetectedUid(res.data.rfid_uid);
+            setKtpManualUid(res.data.rfid_uid);
+            if (res.data.already_registered && res.data.owner_name && res.data.owner_id !== user?.id) {
+              setDetectedOwner(res.data.owner_name);
+              setDetectedOwnerHouse(res.data.owner_house);
+            } else {
+              setDetectedOwner(null);
+              setDetectedOwnerHouse(null);
+            }
+          }
+        } catch {
+          // ignore network hiccups
+        }
+      };
+      pollScan();
+      interval = setInterval(pollScan, 1500);
+    } else {
+      setKtpPolling(false);
+      setDetectedUid('');
+      setDetectedOwner(null);
+      setDetectedOwnerHouse(null);
+    }
+    return () => {
+      if (interval) clearInterval(interval);
+    };
+  }, [showKtpModal, user?.id]);
+
+  const handlePairKtp = async (uidToPair: string) => {
+    if (!uidToPair || !uidToPair.trim()) {
+      setKtpError('Silakan scan e-KTP pada scanner ESP32 atau masukkan UID kartu.');
+      return;
+    }
+    setKtpLoading(true);
+    setKtpError('');
+    setKtpSuccess('');
+    try {
+      const res = await fetchApi('/warga/ktp/pair', {
+        method: 'POST',
+        body: JSON.stringify({ rfid_uid: uidToPair.trim() }),
+      });
+      if (res.success) {
+        setKtpSuccess(res.message);
+        await refreshUser();
+        setTimeout(() => {
+          setShowKtpModal(false);
+          setKtpSuccess('');
+        }, 1800);
+      } else {
+        setKtpError(res.message || 'Gagal menautkan kartu e-KTP.');
+      }
+    } catch (err: any) {
+      setKtpError(err.message || 'Terjadi kesalahan saat menautkan e-KTP.');
+    } finally {
+      setKtpLoading(false);
+    }
+  };
+
+  const handleUnpairKtp = async () => {
+    if (!confirm('Apakah Anda yakin ingin melepas tautan fisik e-KTP dari akun Anda? Palang gerbang otomatis dan kios bank sampah tidak akan mengenali kartu ini sampai ditautkan kembali.')) return;
+    setKtpLoading(true);
+    try {
+      const res = await fetchApi('/warga/ktp/unpair', {
+        method: 'DELETE',
+      });
+      if (res.success) {
+        alert(res.message);
+        await refreshUser();
+      }
+    } catch (err: any) {
+      alert(err.message || 'Gagal melepas tautan e-KTP.');
+    } finally {
+      setKtpLoading(false);
+    }
+  };
+
   const loadFamilyMembers = async () => {
     if (!isApproved) return;
     setFamilyLoading(true);
@@ -730,6 +826,89 @@ export default function DashboardView({
           </div>
         </div>
       </div>
+
+      {/* 2.5 Banner Akses Fisik e-KTP & Sensor RFID */}
+      {isApproved && (
+        <div className={`rounded-3xl p-5 sm:p-6 transition border shadow-sm relative overflow-hidden ${
+          user?.rfid_uid 
+            ? 'bg-gradient-to-r from-emerald-950 via-slate-900 to-teal-950 text-white border-emerald-500/30' 
+            : 'bg-gradient-to-r from-blue-950 via-indigo-950 to-slate-950 text-white border-indigo-500/30'
+        }`}>
+          <div className="absolute -right-8 -bottom-8 w-40 h-40 rounded-full bg-white/5 blur-2xl pointer-events-none"></div>
+          
+          <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-4">
+            <div className="flex items-start sm:items-center gap-4">
+              <div className={`w-12 h-12 rounded-2xl flex items-center justify-center shrink-0 shadow-inner ${
+                user?.rfid_uid 
+                  ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-400/30' 
+                  : 'bg-indigo-500/20 text-indigo-400 border border-indigo-400/30 animate-pulse'
+              }`}>
+                <IdCard className="w-6 h-6" />
+              </div>
+              <div>
+                <div className="flex flex-wrap items-center gap-2">
+                  <h3 className="text-base font-black tracking-tight text-white">
+                    {user?.rfid_uid ? 'Akses Fisik e-KTP Aktif' : 'Perekaman Mandiri e-KTP / Kartu RFID Warga'}
+                  </h3>
+                  {user?.rfid_uid ? (
+                    <span className="inline-flex items-center gap-1 text-[10px] bg-emerald-500/20 text-emerald-300 font-mono font-bold px-2.5 py-0.5 rounded-full border border-emerald-500/40">
+                      <CheckCircle2 className="w-3 h-3 text-emerald-400" />
+                      UID: {user.rfid_uid}
+                    </span>
+                  ) : (
+                    <span className="text-[10px] bg-amber-500/20 text-amber-300 font-bold px-2 py-0.5 rounded-full border border-amber-500/40">
+                      Belum Ditautkan
+                    </span>
+                  )}
+                </div>
+                <p className="text-xs text-slate-300 mt-1 max-w-2xl leading-relaxed">
+                  {user?.rfid_uid 
+                    ? 'Kartu e-KTP fisik Anda telah terintegrasi! Palang gerbang pos satpam otomatis membuka (90°) saat di-tap, dan transaksi timbangan bank sampah langsung mencairkan saldo ke dompet Anda.'
+                    : 'Pindai fisik e-KTP Anda melalui perangkat scanner ESP32 (Kios Mode REG-KTP atau Scanner Meja Satpam) agar identitas digital Anda dapat membuka gerbang otomatis dan menimbang sampah mandiri.'}
+                </p>
+                {user?.rfid_uid && (
+                  <div className="flex flex-wrap items-center gap-3 mt-2 text-[11px] text-emerald-300/90 font-medium">
+                    <span className="flex items-center gap-1">✓ Gerbang Masuk Satpam</span>
+                    <span className="flex items-center gap-1">✓ Bank Sampah Digital</span>
+                    <span className="flex items-center gap-1">✓ Kios KMS Posyandu</span>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            <div className="flex items-center gap-2 shrink-0 pt-2 md:pt-0">
+              {user?.rfid_uid ? (
+                <>
+                  <button
+                    type="button"
+                    onClick={() => setShowKtpModal(true)}
+                    className="px-3.5 py-2 rounded-xl bg-white/10 hover:bg-white/20 text-white text-xs font-bold transition border border-white/10"
+                  >
+                    Ganti Kartu
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleUnpairKtp}
+                    disabled={ktpLoading}
+                    className="px-3.5 py-2 rounded-xl bg-rose-500/20 hover:bg-rose-500/30 text-rose-300 text-xs font-bold transition border border-rose-500/30 disabled:opacity-50"
+                  >
+                    Lepas
+                  </button>
+                </>
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => setShowKtpModal(true)}
+                  className="px-5 py-2.5 rounded-xl bg-white text-slate-900 hover:bg-slate-100 text-xs font-black shadow-lg shadow-indigo-500/20 transition active:scale-95 flex items-center gap-2"
+                >
+                  <Radio className="w-4 h-4 text-indigo-600 animate-pulse" />
+                  <span>📲 Pindai & Tautkan e-KTP Mandiri</span>
+                </button>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* 3. Main 2-Column Responsive Widescreen Grid */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
@@ -1616,6 +1795,146 @@ export default function DashboardView({
           </div>
         </div>
       </div>
+
+      {/* Modal Perekaman Mandiri e-KTP (RFID) */}
+      {showKtpModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-fade-in">
+          <div className="bg-white rounded-3xl max-w-lg w-full p-6 shadow-2xl relative max-h-[92vh] overflow-y-auto">
+            {/* Header */}
+            <div className="flex items-center justify-between pb-3 border-b border-slate-100">
+              <div className="flex items-center gap-2.5">
+                <div className="w-10 h-10 rounded-2xl bg-indigo-100 text-indigo-700 flex items-center justify-center shadow-inner">
+                  <IdCard className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="text-base font-black text-slate-900">
+                    Pendaftaran e-KTP Fisik Mandiri
+                  </h3>
+                  <p className="text-[11px] text-slate-500">
+                    Akun: <span className="font-bold text-slate-800">{user?.name}</span> ({user?.house?.house_code || 'Warga RT'})
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowKtpModal(false)}
+                className="w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-600 flex items-center justify-center text-sm font-bold transition"
+              >
+                ✕
+              </button>
+            </div>
+
+            {/* Petunjuk Penggunaan */}
+            <div className="mt-4 p-3.5 bg-blue-50/80 border border-blue-200 rounded-2xl text-[11px] text-blue-900 leading-relaxed">
+              💡 <strong>Cara Registrasi Cepat:</strong>
+              <ol className="list-decimal list-inside mt-1.5 space-y-1 text-blue-800 font-medium">
+                <li>Bawa fisik <strong>e-KTP</strong> atau kartu RFID Anda ke dekat sensor <strong>ESP32</strong> (bisa Kios Balai Warga Mode <em>REG-KTP</em> atau Scanner Meja Satpam).</li>
+                <li>Tempelkan (tap) kartu pada scanner RFID. Radar di bawah akan otomatis mendeteksi UID kartu Anda dalam 1 detik!</li>
+              </ol>
+            </div>
+
+            {/* Pesan Error / Sukses */}
+            {ktpError && (
+              <div className="mt-3 p-3 bg-red-50 text-red-700 text-xs font-bold rounded-xl border border-red-200">
+                {ktpError}
+              </div>
+            )}
+
+            {ktpSuccess && (
+              <div className="mt-3 p-3 bg-emerald-50 text-emerald-800 text-xs font-bold rounded-xl border border-emerald-200 flex items-center gap-2">
+                <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+                <span>{ktpSuccess}</span>
+              </div>
+            )}
+
+            {/* Radar Listening Area */}
+            <div className="mt-4 p-5 rounded-2xl bg-slate-900 text-white text-center relative overflow-hidden shadow-inner">
+              <div className="flex flex-col items-center justify-center relative z-10 py-2">
+                <div className="relative mb-3">
+                  <div className={`w-16 h-16 rounded-full flex items-center justify-center ${
+                    detectedUid ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-400' : 'bg-indigo-500/20 text-indigo-400 border border-indigo-400'
+                  }`}>
+                    {detectedUid ? <CheckCircle2 className="w-8 h-8 text-emerald-400" /> : <Radio className="w-8 h-8 animate-pulse text-indigo-400" />}
+                  </div>
+                  {!detectedUid && (
+                    <span className="absolute inset-0 rounded-full border-2 border-indigo-400/40 animate-ping pointer-events-none"></span>
+                  )}
+                </div>
+
+                <div className="text-xs font-bold text-slate-300">
+                  {detectedUid ? 'KARTU e-KTP TERDETEKSI DARI SCANNER' : 'MENDENGARKAN SCANNER ESP32...'}
+                </div>
+
+                {detectedUid ? (
+                  <div className="mt-2 text-xl font-mono font-black text-emerald-300 bg-emerald-950/80 px-4 py-1.5 rounded-xl border border-emerald-500/40 tracking-wider">
+                    {detectedUid}
+                  </div>
+                ) : (
+                  <div className="mt-1 text-[11px] text-slate-400 animate-pulse">
+                    Silakan tempelkan e-KTP Anda ke scanner sekarang...
+                  </div>
+                )}
+
+                {detectedOwner && (
+                  <div className="mt-2.5 p-2 bg-amber-500/20 border border-amber-400/40 rounded-xl text-[11px] text-amber-200 font-medium">
+                    ⚠️ Kartu ini saat ini sudah terdaftar milik <strong>{detectedOwner}</strong> ({detectedOwnerHouse || 'Warga'}).
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Tombol Tautkan Otomatis (Jika Terdeteksi) */}
+            {detectedUid && !detectedOwner && (
+              <div className="mt-4">
+                <button
+                  type="button"
+                  onClick={() => handlePairKtp(detectedUid)}
+                  disabled={ktpLoading}
+                  className="w-full py-3 rounded-2xl bg-emerald-600 hover:bg-emerald-700 text-white font-black text-xs shadow-lg shadow-emerald-600/30 transition active:scale-95 disabled:opacity-50 flex items-center justify-center gap-2"
+                >
+                  <CheckCircle2 className="w-4 h-4" />
+                  <span>{ktpLoading ? 'Menautkan e-KTP...' : `Tautkan e-KTP (${detectedUid}) ke Akun Saya`}</span>
+                </button>
+              </div>
+            )}
+
+            {/* Opsi Input Manual (Fallback untuk Pengujian Tanpa Hardware) */}
+            <div className="mt-5 pt-4 border-t border-slate-100">
+              <label className="block text-xs font-bold text-slate-700 mb-1.5">
+                Atau Masukkan / Ubah UID Kartu Manual (Untuk Uji Coba):
+              </label>
+              <div className="flex gap-2">
+                <input
+                  type="text"
+                  value={ktpManualUid}
+                  onChange={(e) => setKtpManualUid(e.target.value.toUpperCase())}
+                  placeholder="Contoh: 04A1B2C3"
+                  className="flex-1 text-xs font-mono font-bold px-3 py-2.5 rounded-xl border border-slate-300 focus:ring-2 focus:ring-indigo-500 focus:outline-none uppercase"
+                />
+                <button
+                  type="button"
+                  onClick={() => handlePairKtp(ktpManualUid)}
+                  disabled={ktpLoading || !ktpManualUid.trim()}
+                  className="px-4 py-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold transition disabled:opacity-40"
+                >
+                  {ktpLoading ? 'Proses...' : 'Tautkan'}
+                </button>
+              </div>
+            </div>
+
+            {/* Footer Tutup */}
+            <div className="mt-4 pt-3 border-t border-slate-100 flex justify-end">
+              <button
+                type="button"
+                onClick={() => setShowKtpModal(false)}
+                className="px-4 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold transition"
+              >
+                Tutup
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Modal Tambah KK Tambahan (Khusus KK Utama) */}
       {showAddKkModal && (

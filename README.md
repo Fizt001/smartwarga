@@ -1,240 +1,241 @@
-# SMART-WARGA — Digital Management System
-### Web + IoT Integrated Platform untuk Lingkungan Warga Modern (RW & RT)
+# SMART-WARGA — Digital Management System & Single ESP32 IoT Hub
+### Integrated Civic Operating System • Smart Neighborhood & IoT Automation (RW & RT)
 
-Platform digital terpadu untuk tata kelola administrasi rukun warga, transparansi keuangan lingkungan (IPL & Bank Sampah), pelayanan persuratan, serta integrasi hardware IoT (Gate Otomatis, Panic Button Darurat, Sirine Wilayah, dan Kios Posyandu Mandiri).
+[![Laravel 11](https://img.shields.io/badge/Laravel-11.x-FF2D20?style=for-the-badge&logo=laravel&logoColor=white)](https://laravel.com)
+[![Next.js 16](https://img.shields.io/badge/Next.js-16.3%20Turbopack-000000?style=for-the-badge&logo=nextdotjs&logoColor=white)](https://nextjs.org)
+[![ESP32](https://img.shields.io/badge/Hardware-Single%20ESP32%20DevKit%20V1-E7352C?style=for-the-badge&logo=espressif&logoColor=white)](https://espressif.com)
+[![MySQL](https://img.shields.io/badge/Database-MySQL%20%2F%20Herd-4479A1?style=for-the-badge&logo=mysql&logoColor=white)](https://herd.laravel.com)
+[![Tests Passed](https://img.shields.io/badge/Tests-119%20Passed%20%28554%20Assertions%29-10B981?style=for-the-badge&logo=checkmarx&logoColor=white)](backend/tests/Feature)
+
+Platform tata kelola lingkungan terpadu untuk rukun warga tingkat RW & RT modern. Mengintegrasikan **Next.js 16 (Turbopack)** pada antarmuka web warga, **Laravel 11 REST API** dengan proteksi transaksi atomik, dan **1 Unit Mikrokontroler ESP32 DevKit V1 (All-in-One Controller)** yang mengendalikan seluruh sistem fisik lingkungan: palang gerbang pos satpam, alarm darurat panic button, timbangan bank sampah, posyandu mandiri, serta fitur **Perekaman Mandiri e-KTP Warga**.
 
 ---
 
-## 🏛️ Arsitektur Monorepo
+## 📚 Buku Panduan Resmi & Dokumentasi Akademis
+
+Dokumentasi lengkap perakitan fisik, diagram pengkabelan, alur komunikasi REST API, dan analisis akademis pencegahan antrean telah dikompilasi dalam format PDF resmi:
+
+👉 **[Buku_Panduan_IoT_ESP32_SMART_WARGA.pdf](Buku_Panduan_IoT_ESP32_SMART_WARGA.pdf)**  
+*(Tersedia juga salinannya di dalam folder firmware: [`firmware/smartwarga_single_esp32_aio/Buku_Panduan_IoT_ESP32_SMART_WARGA.pdf`](firmware/smartwarga_single_esp32_aio/Buku_Panduan_IoT_ESP32_SMART_WARGA.pdf))*
+
+---
+
+## 🏛️ Arsitektur Monorepo & Topologi Sistem
 
 ```
 smartwarga/
-├── backend/            → Laravel 11+ RESTful API + Sanctum + Reverb WebSocket + MySQL/MariaDB
-├── frontend/           → Next.js 16+ (App Router), Tailwind CSS, Lucide Icons, Responsive UI
-├── firmware/           → Sketsa Arduino C++ untuk 3 Node ESP32 (Gate, Sirine, Bank Sampah)
-└── README.md           → Dokumentasi Utama Sistem Monorepo
+├── Buku_Panduan_IoT_ESP32_SMART_WARGA.pdf  → Buku Panduan Master PDF (9 Halaman Siap Cetak/Uji Sidang)
+├── backend/                                 → Laravel 11 REST API, Sanctum RBAC, Reverb WebSockets, DomPDF
+├── frontend/                                → Next.js 16 (App Router), Tailwind CSS, Lucide Icons, Turbopack
+├── firmware/
+│   ├── smartwarga_single_esp32_aio/        → [RESMI] Firmware All-in-One untuk 1 Board ESP32 (4 Mode Operasional)
+│   └── smartwarga_esp32_ktp_enroller/      → [OPSIONAL] Dedicated Desk Scanner ESP32 Khusus Meja Administrasi
+└── docs/                                    → Arsip PDF dan panduan pendukung
 ```
 
 ```mermaid
 graph TD
     subgraph Warga & Pengurus
-        UserMobile["Smartphone Warga (Mobile Web)"]
-        AdminDesktop["Dashboard Pengurus (Desktop)"]
+        UserMobile["Smartphone Warga (Web App)"]
+        AdminDesktop["Dashboard Pengurus & Satpam"]
     end
 
     subgraph Frontend Next.js 16
         NextApp["Next.js App Router (Turbopack)"]
-        Routing["Dynamic URL Routing (/dashboard, /ipl, /layanan, /pengaduan, /iot, /pengurus)"]
+        KtpModal["Modal Perekaman e-KTP Mandiri (Live RFID Radar)"]
+        IoTSim["Hardware Live Simulator Panel (/iot)"]
     end
 
     subgraph Backend Laravel 11
-        ApiRouter["REST API Gateway (Sanctum RBAC)"]
-        Reverb["Laravel Reverb (WebSockets & Events)"]
-        DomPdf["DomPDF Generator (Stempel Digital)"]
+        ApiRouter["REST API Gateway (Sanctum Auth)"]
+        KtpEnroller["KTP Pairing Service (Cache & Anti-Duplikasi)"]
+        AtomicDB["ACID Transaction (lockForUpdate Saldo)"]
+        Reverb["Laravel Reverb (WebSockets S.O.S.)"]
     end
 
-    subgraph IoT Nodes ESP32
-        Node1["Node 1: Pos Satpam (RFID + Servo Gate 90° + Panic Button)"]
-        Node2["Node 2: Balai RT (Sirine Relay Receiver)"]
-        Node3["Node 3: Sentra RW (Timbangan HX711 Bank Sampah & Posyandu)"]
-    end
-
-    subgraph Database
-        MySQL[("MySQL/MariaDB: smart_warga_db (300 Hunian, 14 Foreign Keys Verified)")]
+    subgraph Hardware: Single ESP32 DevKit V1 AIO
+        ESP32Core["ESP32 DevKit V1 (FreeRTOS State Machine)"]
+        Rfid1["Reader 1: Pos Satpam (GPIO 5)"]
+        Rfid2["Reader 2: Kios Layanan / Bank Sampah (GPIO 4)"]
+        GateServo["Servo SG90: Palang Pintu (GPIO 13)"]
+        LcdDisplay["LCD 16x2 I2C: Display Info (GPIO 21/22)"]
+        Hx711Scale["Load Cell 5kg + HX711: Timbangan (GPIO 16/17)"]
+        PanicBtn["Push Button Merah: S.O.S. (GPIO 27)"]
+        ModeBtn["Push Button Kuning: Mode Layanan (GPIO 14)"]
+        BuzzerAudio["Active Buzzer: Indikator Audio (GPIO 25)"]
     end
 
     UserMobile --> NextApp
     AdminDesktop --> NextApp
-    NextApp --> Routing
+    NextApp --> KtpModal
+    NextApp --> IoTSim
     NextApp -->|REST API & Bearer Token| ApiRouter
-    NextApp -->|Echo WebSocket| Reverb
 
-    Node1 -->|POST /api/iot/ronda/tap & panic-button| ApiRouter
-    Node2 -->|GET /api/iot/sirine/status| ApiRouter
-    Node3 -->|POST /api/iot/bank-sampah/setor & posyandu/catat| ApiRouter
+    ESP32Core --> Rfid1
+    ESP32Core --> Rfid2
+    ESP32Core --> GateServo
+    ESP32Core --> LcdDisplay
+    ESP32Core --> Hx711Scale
+    ESP32Core --> PanicBtn
+    ESP32Core --> ModeBtn
+    ESP32Core --> BuzzerAudio
 
-    ApiRouter --> MySQL
-    ApiRouter --> DomPdf
-    ApiRouter -->|Broadcast Emergency Events| Reverb
+    ESP32Core -->|POST /api/iot/ronda/tap| ApiRouter
+    ESP32Core -->|POST /api/iot/bank-sampah/setor| ApiRouter
+    ESP32Core -->|POST /api/iot/posyandu/catat| ApiRouter
+    ESP32Core -->|POST /api/iot/panic-button| ApiRouter
+    ESP32Core -->|POST /api/iot/ktp/scan| KtpEnroller
+    ESP32Core -->|POST /api/iot/heartbeat| ApiRouter
+
+    KtpModal -->|GET /api/warga/ktp/latest-scan & POST /pair| KtpEnroller
+    ApiRouter --> AtomicDB
+    ApiRouter -->|Broadcast Darurat| Reverb
 ```
 
 ---
 
-## 🧭 Dynamic URL Routing (Clean Slashes & Deep Linking)
+## ⚡ Arsitektur Resmi: Single ESP32 All-in-One (Opsi 1)
 
-Aplikasi telah dilengkapi sinkronisasi dua arah (*bidirectional URL synchronization*) menggunakan History API (`pushState` & `popstate`), sehingga address bar browser selalu menampilkan lokasi halaman secara rapi dan mendukung *refresh/deep-link*:
+Sistem dirancang secara cerdas agar **TIDAK MEMBUTUHKAN BANYAK ESP32 (HEMAT ANGGARAN & IDEAL UNTUK SIDANG PENGUJIAN)**. Seluruh fungsionalitas dijalankan oleh **1 board ESP32 DevKit V1**:
 
-* **`/dashboard`** : Beranda Warga & Accordion Kartu Keluarga (KK Utama & KK Pendukung)
-* **`/ipl`** : Kalender 12 Bulan Iuran IPL, Riwayat Pembayaran, & QRIS
-* **`/layanan`** : Portal Layanan Warga
-  * `/layanan/surat` : Pengajuan Surat Digital (SKCK, Domisili, SKTM, Usaha)
-  * `/layanan/umkm` : Etalase Produk UMKM Warga & WhatsApp Order
-  * `/layanan/koperasi` : Koperasi Simpan Pinjam (Bunga 1%/bln)
-  * `/layanan/aset` : Peminjaman Tenda, Sound System, & Aset Fasum
-  * `/layanan/posyandu` : Layanan Posyandu Balita & Skrining Lansia
-  * `/layanan/rukam` : RUKAM (Santunan Duka) & Booking Ambulans 24/7
-* **`/pengaduan`** : Pusat Pengaduan & Aspirasi Warga (+ Riwayat Respon Pengurus)
-* **`/iot`** : Monitoring Wilayah IoT Live (Kontrol Sirine, Log Gate, & Timbangan)
-* **`/pengurus`** : Dashboard Khusus Pengurus RT/RW
-  * `/pengurus/sensus` : Manajemen Sensus 300 Hunian & KK Digital
-  * `/pengurus/ipl` : Audit Rekap Kas RT (60%) & Kas RW (40%)
-  * `/pengurus/kegiatan` : Agenda & Publikasi LPJ Transparan
+### 4 Mode Operasional Kios (Dapat Diganti via Tombol Mode GPIO 14):
+1. **Mode 1: `MD:BS-PLASTIK >`** &mdash; Timbangan bank sampah plastik (Tarif: Rp 2.000 / kg).
+2. **Mode 2: `MD:BS-KALENG  >`** &mdash; Timbangan bank sampah kaleng (Tarif: Rp 5.000 / kg).
+3. **Mode 3: `MD:POSYANDU   >`** &mdash; Pencatatan mandiri berat badan balita untuk KMS digital.
+4. **Mode 4: `MD:DAFTAR-KTP >`** &mdash; **Perekaman Mandiri e-KTP Warga** (Tap kartu untuk langsung memasangkan identitas ke akun web).
+
+*Catatan:* Di samping 4 mode kios di atas, **Reader 1 (Gerbang Masuk) dan Tombol Panik Darurat (GPIO 27) selalu aktif stand-by 24/7** secara non-blocking (*interrupt driven*).
 
 ---
 
-## 👥 Spesifikasi Wilayah & User Roles (RBAC)
+## 🔌 Panduan Pengkabelan (Wiring Pin-by-Pin Bebas Konflik)
 
-- **Cakupan Wilayah:** 1 Rukun Warga (RW 05) menaungi 3 Rukun Tetangga (RT 01, RT 02, RT 03).
-- **Kapasitas Hunian:** Masing-masing RT memiliki kuota 100 unit rumah terdata (Total 300 unit rumah: Blok A1-A25, B1-B25, C1-C25, D1-D25 per RT).
-- **Struktur Kartu Keluarga (KK):**
-  * **KK Utama (KK Inti):** Pemilik/Penanggung Jawab Rumah yang berkewajiban atas iuran IPL unit.
-  * **KK Pendukung (KK Tambahan):** Keluarga mandiri yang tinggal satu atap; sah terdata sensus & berhak layanan administrasi **bebas pungutan IPL ganda**.
-- **Daftar Role:**
-  * `super_admin`: Akses menyeluruh sistem dan konfigurasi IoT.
-  * `rw`: Validasi surat akhir, broadcast kegiatan tingkat RW, monitoring kas RW.
-  * `rt`: Approval pendaftaran warga baru, approval surat tingkat RT, tagihan IPL RT.
-  * `bendahara`: Verifikasi pembayaran IPL, verifikasi top-up dompet, pencairan pinjaman & santunan RUKAM.
-  * `sekretaris`: Pengelolaan arsip dan pengumuman kegiatan.
-  * `warga`: Mengajukan surat, bayar IPL, transaksi bank sampah, lapor aduan, belanja UMKM.
+> [!CAUTION]
+> **ATURAN TEGANGAN KRUSIAL (PENCEGAHAN KERUSAKAN CHIP):**
+> * **Modul RFID RC522 HANYA MENGGUNAKAN TEGANGAN 3.3V:** Hubungkan pin VCC kedua modul RFID <u>hanya ke pin 3V3 ESP32</u>. Menyambungkan ke 5V akan merusak modul RFID secara permanen.
+> * **Servo SG90 & LCD 16x2 WAJIB TEGANGAN 5V:** Hubungkan VCC Servo dan LCD ke pin **VIN (5V)** ESP32 (daya USB). Jika disambung ke 3.3V, servo tidak kuat bergerak dan teks LCD menjadi redup/gelap.
+> * **Common Ground:** Seluruh GND modul harus disatukan ke rel ground breadboard.
 
-### Approval Workflow Pendaftaran Warga
-1. Warga mendaftar via web dengan memilih RT, Blok, dan Nomor Rumah (+ opsional UID Kartu RFID).
-2. Status pendaftaran awal adalah **`pending`**.
-3. Akun `pending` hanya dapat melihat profil. Seluruh menu layanan akan terkunci.
-4. Pengurus RT memeriksa dan mengklik tombol **ACC / Approve**.
-5. Status berubah menjadi **`approved`**, rumah ditandai terhuni, dan seluruh fitur langsung aktif.
+| Periferal | Pin Modul | Pin ESP32 DevKit V1 | Protokol | Keterangan & Catatan |
+|---|---|---|---|---|
+| **Catu Daya 3.3V** | Rel Positif (+) | **Pin 3V3** | Power Line | Khusus VCC Reader 1 dan VCC Reader 2 |
+| **Catu Daya 5.0V** | Rel Positif (+) | **Pin VIN (5V)** | Power Line | Mencatu VCC Servo, LCD 16x2, dan HX711 |
+| **Ground (GND)** | Rel Negatif (-) | **Pin GND** | Common GND | Satukan seluruh kaki GND komponen |
+| **RFID Reader 1 (Gerbang)** | SDA (SS)<br>SCK<br>MOSI<br>MISO<br>RST<br>VCC / GND | **GPIO 5**<br>GPIO 18<br>GPIO 23<br>GPIO 19<br>GPIO 26<br>3V3 / GND | SPI Bus | Chip Select 1 (Pos Ronda & Gerbang)<br>Shared SPI Clock<br>Shared Master Out Slave In<br>Shared Master In Slave Out<br>Shared Reset Pin<br>**3.3V Only!** |
+| **RFID Reader 2 (Kios)** | SDA (SS)<br>SCK, MOSI, MISO<br>RST<br>VCC / GND | **GPIO 4**<br>GPIO 18, 23, 19<br>GPIO 26<br>3V3 / GND | SPI Bus | Chip Select 2 (Kios Bank Sampah & Posyandu)<br>Jalur SPI paralel bersama Reader 1<br>Jalur reset paralel bersama Reader 1<br>**3.3V Only!** |
+| **Servo Motor SG90** | PWM (Kuning/Oranye)<br>VCC (Merah)<br>GND (Cokelat/Hitam) | **GPIO 13**<br>VIN (5V)<br>GND | PWM Control | Sudut: 0° (Tertutup), 90° (Terbuka 4 Detik)<br>Wajib 5V agar torsi mengangkat palang kuat |
+| **LCD 16x2 + I2C** | SDA<br>SCL<br>VCC / GND | **GPIO 21**<br>GPIO 22<br>VIN (5V) / GND | I2C Bus | Serial Data (Alamat I2C: `0x27` / `0x3F`)<br>Serial Clock<br>Wajib 5V agar lampu latar terang |
+| **Load Cell 5kg + HX711** | DT (Data)<br>SCK (Clock)<br>VCC / GND | **GPIO 16**<br>GPIO 17<br>VIN (5V) / GND | 2-Wire Serial | Serial data ADC 24-bit timbangan presisi<br>Clock konversi<br>Daya modul HX711 |
+| **Tombol Panik (Merah)** | Kaki 1 ke GPIO, Kaki 2 ke GND | **GPIO 27** | INPUT_PULLUP | Ditekan = LOW (Sirine & Alert Darurat Aktif) |
+| **Tombol Mode (Kuning)** | Kaki 1 ke GPIO, Kaki 2 ke GND | **GPIO 14** | INPUT_PULLUP | Ditekan = LOW (Rotasi 4 Mode Operasional Kios) |
+| **Active Buzzer 5V** | Positif (+)<br>Negatif (-) | **GPIO 25**<br>GND | Digital Output | Bip Konfirmasi (2x) & Sirene Peringatan |
 
----
-
-## ⚡ 3 Node Integrasi Hardware IoT (ESP32)
-
-### 1. Node 1: Pos Satpam / Gerbang Masuk Utama
-- **Hardware:** ESP32 + RFID RC522 + Servo SG90 + Push Button Darurat.
-- **Endpoint:**
-  * `POST /api/iot/ronda/tap`  
-    Payload: `{"rfid_uid": "STRING", "post_id": "POS_01"}`  
-    Respon: `gate_open: true`, `servo_angle: 90`, `open_duration_ms: 4000`, `lcd_line1`, `lcd_line2`.  
-    *Jika kartu tidak terdaftar:* HTTP 404, `gate_open: false`, LCD `KARTU DITOLAK` / `TIDAK TERDAFTAR`.
-  * `POST /api/iot/panic-button`  
-    Payload: `{"location": "STRING", "trigger_type": "hardware_button"}`  
-    Respon: HTTP 201, `siren_triggered: true`, membuat log darurat aktif di database & broadcast WebSocket.
-
-### 2. Node 2: Titik Sirine Wilayah RT
-- **Hardware:** ESP32 + Modul Relay 5V + Horn Sirine 12V/220V + Strobe LED.
-- **Endpoint:**
-  * `GET /api/iot/sirine/status`  
-    Respon: `{"siren_active": true/false, "reason": "STRING", "timestamp": "..."}`  
-    ESP32 melakukan polling setiap 3–5 detik.
-  * `POST /api/iot/sirine/toggle`  
-    Payload: `{"is_active": false, "reason": "Terkendali"}`  
-    Mematikan sirine sekaligus otomatis menandai seluruh insiden aktif menjadi `status: handled` dengan stempel waktu `resolved_at`.
-
-### 3. Node 3: Terminal Mandiri Bank Sampah & Posyandu
-- **Hardware:** ESP32 + RFID RC522 + Timbangan Load Cell HX711 + Sensor Jarak HC-SR04 + LCD 16x2 I2C.
-- **Endpoint:**
-  * `POST /api/iot/bank-sampah/setor`  
-    Payload: `{"rfid_uid": "STRING", "kategori": "kaleng|plastik", "berat_gram": NUMBER}`  
-    *Logika:* Menghitung $\text{Nominal} = (\text{berat\_gram} / 1000) \times \text{Tarif}$ (min Rp 100).  
-    Kredit otomatis masuk ke `Wallet` warga via *DB Transaction*, tercatat di buku besar `WalletTransaction` (ref: `BS-...`), dan menghasilkan output teks LCD 16x2 terformat.
-  * `POST /api/iot/posyandu/catat`  
-    Payload: `{"rfid_uid": "STRING", "berat_kg": NUMBER, "tinggi_cm": NUMBER}`  
-    Tercatat otomatis ke rekam medis KMS balita.
+### Sambungan Kabel Load Cell 4-Warna ke Modul HX711:
+* **Kabel Merah** $\rightarrow$ Terminal `E+` (Excitation +)
+* **Kabel Hitam** $\rightarrow$ Terminal `E-` (Excitation -)
+* **Kabel Putih** $\rightarrow$ Terminal `A-` (Signal -)
+* **Kabel Hijau** $\rightarrow$ Terminal `A+` (Signal +)
 
 ---
 
-## 📦 11 Modul Lengkap & Status Pengujian (105 Tests, 507 Assertions — 100% PASS)
+## 🎓 Analisis Akademis & Penanganan Kasus Tabrakan Antrean (Sidang Dosen)
 
-| No | Modul Sistem | Cakupan Fitur | Test Suite |
-|:---:|:---|:---|:---:|
-| 1 | **Sensus 300 Hunian & KK Digital** | Struktur multi-keluarga (KK Utama & KK Pendukung), penetapan Kepala Keluarga, relasi anggota keluarga. | Feature Tested |
-| 2 | **IPL 12 Bulan, QRIS & Kas RT/RW** | Kalender tagihan 12 bulan, QRIS statis & dompet, auto-split kas RT (60%) & RW (40%). | `IplAccumulationTest.php` (2 tests) |
-| 3 | **Payroll Satpam & Petugas Sampah** | Penggajian rutin, audit kas operasional, approval berjenjang pengurus. | Feature Tested |
-| 4 | **Persuratan Digital & Download PDF** | SKCK, Domisili, SKTM, approval berjenjang RT/RW, generate & download PDF stempel digital. | `LetterTest.php` (15 tests) |
-| 5 | **Layanan Pengaduan Warga** | Lapor aduan dengan foto, tracking status realtime (*Laporan Masuk -> Diproses -> Selesai*), robust timeline. | `ComplaintTest.php` (10 tests) |
-| 6 | **Peminjaman Aset Fasum & Donasi** | Peminjaman tenda, sound system, kursi warga, batas kapasitas, dan donasi kas pemeliharaan. | `AssetLoanTest.php` (14 tests) |
-| 7 | **Koperasi Simpan Pinjam & UMKM** | Plafon pinjaman s.d Rp 50jt, bunga 1%/bulan, etalase katalog produk & order WA penjual. | `KoperasiAndUmkmTest.php` (11 tests) |
-| 8 | **Posyandu Digital Terpadu** | KMS Balita mandiri, jadwal imunisasi wajib anak, dan skrining berkala kesehatan lansia. | `PosyanduDigitalTest.php` (12 tests) |
-| 9 | **RUKAM & Ambulans Siaga Warga** | Santunan duka kematian Rp 2.500.000, armada ambulans 24/7, booking darurat & dispatch. | `RukamAndAmbulanceTest.php` (14 tests) |
-| 10 | **Monitoring Wilayah & IoT Hardware** | Tap RFID gerbang servo 90°, Panic Button, horn sirine relay, timbangan bank sampah HX711 LCD 16x2. | `IoTMonitoringTest.php` (17 tests) |
-| 11 | **Agenda Warga, RSVP & LPJ Keuangan** | Countdown Hari-H/H-1/H-7, RSVP hadir/izin (+ alasan), donasi swadaya, dan LPJ realisasi transparan. | `AnnouncementTest.php` (14 tests) |
+Dokumen ini memuat solusi teknis atas 6 skenario kegagalan antrean (*edge cases*) yang sering ditanyakan dosen penguji:
 
----
+### 1. Proteksi Palang Menabrak Kendaraan/Warga (*Gate Collision Protection*)
+* **Masalah:** Palang turun saat kendaraan warga masih melintas.
+* **Solusi SMART-WARGA:**
+  1. *Hold-Open Timer (4000ms):* Memberikan jendela waktu aman yang cukup bagi kendaraan roda dua/empat melintas.
+  2. *Torque-Safe Micro Actuator:* Servo SG90 memiliki batas torsi aman (&plusmn;1.8 kg/cm). Jika palang terhalang atap mobil atau kepala warga, motor servo berhenti tanpa mencederai manusia atau merusak bodi mobil.
 
-## 🔒 Audit Integritas Relasi Database (Foreign Key Health Check)
+### 2. Antrean Beruntun di Gerbang (*Anti-Tailgating & FIFO Logging*)
+* **Masalah:** Warga B men-tap kartu saat gerbang masih terbuka karena Warga A.
+* **Solusi SMART-WARGA:**
+  Firmware mendeteksi tap valid saat servo berada pada posisi 90°, seketika mereset timer hold-open (+4000ms perpanjangan) dan tetap mengirim HTTP request untuk Warga B. Kedua warga tercatat independen pada tabel `ronda_logs`, dan palang gerbang tidak terbanting menutup mendadak di antara kedua kendaraan (*anti-slamming*).
 
-Seluruh 14 relasi foreign key pada database operasional telah diverifikasi dengan rasio **0 Orphan Record (100% Konsisten)**:
+### 3. Pencegahan Double-Tap Tak Sengaja (*Accidental Double-Tap Debouncing*)
+* **Masalah:** Kartu ditempel terlalu lama atau tangan bergetar sehingga UID terbaca berulang kali dalam milidetik.
+* **Solusi SMART-WARGA:**
+  *Filter Lapis Ganda:* Firmware mengeksekusi `PICC_HaltA()` dan delay 500ms, sementara Backend mengecek transaksi terakhir dalam 5 detik terakhir. Jika UID yang sama terdeteksi berulang, backend mengabaikan request duplikat secara idempoten (*Idempotency Guard*).
 
-1. `users.house_id` $\rightarrow$ `houses.id` (0 Orphan)
-2. `wallets.user_id` $\rightarrow$ `users.id` (100% warga memiliki dompet aktif)
-3. `wallet_transactions` $\rightarrow$ `wallets.id` & `users.id` (0 Orphan)
-4. `letters.user_id` $\rightarrow$ `users.id` (0 Orphan)
-5. `complaints.user_id` $\rightarrow$ `users.id` (0 Orphan)
-6. `asset_loans` $\rightarrow$ `users.id` & `assets.id` (0 Orphan)
-7. `umkm_products` $\rightarrow$ `users.id` (0 Orphan)
-8. `koperasi_loans` $\rightarrow$ `users.id` (0 Orphan)
-9. `ambulance_bookings` $\rightarrow$ `users.id` & `ambulances.id` (0 Orphan)
-10. `rukam_reports` $\rightarrow$ `users.id` (0 Orphan)
-11. `posyandu_records` $\rightarrow$ `users.id` (0 Orphan)
-12. `elderly_health_records` $\rightarrow$ `users.id` (0 Orphan)
-13. `announcement_donations` $\rightarrow$ `users.id` (0 Orphan)
-14. `ronda_logs` & `waste_bank_transactions` $\rightarrow$ `users.id` (0 Orphan)
+### 4. Antrean di Kios Timbangan Bank Sampah (*Zero-Load Enforcement & ACID Lock*)
+* **Masalah:** Warga B menaruh kantong sampah sebelum sesi Warga A selesai dihitung.
+* **Solusi SMART-WARGA:**
+  1. *Zero-Load Verification:* Kios mewajibkan timbangan kembali ke kondisi stabil mendekati nol (< 20 gram) sebelum transaksi warga berikutnya diizinkan. Jika beban belum diangkat, LCD menampilkan `ANGKAT SAMPAH!` dan menolak tap berikutnya.
+  2. *Database Concurrency Locking:* Pada `IoTController.php`, mutasi saldo e-wallet dibungkus dalam `DB::transaction()` dengan pemanggilan `lockForUpdate()`, menjamin integritas saldo dan audit kas secara mutlak tanpa resiko *double-credit*.
 
----
+### 5. Pencegahan Tabrakan Bus SPI Dua RFID Reader (*Hardware Bus Contention*)
+* **Masalah:** Dua modul RFID RC522 berbagi jalur bus SPI fisik bersama (SCK=18, MISO=19, MOSI=23). Bagaimana jika dua kartu di-tap bersamaan?
+* **Solusi SMART-WARGA:**
+  Penerapan *Time-Division Multiplexing (TDM)* dengan isolasi sinyal Chip Select (CS). Reader 1 dikendalikan GPIO 5, Reader 2 dikendalikan GPIO 4. Firmware mengaktifkan pin CS bergantian secara eksklusif (hanya satu pin yang `LOW` pada satu siklus). Ketika satu reader dibaca, reader pasif berada dalam mode *High-Impedance (Hi-Z)*, sehingga **tabrakan sinyal data SPI secara elektrik mustahil terjadi**.
 
-## 🔑 Kredensial Akun Percobaan (Seeded Accounts)
-
-Password untuk semua akun: **`password`**
-
-- **Super Admin:** `admin@smartwarga.test`
-- **Ketua RW:** `rw@smartwarga.test`
-- **Ketua RT 01:** `rt01@smartwarga.test`
-- **Bendahara RT 01:** `bendahara@smartwarga.test`
-- **Sekretaris RT 01:** `sekretaris@smartwarga.test`
-- **Warga Aktif (Budi Santoso):** `budi@smartwarga.test` (Saldo Dompet Aktif, RFID: `RFID_WARGA_01`)
-- **Warga Pending (Siti Rahma):** `siti@smartwarga.test` (Menunggu ACC RT)
+### 6. Redaman Banjir Penekanan Tombol Darurat (*Panic Button Flooding Filter*)
+* **Masalah:** Warga panik menekan tombol darurat berkali-kali dalam 1 detik.
+* **Solusi SMART-WARGA:**
+  Penerapan *Interrupt Debounce Timer (3000ms)*. Penekanan pertama langsung membunyikan sirine dan mengirim sinyal HTTP POST ke server, sementara penekanan berulang dalam jendela 3 detik diredam tanpa membebani server backend dengan banjir request darurat (*DDoS mitigation*).
 
 ---
 
-## 🚀 Panduan Menjalankan Sistem Lokal
+## 📲 Alur Perekaman Mandiri e-KTP Warga (Self-Service e-KTP Pairing)
 
-### 1. Backend Laravel
+Fitur ini memfasilitasi warga agar dapat mendaftarkan fisik kartu e-KTP mereka secara mandiri:
+
+1. **Akses Dashboard Warga:** Warga membuka aplikasi SMART-WARGA di smartphone mereka (`/dashboard`).
+2. **Klik Tombol Aktivasi:** Warga menekan tombol **`[ 📲 Pindai & Tautkan e-KTP Mandiri ]`** pada banner beranda.
+3. **Radar RFID Aktif Mendengarkan:** Modal menampilkan radar animasi yang aktif melakukan polling ke `/api/warga/ktp/latest-scan`.
+4. **Tap e-KTP di Scanner ESP32:** Warga menempelkan e-KTP ke sensor ESP32 (Single AIO Mode `MD:DAFTAR-KTP >` atau unit scanner meja).
+5. **Deteksi Instan:** Dalam 1 detik, radar web bergetar hijau menampilkan:  
+   `KARTU e-KTP TERDETEKSI: 04A1B2C3 • Status: Siap Ditautkan`.
+6. **Simpan ke Akun:** Warga menekan **`[ Tautkan e-KTP ke Akun Saya ]`**. Sistem mengecek keunikan kartu di database lalu mengikatkan `rfid_uid` tersebut secara permanen ke akun warga.
+7. **Aktif Seketika:** Kartu fisik tersebut detik itu juga dapat langsung membuka gerbang perumahan dan setor bank sampah otomatis.
+
+---
+
+## 🛠️ Panduan Menjalankan Sistem Secara Lokal
+
+### 1. Menjalankan Backend (Laravel 11 + Herd)
 ```bash
 cd backend
 composer install
-# Hubungkan ke domain local Herd
-herd link smartwarga
-# Jalankan migrasi dan seeder
-php artisan migrate:fresh --seed
-php artisan storage:link
-
-# Menjalankan seluruh 105 automated test suite (507 assertions)
+cp .env.example .env
+php artisan key:generate
+php artisan migrate --seed
 php artisan test
 ```
 
-### 2. Frontend Next.js
+### 2. Menjalankan Frontend (Next.js 16 + Turbopack)
 ```bash
 cd frontend
 npm install
 npm run dev
-
-# Build verifikasi produksi (Turbopack)
-npm run build
+# Buka di browser: http://localhost:3000
 ```
-Frontend siap diakses pada: `http://localhost:3000`
 
-### 3. Firmware ESP32
-Buka sketsa pada direktori `firmware/` menggunakan Arduino IDE, sesuaikan SSID/Password WiFi dan IP host backend, lalu upload ke board ESP32 (Node 1 Gate/Panic, Node 2 Siren Relay, Node 3 Timbangan Bank Sampah).
+### 3. Meng-upload Firmware ke ESP32 (Arduino IDE)
+1. Buka Arduino IDE, tambahkan Board Manager URL ESP32:  
+   `https://raw.githubusercontent.com/espressif/arduino-esp32/gh-pages/package_esp32_index.json`
+2. Pasang library wajib: `MFRC522`, `LiquidCrystal_I2C`, `ESP32Servo`, dan `ArduinoJson`.
+3. Buka file [`firmware/smartwarga_single_esp32_aio/smartwarga_single_esp32_aio.ino`](firmware/smartwarga_single_esp32_aio/smartwarga_single_esp32_aio.ino).
+4. Sesuaikan `WIFI_SSID`, `WIFI_PASSWORD`, dan `API_BASE_URL`.
+5. Pilih Board: **ESP32 Dev Module** dan Port USB, lalu klik **Upload**.
 
 ---
 
-## 🌐 Live Production Deployment
+## 🧪 Hasil Verifikasi & Uji Otomatisasi (Test Matrix)
 
-Sistem telah aktif secara penuh pada infrastruktur Cloud Production (Ubuntu 22.04 LTS):
-- **Domain Resmi Warga & Pengurus (SSL HTTPS):**  
-  👉 **[https://swarga.manajemensystem.my.id](https://swarga.manajemensystem.my.id)**
-- **Integrated Environment Gateway:**  
-  👉 Terhubung langsung dengan Hub Manajemen Lingkungan Digital
-- **High-Speed Dedicated IoT API Gateway:**  
-  👉 `https://swarga.manajemensystem.my.id/api/iot` (ESP32 Gate RFID, Sirine, & Timbangan)
-- **Database Engine:** MariaDB High-Performance Cluster
-- **Sertifikat Keamanan:** TLS 1.3 High-Grade Encryption (Let's Encrypt Valid SSL)
+Seluruh logika bisnis, transaksi dompet atomik, dan validasi hardware telah terverifikasi melalui test suite otomatis Laravel PHPUnit:
+
+```
+Tests:    119 passed (554 assertions)
+Duration: 2.12s
+Status:   100% PASS
+```
+
+* **White-Box Testing:** State-machine gerbang, formula timbangan sampah kaleng/plastik, pembagian kas RT (60%) & RW (40%), atomic row locking saldo e-wallet, de-aktivasi sirine, dan proteksi duplikasi KTP.
+* **Black-Box Testing:** Format respons teks LCD 16 karakter (`lcd_line1` dan `lcd_line2`), status kode HTTP REST API, otentikasi Sanctum RBAC, serta filtering offline hardware.
+
+---
+
+## 📄 Lisensi & Hak Cipta
+Dokumentasi dan kode sumber dikembangkan untuk **SMART-WARGA Ecosystem Platform**.  
+Hak Cipta &copy; 2026 Management System Hub. Seluruh hak cipta dilindungi undang-undang.

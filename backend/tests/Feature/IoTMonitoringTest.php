@@ -777,6 +777,172 @@ class IoTMonitoringTest extends TestCase
 
         $this->assertFalse((bool) SirenStatus::first()->is_active);
     }
+
+    /**
+     * White-Box 25: Kiosk tap (Reader 2) mengidentifikasi warga, membaca saldo wallet, dan memformat LCD 16x2.
+     */
+    public function test_whitebox_kiosk_tap_identifies_registered_user_and_wallet()
+    {
+        Wallet::create([
+            'user_id' => $this->wargaBudi->id,
+            'balance' => 75000.00,
+        ]);
+
+        $response = $this->postJson('/api/iot/kiosk/tap', [
+            'rfid_uid' => 'RFID_BUDI_01',
+            'requested_mode' => 'bank_sampah',
+        ]);
+
+        $response->assertStatus(200)
+            ->assertJson([
+                'success' => true,
+                'mode' => 'bank_sampah',
+                'user' => [
+                    'id' => $this->wargaBudi->id,
+                    'name' => 'Budi Santoso',
+                    'wallet_balance' => 75000.0,
+                ],
+            ]);
+
+        $this->assertEquals(16, strlen($response->json('lcd_line1')));
+        $this->assertEquals(16, strlen($response->json('lcd_line2')));
+    }
+
+    /**
+     * White-Box 26: Heartbeat tunggal dari 1 ESP32 AIO memperbarui last_ping semua modul device secara atomik.
+     */
+    public function test_whitebox_aio_heartbeat_updates_all_iot_devices_in_single_ping()
+    {
+        $tenMinutesAgo = Carbon::now()->subMinutes(10);
+        $this->gateDevice->update(['last_ping' => $tenMinutesAgo]);
+        $this->sirenDevice->update(['last_ping' => $tenMinutesAgo]);
+        $this->wasteTerminalDevice->update(['last_ping' => $tenMinutesAgo]);
+
+        $response = $this->postJson('/api/iot/heartbeat', [
+            'device_type' => 'all',
+        ]);
+
+        $response->assertStatus(200)
+            ->assertJson([
+                'success' => true,
+            ]);
+
+        $this->assertTrue(abs($this->gateDevice->fresh()->last_ping->diffInSeconds(now())) <= 2);
+        $this->assertTrue(abs($this->sirenDevice->fresh()->last_ping->diffInSeconds(now())) <= 2);
+        $this->assertTrue(abs($this->wasteTerminalDevice->fresh()->last_ping->diffInSeconds(now())) <= 2);
+    }
+
+    /**
+     * White-Box 27: Scan KTP baru pada ESP32 menyimpan data ke cache dengan format LCD 16 karakter
+     */
+    public function test_whitebox_scan_new_ktp_caches_scan_data_with_proper_lcd_format()
+    {
+        $response = $this->postJson('/api/iot/ktp/scan', [
+            'rfid_uid' => 'KTP_NEW_9988',
+            'device_id' => 'ENROLLER_01',
+        ]);
+
+        $response->assertStatus(200)
+            ->assertJson([
+                'success' => true,
+                'rfid_uid' => 'KTP_NEW_9988',
+                'already_registered' => false,
+            ]);
+
+        $this->assertEquals(16, strlen($response->json('lcd_line1')));
+        $this->assertEquals(16, strlen($response->json('lcd_line2')));
+
+        // Pastikan tersimpan di endpoint polling web warga
+        $pollResponse = $this->actingAs($this->wargaBudi)->getJson('/api/warga/ktp/latest-scan');
+        $pollResponse->assertStatus(200)
+            ->assertJson([
+                'success' => true,
+                'data' => [
+                    'rfid_uid' => 'KTP_NEW_9988',
+                    'already_registered' => false,
+                ],
+            ]);
+    }
+
+    /**
+     * White-Box 28: Scan KTP yang sudah terdaftar mengenali nama pemiliknya
+     */
+    public function test_whitebox_scan_existing_ktp_identifies_card_owner()
+    {
+        $response = $this->postJson('/api/iot/ktp/scan', [
+            'rfid_uid' => 'RFID_BUDI_01',
+            'device_id' => 'AIO_KIOSK',
+        ]);
+
+        $response->assertStatus(200)
+            ->assertJson([
+                'success' => true,
+                'rfid_uid' => 'RFID_BUDI_01',
+                'already_registered' => true,
+                'owner' => [
+                    'name' => 'Budi Santoso',
+                ],
+            ]);
+    }
+
+    /**
+     * White-Box 29: Warga dapat menautkan e-KTP mandiri ke akun profilnya
+     */
+    public function test_whitebox_warga_can_pair_scanned_ktp_successfully()
+    {
+        // Siti belum punya rfid_uid
+        $this->wargaSiti->update(['rfid_uid' => null]);
+
+        $response = $this->actingAs($this->wargaSiti)->postJson('/api/warga/ktp/pair', [
+            'rfid_uid' => 'KTP_SITI_NEW_77',
+        ]);
+
+        $response->assertStatus(200)
+            ->assertJson([
+                'success' => true,
+            ]);
+
+        $this->assertDatabaseHas('users', [
+            'id' => $this->wargaSiti->id,
+            'rfid_uid' => 'KTP_SITI_NEW_77',
+        ]);
+    }
+
+    /**
+     * White-Box 30: Warga tidak dapat menautkan e-KTP yang sudah terdaftar atas nama warga lain
+     */
+    public function test_whitebox_warga_cannot_pair_ktp_owned_by_another_resident()
+    {
+        // Budi sudah punya 'RFID_BUDI_01', Siti mencoba menautkan kartu yang sama
+        $response = $this->actingAs($this->wargaSiti)->postJson('/api/warga/ktp/pair', [
+            'rfid_uid' => 'RFID_BUDI_01',
+        ]);
+
+        $response->assertStatus(422)
+            ->assertJson([
+                'success' => false,
+            ]);
+    }
+
+    /**
+     * White-Box 31: Warga dapat melepas tautan e-KTP jika kartu hilang / ganti kartu
+     */
+    public function test_whitebox_warga_can_unpair_ktp()
+    {
+        $this->assertNotNull($this->wargaBudi->rfid_uid);
+
+        $response = $this->actingAs($this->wargaBudi)->deleteJson('/api/warga/ktp/unpair');
+
+        $response->assertStatus(200)
+            ->assertJson([
+                'success' => true,
+            ]);
+
+        $this->assertDatabaseHas('users', [
+            'id' => $this->wargaBudi->id,
+            'rfid_uid' => null,
+        ]);
+    }
 }
 
 

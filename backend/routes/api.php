@@ -45,12 +45,14 @@ Route::get('/waste-rates', function () {
 */
 Route::prefix('iot')->group(function () {
     Route::post('/ronda/tap', [IoTController::class, 'rondaTap']);
+    Route::post('/kiosk/tap', [IoTController::class, 'kioskTap']);
     Route::post('/panic-button', [IoTController::class, 'panicButton']);
     Route::get('/sirine/status', [IoTController::class, 'sirineStatus']);
     Route::post('/bank-sampah/setor', [IoTController::class, 'bankSampahSetor']);
     Route::post('/posyandu/catat', [IoTController::class, 'posyanduCatat']);
     Route::get('/devices', [IoTController::class, 'listDevices']);
     Route::post('/heartbeat', [IoTController::class, 'heartbeat']);
+    Route::post('/ktp/scan', [IoTController::class, 'scanKtp']);
 });
 
 /*
@@ -81,6 +83,11 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::put('/warga/family-members/{id}', [AuthController::class, 'updateFamilyMember']);
         Route::delete('/warga/family-members/{id}', [AuthController::class, 'deleteFamilyMember']);
         Route::post('/warga/add-family-kk', [AuthController::class, 'addFamilyKk']);
+
+        // Registrasi & Pairing e-KTP Mandiri (RFID)
+        Route::get('/warga/ktp/latest-scan', [IoTController::class, 'getLatestKtpScan']);
+        Route::post('/warga/ktp/pair', [IoTController::class, 'pairKtp']);
+        Route::delete('/warga/ktp/unpair', [IoTController::class, 'unpairKtp']);
 
         // Wallet
         Route::get('/wallet/balance', [WalletController::class, 'getBalance']);

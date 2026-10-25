@@ -205,8 +205,8 @@ export default function AuthView() {
     <div className="w-full max-w-md mx-auto py-4">
       {/* Brand Header */}
       <div className="text-center mb-6">
-        <div className="w-14 h-14 bg-gradient-to-tr from-emerald-600 to-teal-500 rounded-3xl mx-auto flex items-center justify-center text-white shadow-xl shadow-emerald-500/20 mb-3">
-          <Building2 className="w-8 h-8" />
+        <div className="w-16 h-16 rounded-3xl mx-auto flex items-center justify-center shadow-xl shadow-emerald-500/20 mb-3 overflow-hidden border border-emerald-500/20 bg-emerald-950">
+          <img src="/icon-192.png" alt="SMART-WARGA" className="w-full h-full object-cover" />
         </div>
         <h2 className="text-2xl font-black text-slate-900 tracking-tight">
           SMART<span className="text-emerald-600">-WARGA</span>

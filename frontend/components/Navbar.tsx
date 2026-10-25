@@ -65,8 +65,8 @@ export default function Navbar({ onOpenPanic }: { onOpenPanic?: () => void }) {
       <div className="w-full px-4 sm:px-8 h-16 flex items-center justify-between">
         {/* Brand */}
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-emerald-600 to-teal-500 flex items-center justify-center text-white shadow-md shadow-emerald-500/20">
-            <Building2 className="w-5 h-5" />
+          <div className="w-10 h-10 rounded-xl flex items-center justify-center shadow-md shadow-emerald-500/20 overflow-hidden border border-emerald-500/20 bg-emerald-950">
+            <img src="/icon-192.png" alt="SMART-WARGA" className="w-full h-full object-cover" />
           </div>
           <div>
             <div className="font-extrabold text-base sm:text-lg leading-tight tracking-tight text-slate-800">

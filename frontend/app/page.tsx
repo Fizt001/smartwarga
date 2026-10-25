@@ -17,6 +17,7 @@ import LayananView from '@/components/views/LayananView';
 import PengaduanView from '@/components/views/PengaduanView';
 import IoTView from '@/components/views/IoTView';
 import PengurusView from '@/components/views/PengurusView';
+import SimulatorView from '@/components/views/SimulatorView';
 
 export default function HomePage() {
   const { user, loading, refreshUser, viewMode, isPengurus } = useAuth();
@@ -67,7 +68,7 @@ export default function HomePage() {
     const mainTab = parts[0]?.toLowerCase();
     const subTab = parts[1]?.toLowerCase();
 
-    const validTabs = ['dashboard', 'ipl', 'layanan', 'pengaduan', 'iot', 'pengurus'];
+    const validTabs = ['dashboard', 'ipl', 'layanan', 'pengaduan', 'iot', 'pengurus', 'simulator'];
     if (validTabs.includes(mainTab)) {
       setActiveTabState(mainTab);
       if (mainTab === 'layanan' && subTab) {
@@ -172,6 +173,8 @@ export default function HomePage() {
         return <PengaduanView />;
       case 'iot':
         return <IoTView />;
+      case 'simulator':
+        return <SimulatorView />;
       case 'pengurus':
         return (
           <PengurusView

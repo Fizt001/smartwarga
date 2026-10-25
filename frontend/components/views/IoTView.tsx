@@ -16,7 +16,8 @@ import {
   AlertTriangle,
   Clock,
   DoorOpen,
-  IdCard
+  IdCard,
+  ExternalLink
 } from 'lucide-react';
 
 export default function IoTView() {
@@ -174,6 +175,38 @@ export default function IoTView() {
 
   return (
     <div className="space-y-4">
+      {/* Interactive ESP32 Simulator Banner */}
+      <div className="bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 p-5 rounded-3xl border border-indigo-500/30 text-white shadow-xl flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div className="flex items-center gap-3.5">
+          <div className="w-12 h-12 rounded-2xl bg-indigo-500/20 text-indigo-400 border border-indigo-400/30 flex items-center justify-center shrink-0">
+            <Cpu className="w-6 h-6 animate-pulse" />
+          </div>
+          <div>
+            <div className="flex items-center gap-2">
+              <h3 className="text-base font-black tracking-tight text-white">
+                Website Simulator ESP32 AIO (Virtual Hardware Lab)
+              </h3>
+              <span className="text-[10px] bg-emerald-500/20 text-emerald-400 font-mono font-bold px-2 py-0.5 rounded-full border border-emerald-500/30">
+                Live Twin
+              </span>
+            </div>
+            <p className="text-xs text-slate-300 mt-1 max-w-xl">
+              Simulator perangkat keras interaktif lengkap dengan layar LCD 16x2 dot-matrix, sensor RFID RC522, palang servo otomatis SG90, timbangan HX711, dan Serial Monitor 115200 baud!
+            </p>
+          </div>
+        </div>
+
+        <a
+          href="/simulator"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-400 hover:to-teal-400 text-slate-950 font-black text-xs shadow-lg shadow-emerald-500/20 transition active:scale-95 flex items-center justify-center gap-2 shrink-0"
+        >
+          <span>Buka Virtual Lab Fullscreen</span>
+          <ExternalLink className="w-4 h-4" />
+        </a>
+      </div>
+
       {/* 1. Sirene Wilayah Master Control Card */}
       <div className={`p-5 rounded-3xl border-2 transition-all shadow-xl ${
         sirenActive 

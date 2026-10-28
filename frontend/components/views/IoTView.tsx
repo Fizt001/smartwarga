@@ -307,7 +307,7 @@ export default function IoTView() {
               ? 'bg-slate-800 text-emerald-400' 
               : 'bg-rose-950/80 text-rose-400 border border-rose-800/60'
           }`}>
-            {devices.filter((d: any) => d.is_online).length} / {devices.length || 3} Nodes Online
+            {devices.filter((d: any) => d.is_online).length > 0 ? 'ESP32 AIO Online (Semua Modul Siaga)' : 'ESP32 AIO Offline'}
           </span>
         </div>
 

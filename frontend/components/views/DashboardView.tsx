@@ -850,7 +850,7 @@ export default function DashboardView({
                 {sirenStatus?.is_active 
                   ? 'ALARM SIRINE AKTIF!' 
                   : iotOnlineCount === 0
-                  ? 'Hardware Sirine Offline'
+                  ? 'Hardware ESP32 AIO Offline'
                   : 'Kondisi Aman Siaga'}
               </span>
             </div>
@@ -867,8 +867,8 @@ export default function DashboardView({
                 {iotOnlineCount === null
                   ? 'Memeriksa IoT...'
                   : iotOnlineCount === 0
-                  ? 'Semua Node ESP32 Offline'
-                  : `${iotOnlineCount} dari ${iotTotalCount} Node Online`}
+                  ? 'Hardware ESP32 AIO Offline'
+                  : 'ESP32 AIO Online (Gate, Sirine & Kios Siaga)'}
               </span>
               <button
                 onClick={onOpenPanic}
@@ -1734,7 +1734,7 @@ export default function DashboardView({
               <div className="flex items-center gap-2">
                 <Radio className="w-4 h-4 text-emerald-400" />
                 <h4 className="font-extrabold text-xs uppercase tracking-wider text-slate-200">
-                  Node Status & IoT Live
+                  Status ESP32 AIO & IoT Live
                 </h4>
               </div>
               <span className="text-[10px] bg-emerald-500/20 text-emerald-400 px-2 py-0.5 rounded font-mono">

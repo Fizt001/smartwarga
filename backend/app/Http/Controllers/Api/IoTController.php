@@ -60,6 +60,18 @@ class IoTController extends Controller
         $user = User::with('house')->where('rfid_uid', $rfidUid)->first();
 
         if (!$user) {
+            // Simpan kartu baru yang belum terdaftar ke Cache agar bisa langsung ditangkap web untuk registrasi/tautkan e-KTP
+            Cache::put('latest_ktp_scan', [
+                'rfid_uid' => strtoupper($rfidUid),
+                'device_id' => $postId,
+                'scanned_at' => now()->toIso8601String(),
+                'timestamp' => now()->timestamp,
+                'already_registered' => false,
+                'owner_id' => null,
+                'owner_name' => null,
+                'owner_house' => null,
+            ], 120);
+
             return response()->json([
                 'success' => false,
                 'gate_open' => false,

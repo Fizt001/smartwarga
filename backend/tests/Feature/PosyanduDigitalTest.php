@@ -450,4 +450,88 @@ class PosyanduDigitalTest extends TestCase
             ],
         ]);
     }
+
+    public function test_warga_can_take_posyandu_queue_ticket(): void
+    {
+        $response = $this->actingAs($this->wargaRt01)->postJson('/api/posyandu/queues', [
+            'category' => 'balita',
+            'patient_name' => 'Balita Kenzo',
+            'patient_age' => '14 Bulan',
+            'complaint' => 'Imunisasi Polio dan timbang berat',
+            'rfid_uid' => '04AABBCCDD',
+        ]);
+
+        $response->assertStatus(201);
+        $response->assertJson([
+            'success' => true,
+            'data' => [
+                'queue_number' => 'B-001',
+                'category' => 'balita',
+                'patient_name' => 'Balita Kenzo',
+                'status' => 'waiting',
+            ],
+        ]);
+
+        // Cek list antrean
+        $listRes = $this->actingAs($this->wargaRt01)->getJson('/api/posyandu/queues');
+        $listRes->assertStatus(200);
+        $listRes->assertJson([
+            'success' => true,
+            'data' => [
+                'total' => 1,
+                'waiting_count' => 1,
+                'my_queue' => [
+                    'queue_number' => 'B-001',
+                ],
+            ],
+        ]);
+    }
+
+    public function test_officer_can_call_and_complete_posyandu_queue(): void
+    {
+        $takeRes = $this->actingAs($this->wargaRt01)->postJson('/api/posyandu/queues', [
+            'category' => 'lansia',
+            'patient_name' => 'Kakek Subur',
+            'patient_age' => '72 Tahun',
+            'complaint' => 'Cek tensi darah tinggi',
+        ]);
+        $queueId = $takeRes->json('data.id');
+
+        // Petugas memanggil antrean
+        $callRes = $this->actingAs($this->kader)->patchJson("/api/posyandu/queues/{$queueId}/call");
+        $callRes->assertStatus(200);
+        $callRes->assertJson([
+            'success' => true,
+            'data' => [
+                'status' => 'calling',
+            ],
+        ]);
+
+        // Petugas menyelesaikan antrean
+        $compRes = $this->actingAs($this->kader)->patchJson("/api/posyandu/queues/{$queueId}/complete", [
+            'notes' => 'Tensi 140/90, diberikan vitamin.',
+        ]);
+        $compRes->assertStatus(200);
+        $compRes->assertJson([
+            'success' => true,
+            'data' => [
+                'status' => 'completed',
+            ],
+        ]);
+    }
+
+    public function test_warga_can_cancel_queue(): void
+    {
+        $takeRes = $this->actingAs($this->wargaRt01)->postJson('/api/posyandu/queues', [
+            'category' => 'umum',
+            'patient_name' => 'Warga Test',
+        ]);
+        $queueId = $takeRes->json('data.id');
+
+        $delRes = $this->actingAs($this->wargaRt01)->deleteJson("/api/posyandu/queues/{$queueId}");
+        $delRes->assertStatus(200);
+        $delRes->assertJson([
+            'success' => true,
+        ]);
+    }
 }

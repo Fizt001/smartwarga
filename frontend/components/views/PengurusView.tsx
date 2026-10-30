@@ -46,13 +46,16 @@ import {
   HeartHandshake,
   Car,
   Siren,
-  Phone
+  Phone,
+  Ticket,
+  DoorOpen,
+  IdCard
 } from 'lucide-react';
 import ConfirmModal from '@/components/ConfirmModal';
 
 interface PengurusViewProps {
-  currentSubTab?: 'sensus' | 'ipl' | 'kegiatan' | 'surat' | 'approval' | 'topup' | 'aset' | 'koperasi' | 'posyandu' | 'rukam';
-  onSubTabChange?: (tab: 'sensus' | 'ipl' | 'kegiatan' | 'surat' | 'approval' | 'topup' | 'aset' | 'koperasi' | 'posyandu' | 'rukam') => void;
+  currentSubTab?: 'sensus' | 'ipl' | 'kegiatan' | 'surat' | 'approval' | 'topup' | 'aset' | 'koperasi' | 'posyandu' | 'rukam' | 'gerbang';
+  onSubTabChange?: (tab: 'sensus' | 'ipl' | 'kegiatan' | 'surat' | 'approval' | 'topup' | 'aset' | 'koperasi' | 'posyandu' | 'rukam' | 'gerbang') => void;
 }
 
 export default function PengurusView({ currentSubTab, onSubTabChange }: PengurusViewProps = {}) {
@@ -65,13 +68,13 @@ export default function PengurusView({ currentSubTab, onSubTabChange }: Pengurus
     ? 'kegiatan' 
     : 'sensus';
 
-  const [internalSubTab, setInternalSubTab] = useState<'sensus' | 'ipl' | 'kegiatan' | 'surat' | 'approval' | 'topup' | 'aset' | 'koperasi' | 'posyandu' | 'rukam'>(
+  const [internalSubTab, setInternalSubTab] = useState<'sensus' | 'ipl' | 'kegiatan' | 'surat' | 'approval' | 'topup' | 'aset' | 'koperasi' | 'posyandu' | 'rukam' | 'gerbang'>(
     currentSubTab || initialTab
   );
 
   const subTab = currentSubTab || internalSubTab;
 
-  const setSubTab = (tab: 'sensus' | 'ipl' | 'kegiatan' | 'surat' | 'approval' | 'topup' | 'aset' | 'koperasi' | 'posyandu' | 'rukam') => {
+  const setSubTab = (tab: 'sensus' | 'ipl' | 'kegiatan' | 'surat' | 'approval' | 'topup' | 'aset' | 'koperasi' | 'posyandu' | 'rukam' | 'gerbang') => {
     setInternalSubTab(tab);
     if (onSubTabChange) {
       onSubTabChange(tab);
@@ -194,7 +197,9 @@ export default function PengurusView({ currentSubTab, onSubTabChange }: Pengurus
   const [posyanduImun, setPosyanduImun] = useState<any[]>([]);
   const [posyanduLansia, setPosyanduLansia] = useState<any[]>([]);
   const [posyanduStats, setPosyanduStats] = useState<any | null>(null);
-  const [posyanduAdminSection, setPosyanduAdminSection] = useState<'balita' | 'imunisasi' | 'lansia'>('balita');
+  const [posyanduQueues, setPosyanduQueues] = useState<any[]>([]);
+  const [posyanduQueueData, setPosyanduQueueData] = useState<any | null>(null);
+  const [posyanduAdminSection, setPosyanduAdminSection] = useState<'antrean' | 'balita' | 'imunisasi' | 'lansia'>('antrean');
 
   // Balita Modal Form State
   const [showBalitaModal, setShowBalitaModal] = useState(false);
@@ -233,6 +238,12 @@ export default function PengurusView({ currentSubTab, onSubTabChange }: Pengurus
   const [ambulancesList, setAmbulancesList] = useState<any[]>([]);
   const [ambulanceBookingsList, setAmbulanceBookingsList] = useState<any[]>([]);
   const [rukamAdminSection, setRukamAdminSection] = useState<'laporan' | 'ambulans'>('laporan');
+
+  // Gerbang Tol (SDA Pin 5) & Kios Pelayanan (SDA Pin 4) Pengurus States
+  const [gateLogs, setGateLogs] = useState<any[]>([]);
+  const [kioskHistory, setKioskHistory] = useState<any[]>([]);
+  const [activeKioskSession, setActiveKioskSession] = useState<any | null>(null);
+  const [waitingKioskQueues, setWaitingKioskQueues] = useState<any[]>([]);
 
   // Disburse Modal State
   const [showDisburseModal, setShowDisburseModal] = useState(false);
@@ -278,8 +289,8 @@ export default function PengurusView({ currentSubTab, onSubTabChange }: Pengurus
       const [
         wargaRes, masterRes, billRes, topupRes, letRes, annRes, rekapRes, 
         payrollRes, expensesRes, auditRes, loansRes, assetsRes, kopRes, 
-        umkmRes, posBalitaRes, posImunRes, posLansiaRes, posSummaryRes,
-        rukamRes, rukamSumRes, ambRes, ambBookRes
+        umkmRes, posBalitaRes, posImunRes, posLansiaRes, posSummaryRes, posQueueRes,
+        rukamRes, rukamSumRes, ambRes, ambBookRes, gateLogsRes, kioskSessionRes, kioskHistRes
       ] = await Promise.all([
         fetchApi('/admin/warga?status=pending').catch(() => ({ success: false, data: { data: [] } })),
         fetchApi(`/admin/ipl/masters?year=${generateYear}`).catch(() => ({ success: false, data: [] })),
@@ -299,10 +310,14 @@ export default function PengurusView({ currentSubTab, onSubTabChange }: Pengurus
         fetchApi('/posyandu/immunizations').catch(() => ({ success: false, data: { data: [] } })),
         fetchApi('/posyandu/lansia').catch(() => ({ success: false, data: { data: [] } })),
         fetchApi('/posyandu/summary').catch(() => ({ success: false, data: null })),
+        fetchApi('/posyandu/queues').catch(() => ({ success: false, data: null })),
         fetchApi('/rukam').catch(() => ({ success: false, data: { data: [] } })),
         fetchApi('/rukam/summary').catch(() => ({ success: false, data: null })),
         fetchApi('/ambulances').catch(() => ({ success: false, data: [] })),
         fetchApi('/ambulances/bookings').catch(() => ({ success: false, data: { data: [] } })),
+        fetchApi('/warga/gate-logs').catch(() => ({ success: false, data: { data: [] } })),
+        fetchApi('/pelayanan/active-session').catch(() => ({ success: false, data: null })),
+        fetchApi('/pelayanan/history').catch(() => ({ success: false, data: { data: [] } })),
       ]);
 
       if (wargaRes.success) setPendingWarga(wargaRes.data?.data || []);
@@ -323,10 +338,20 @@ export default function PengurusView({ currentSubTab, onSubTabChange }: Pengurus
       if (posImunRes?.success) setPosyanduImun(posImunRes.data?.data || []);
       if (posLansiaRes?.success) setPosyanduLansia(posLansiaRes.data?.data || []);
       if (posSummaryRes?.success) setPosyanduStats(posSummaryRes.data);
+      if (posQueueRes?.success) {
+        setPosyanduQueueData(posQueueRes.data);
+        setPosyanduQueues(posQueueRes.data?.queues || []);
+      }
       if (rukamRes?.success) setRukamList(rukamRes.data?.data || []);
       if (rukamSumRes?.success) setRukamStats(rukamSumRes.data);
       if (ambRes?.success) setAmbulancesList(ambRes.data || []);
       if (ambBookRes?.success) setAmbulanceBookingsList(ambBookRes.data?.data || []);
+      if (gateLogsRes?.success) setGateLogs(gateLogsRes.data?.data || []);
+      if (kioskSessionRes?.success) {
+        setActiveKioskSession(kioskSessionRes.data?.active_session || null);
+        setWaitingKioskQueues(kioskSessionRes.data?.waiting_queues || []);
+      }
+      if (kioskHistRes?.success) setKioskHistory(kioskHistRes.data?.data || []);
     } catch {
       // ignore
     } finally {
@@ -660,6 +685,63 @@ export default function PengurusView({ currentSubTab, onSubTabChange }: Pengurus
   };
 
   // Posyandu Digital Handlers
+  const handleCallQueue = async (id: number) => {
+    setActionLoading(true);
+    try {
+      const res = await fetchApi(`/posyandu/queues/${id}/call`, { method: 'PATCH' });
+      if (res.success) {
+        setAlertMsg({ type: 'success', text: res.message });
+        const qRes = await fetchApi('/posyandu/queues');
+        if (qRes.success) {
+          setPosyanduQueueData(qRes.data);
+          setPosyanduQueues(qRes.data?.queues || []);
+        }
+      }
+    } catch (err: any) {
+      setAlertMsg({ type: 'error', text: err.message || 'Gagal memanggil antrean.' });
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  const handleCompleteQueue = async (id: number) => {
+    setActionLoading(true);
+    try {
+      const res = await fetchApi(`/posyandu/queues/${id}/complete`, { method: 'PATCH' });
+      if (res.success) {
+        setAlertMsg({ type: 'success', text: res.message });
+        const qRes = await fetchApi('/posyandu/queues');
+        if (qRes.success) {
+          setPosyanduQueueData(qRes.data);
+          setPosyanduQueues(qRes.data?.queues || []);
+        }
+      }
+    } catch (err: any) {
+      setAlertMsg({ type: 'error', text: err.message || 'Gagal menyelesaikan antrean.' });
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  const handleCancelQueue = async (id: number) => {
+    setActionLoading(true);
+    try {
+      const res = await fetchApi(`/posyandu/queues/${id}`, { method: 'DELETE' });
+      if (res.success) {
+        setAlertMsg({ type: 'success', text: res.message });
+        const qRes = await fetchApi('/posyandu/queues');
+        if (qRes.success) {
+          setPosyanduQueueData(qRes.data);
+          setPosyanduQueues(qRes.data?.queues || []);
+        }
+      }
+    } catch (err: any) {
+      setAlertMsg({ type: 'error', text: err.message || 'Gagal membatalkan antrean.' });
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
   const handleStoreBalita = async (e: React.FormEvent) => {
     e.preventDefault();
     setActionLoading(true);
@@ -1076,6 +1158,15 @@ export default function PengurusView({ currentSubTab, onSubTabChange }: Pengurus
           >
             <HeartHandshake className="w-3.5 h-3.5" />
             <span>RUKAM & Ambulans {rukamList.filter(r => r.status === 'reported').length > 0 && `(${rukamList.filter(r => r.status === 'reported').length})`}</span>
+          </button>
+          <button
+            onClick={() => setSubTab('gerbang')}
+            className={`py-2 text-xs font-bold rounded-xl transition flex items-center justify-center gap-1.5 ${
+              subTab === 'gerbang' ? 'bg-indigo-600 text-white shadow-sm' : 'text-slate-300 hover:text-white'
+            }`}
+          >
+            <DoorOpen className="w-3.5 h-3.5" />
+            <span>Gerbang & Kios</span>
           </button>
         </div>
       </div>
@@ -3238,11 +3329,22 @@ export default function PengurusView({ currentSubTab, onSubTabChange }: Pengurus
           </div>
 
           {/* Sub-module Navigation Bar */}
-          <div className="flex items-center justify-between border-b border-slate-200 pb-3">
-            <div className="flex gap-2">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between border-b border-slate-200 pb-3 gap-3">
+            <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-none">
+              <button
+                onClick={() => setPosyanduAdminSection('antrean')}
+                className={`px-3.5 py-2 rounded-xl text-xs font-bold transition flex items-center gap-1.5 whitespace-nowrap ${
+                  posyanduAdminSection === 'antrean'
+                    ? 'bg-emerald-600 text-white shadow-sm'
+                    : 'bg-white text-slate-600 border border-slate-200 hover:bg-slate-50'
+                }`}
+              >
+                <Ticket className="w-3.5 h-3.5" />
+                <span>Antrean Hari Ini ({posyanduQueues.length})</span>
+              </button>
               <button
                 onClick={() => setPosyanduAdminSection('balita')}
-                className={`px-3.5 py-2 rounded-xl text-xs font-bold transition flex items-center gap-1.5 ${
+                className={`px-3.5 py-2 rounded-xl text-xs font-bold transition flex items-center gap-1.5 whitespace-nowrap ${
                   posyanduAdminSection === 'balita'
                     ? 'bg-emerald-600 text-white shadow-sm'
                     : 'bg-white text-slate-600 border border-slate-200 hover:bg-slate-50'
@@ -3253,7 +3355,7 @@ export default function PengurusView({ currentSubTab, onSubTabChange }: Pengurus
               </button>
               <button
                 onClick={() => setPosyanduAdminSection('imunisasi')}
-                className={`px-3.5 py-2 rounded-xl text-xs font-bold transition flex items-center gap-1.5 ${
+                className={`px-3.5 py-2 rounded-xl text-xs font-bold transition flex items-center gap-1.5 whitespace-nowrap ${
                   posyanduAdminSection === 'imunisasi'
                     ? 'bg-emerald-600 text-white shadow-sm'
                     : 'bg-white text-slate-600 border border-slate-200 hover:bg-slate-50'
@@ -3264,7 +3366,7 @@ export default function PengurusView({ currentSubTab, onSubTabChange }: Pengurus
               </button>
               <button
                 onClick={() => setPosyanduAdminSection('lansia')}
-                className={`px-3.5 py-2 rounded-xl text-xs font-bold transition flex items-center gap-1.5 ${
+                className={`px-3.5 py-2 rounded-xl text-xs font-bold transition flex items-center gap-1.5 whitespace-nowrap ${
                   posyanduAdminSection === 'lansia'
                     ? 'bg-emerald-600 text-white shadow-sm'
                     : 'bg-white text-slate-600 border border-slate-200 hover:bg-slate-50'
@@ -3277,6 +3379,21 @@ export default function PengurusView({ currentSubTab, onSubTabChange }: Pengurus
 
             {/* Quick Action Button */}
             <div>
+              {posyanduAdminSection === 'antrean' && (
+                <button
+                  onClick={async () => {
+                    const qRes = await fetchApi('/posyandu/queues');
+                    if (qRes.success) {
+                      setPosyanduQueueData(qRes.data);
+                      setPosyanduQueues(qRes.data?.queues || []);
+                    }
+                  }}
+                  className="px-3 py-1.5 bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold rounded-xl shadow-sm flex items-center gap-1 transition"
+                >
+                  <RefreshCw className="w-3.5 h-3.5" />
+                  <span>Segarkan Antrean</span>
+                </button>
+              )}
               {posyanduAdminSection === 'balita' && (
                 <button
                   onClick={() => setShowBalitaModal(true)}
@@ -3306,6 +3423,211 @@ export default function PengurusView({ currentSubTab, onSubTabChange }: Pengurus
               )}
             </div>
           </div>
+
+          {/* 0. CONTENT: DAFTAR ANTREAN POSYANDU HARI INI */}
+          {posyanduAdminSection === 'antrean' && (
+            <div className="space-y-4">
+              {/* Now Serving Card */}
+              <div className="bg-gradient-to-r from-emerald-900 to-teal-950 rounded-3xl p-6 text-white border border-emerald-500/30 shadow-lg">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                  <div>
+                    <div className="text-xs uppercase font-bold text-emerald-300 flex items-center gap-1.5">
+                      <Ticket className="w-4 h-4 text-emerald-400" />
+                      <span>Sedang Diperiksa / Dipanggil Saat Ini</span>
+                    </div>
+                    {posyanduQueueData?.calling_now ? (
+                      <div className="mt-2 space-y-1">
+                        <div className="text-4xl font-black tracking-tight text-white">
+                          {posyanduQueueData.calling_now.queue_number}
+                        </div>
+                        <div className="text-sm font-bold text-emerald-200">
+                          {posyanduQueueData.calling_now.patient_name} 
+                          <span className="text-xs font-normal text-emerald-300 ml-2">
+                            ({posyanduQueueData.calling_now.category?.toUpperCase()})
+                            {posyanduQueueData.calling_now.patient_age ? ` • ${posyanduQueueData.calling_now.patient_age}` : ''}
+                          </span>
+                        </div>
+                        {posyanduQueueData.calling_now.complaint && (
+                          <div className="text-xs text-emerald-200/80">
+                            Keluhan: {posyanduQueueData.calling_now.complaint}
+                          </div>
+                        )}
+                        {posyanduQueueData.calling_now.user && (
+                          <div className="text-xs text-emerald-300/80">
+                            Warga: {posyanduQueueData.calling_now.user.name} ({posyanduQueueData.calling_now.user.house?.house_code || 'RT ' + posyanduQueueData.calling_now.user.rt_number})
+                          </div>
+                        )}
+                      </div>
+                    ) : (
+                      <div className="text-lg font-bold text-slate-300 mt-2">
+                        Belum ada nomor yang sedang dipanggil.
+                      </div>
+                    )}
+                  </div>
+
+                  {posyanduQueueData?.calling_now && (
+                    <div className="flex flex-col sm:items-end gap-2">
+                      <button
+                        onClick={() => handleCompleteQueue(posyanduQueueData.calling_now.id)}
+                        disabled={actionLoading}
+                        className="px-4 py-2.5 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-black text-xs shadow-md transition flex items-center gap-1.5 whitespace-nowrap active:scale-95"
+                      >
+                        <Check className="w-4 h-4" />
+                        <span>Selesaikan Pemeriksaan</span>
+                      </button>
+                      <button
+                        onClick={() => {
+                          if (posyanduQueueData.calling_now.category === 'lansia') {
+                            setLansiaName(posyanduQueueData.calling_now.patient_name);
+                            setShowLansiaModal(true);
+                          } else {
+                            setBalitaName(posyanduQueueData.calling_now.patient_name);
+                            setShowBalitaModal(true);
+                          }
+                        }}
+                        className="px-4 py-2 rounded-xl bg-white/10 hover:bg-white/20 text-white font-bold text-xs transition flex items-center gap-1.5 whitespace-nowrap"
+                      >
+                        <Plus className="w-3.5 h-3.5" />
+                        <span>Catat Rekam Medis Pasien Ini</span>
+                      </button>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Tabel Live Daftar Antrean */}
+              <div className="bg-white rounded-3xl p-6 border border-slate-200 shadow-sm space-y-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h5 className="font-extrabold text-base text-slate-900">Daftar Antrean Pasien Posyandu</h5>
+                    <p className="text-xs text-slate-500">Antrean otomatis dari pendaftaran web & tap e-KTP di scanner ESP32.</p>
+                  </div>
+                  <div className="text-xs font-bold text-slate-600 bg-slate-100 px-3 py-1.5 rounded-xl">
+                    Total: {posyanduQueues.length} Pasien
+                  </div>
+                </div>
+
+                {posyanduQueues.length === 0 ? (
+                  <div className="text-center py-12 text-slate-400 text-xs">
+                    <Ticket className="w-10 h-10 mx-auto text-slate-300 mb-2" />
+                    <div className="font-bold text-slate-700">Belum Ada Antrean Hari Ini</div>
+                    <div className="text-[11px] text-slate-400 mt-0.5">
+                      Warga dapat mendaftar dari akun masing-masing atau tap e-KTP di kios hardware.
+                    </div>
+                  </div>
+                ) : (
+                  <div className="divide-y divide-slate-100">
+                    {posyanduQueues.map((q) => (
+                      <div
+                        key={q.id}
+                        className={`py-3.5 px-4 rounded-2xl flex flex-col md:flex-row md:items-center justify-between gap-3 transition ${
+                          q.status === 'calling'
+                            ? 'bg-amber-50/80 border border-amber-200'
+                            : q.status === 'completed'
+                            ? 'bg-slate-50/50 opacity-60'
+                            : 'hover:bg-slate-50'
+                        }`}
+                      >
+                        <div className="flex items-center gap-4">
+                          <div className={`w-14 h-14 rounded-2xl flex items-center justify-center font-black text-base shadow-sm ${
+                            q.status === 'calling'
+                              ? 'bg-amber-500 text-white animate-pulse'
+                              : q.status === 'completed'
+                              ? 'bg-slate-200 text-slate-500'
+                              : 'bg-emerald-600 text-white'
+                          }`}>
+                            {q.queue_number}
+                          </div>
+                          <div>
+                            <div className="font-bold text-sm text-slate-900 flex items-center gap-2">
+                              <span>{q.patient_name}</span>
+                              <span className="text-[10px] uppercase font-bold px-2 py-0.5 rounded-full bg-slate-100 text-slate-600 border border-slate-200">
+                                {q.category}
+                              </span>
+                              {q.rfid_uid && (
+                                <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-emerald-50 text-emerald-700 border border-emerald-200">
+                                  RFID: {q.rfid_uid}
+                                </span>
+                              )}
+                            </div>
+                            <div className="text-xs text-slate-500 mt-0.5">
+                              {q.patient_age ? `Usia: ${q.patient_age}` : ''} 
+                              {q.user ? ` • KK/Warga: ${q.user.name} (${q.user.house?.house_code || 'RT ' + q.user.rt_number})` : ''}
+                            </div>
+                            {q.complaint && (
+                              <div className="text-xs text-slate-600 italic mt-0.5">
+                                "{q.complaint}"
+                              </div>
+                            )}
+                          </div>
+                        </div>
+
+                        {/* Status & Actions */}
+                        <div className="flex items-center gap-2 self-end md:self-center">
+                          {q.status === 'waiting' && (
+                            <>
+                              <button
+                                onClick={() => handleCallQueue(q.id)}
+                                disabled={actionLoading}
+                                className="px-3.5 py-1.5 rounded-xl bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold text-xs shadow-sm flex items-center gap-1.5 active:scale-95 transition"
+                              >
+                                <Siren className="w-3.5 h-3.5" />
+                                <span>Panggil</span>
+                              </button>
+                              <button
+                                onClick={() => handleCancelQueue(q.id)}
+                                disabled={actionLoading}
+                                className="px-3 py-1.5 rounded-xl border border-slate-200 hover:bg-slate-100 text-slate-600 font-semibold text-xs transition"
+                              >
+                                Batal
+                              </button>
+                            </>
+                          )}
+                          {q.status === 'calling' && (
+                            <>
+                              <button
+                                onClick={() => {
+                                  if (q.category === 'lansia') {
+                                    setLansiaName(q.patient_name);
+                                    setShowLansiaModal(true);
+                                  } else {
+                                    setBalitaName(q.patient_name);
+                                    setShowBalitaModal(true);
+                                  }
+                                }}
+                                className="px-3 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs shadow-sm flex items-center gap-1.5 transition"
+                              >
+                                <Plus className="w-3.5 h-3.5" />
+                                <span>Catat KMS</span>
+                              </button>
+                              <button
+                                onClick={() => handleCompleteQueue(q.id)}
+                                disabled={actionLoading}
+                                className="px-3 py-1.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs shadow-sm flex items-center gap-1.5 transition"
+                              >
+                                <Check className="w-3.5 h-3.5" />
+                                <span>Selesai</span>
+                              </button>
+                            </>
+                          )}
+                          {q.status === 'completed' && (
+                            <span className="px-3 py-1 rounded-full bg-emerald-100 text-emerald-800 font-bold text-xs flex items-center gap-1">
+                              <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" /> Selesai
+                            </span>
+                          )}
+                          {q.status === 'cancelled' && (
+                            <span className="px-3 py-1 rounded-full bg-slate-200 text-slate-600 font-semibold text-xs">
+                              Dibatalkan
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
 
           {/* 1. CONTENT: KMS BALITA */}
           {posyanduAdminSection === 'balita' && (
@@ -3964,6 +4286,268 @@ export default function PengurusView({ currentSubTab, onSubTabChange }: Pengurus
               </div>
             </div>
           )}
+        </div>
+      )}
+
+      {/* 11. SUBTAB GERBANG TOL & KIOS PELAYANAN (SDA 5 & SDA 4) */}
+      {subTab === 'gerbang' && (
+        <div className="space-y-6">
+          {/* Header Banner */}
+          <div className="bg-gradient-to-r from-indigo-900 via-slate-900 to-teal-950 rounded-3xl p-6 text-white shadow-xl space-y-3">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+              <div className="flex items-center gap-3">
+                <div className="w-12 h-12 rounded-2xl bg-white/10 backdrop-blur-md flex items-center justify-center border border-white/20">
+                  <DoorOpen className="w-6 h-6 text-indigo-300" />
+                </div>
+                <div>
+                  <h4 className="font-black text-lg text-white tracking-tight">
+                    Monitoring Gerbang Tol & Kios Pelayanan
+                  </h4>
+                  <p className="text-xs text-indigo-200 mt-0.5">
+                    Live feed keluar-masuk warga di gerbang akses (SDA 5) & antrean terpadu meja pelayanan warga (SDA 4).
+                  </p>
+                </div>
+              </div>
+
+              <button
+                onClick={loadData}
+                disabled={loading}
+                className="px-3.5 py-2 rounded-xl bg-white/10 hover:bg-white/20 text-white font-bold text-xs transition flex items-center gap-1.5 self-start sm:self-center"
+              >
+                <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin' : ''}`} />
+                <span>Segarkan Data</span>
+              </button>
+            </div>
+
+            {/* Quick Metrics */}
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 pt-3 border-t border-white/10">
+              <div className="bg-white/5 rounded-2xl p-3 border border-white/10">
+                <div className="text-[10px] uppercase font-bold text-indigo-200">Total Tap Gerbang</div>
+                <div className="text-base font-black text-white mt-0.5">
+                  {gateLogs.length} Kali Akses
+                </div>
+              </div>
+              <div className="bg-white/5 rounded-2xl p-3 border border-white/10">
+                <div className="text-[10px] uppercase font-bold text-emerald-200">Sedang Di Kios</div>
+                <div className="text-base font-black text-emerald-300 mt-0.5 truncate">
+                  {activeKioskSession ? activeKioskSession.citizen_name : 'Tidak Ada (Kosong)'}
+                </div>
+              </div>
+              <div className="bg-white/5 rounded-2xl p-3 border border-white/10">
+                <div className="text-[10px] uppercase font-bold text-amber-200">Antrean Menunggu</div>
+                <div className="text-base font-black text-amber-300 mt-0.5">
+                  {waitingKioskQueues.length} Warga
+                </div>
+              </div>
+              <div className="bg-white/5 rounded-2xl p-3 border border-white/10">
+                <div className="text-[10px] uppercase font-bold text-blue-200">Selesai Hari Ini</div>
+                <div className="text-base font-black text-blue-300 mt-0.5">
+                  {kioskHistory.length} Layanan
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+            {/* Left Column (7 cols): Log Keluar-Masuk Gerbang Tol Warga (SDA Pin 5) */}
+            <div className="lg:col-span-7 bg-white rounded-3xl p-6 border border-slate-200 shadow-sm space-y-4">
+              <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+                <div className="flex items-center gap-2">
+                  <DoorOpen className="w-5 h-5 text-indigo-600" />
+                  <div>
+                    <h5 className="font-extrabold text-sm text-slate-900">
+                      Log Keluar-Masuk Gerbang Tol (SDA 5)
+                    </h5>
+                    <p className="text-[11px] text-slate-500">
+                      Setiap tap kartu resmi langsung membuka palang servo dan terekam di sini.
+                    </p>
+                  </div>
+                </div>
+                <span className="text-xs font-bold text-indigo-700 bg-indigo-50 px-2.5 py-1 rounded-full border border-indigo-200">
+                  {gateLogs.length} Riwayat
+                </span>
+              </div>
+
+              {gateLogs.length === 0 ? (
+                <div className="text-center py-12 text-slate-400 text-xs">
+                  Belum ada aktivitas tap di gerbang tol hari ini.
+                </div>
+              ) : (
+                <div className="overflow-x-auto">
+                  <table className="w-full text-left text-xs">
+                    <thead>
+                      <tr className="border-b border-slate-200 text-slate-400 font-bold uppercase text-[10px]">
+                        <th className="pb-3">Waktu</th>
+                        <th className="pb-3">Warga / Pemilik Kartu</th>
+                        <th className="pb-3">Lokasi Pos</th>
+                        <th className="pb-3 text-right">Status Palang</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-100">
+                      {gateLogs.map((log: any) => (
+                        <tr key={log.id} className="hover:bg-slate-50">
+                          <td className="py-3 font-mono text-[11px] text-slate-500 whitespace-nowrap">
+                            {new Date(log.tapped_at).toLocaleString('id-ID', { dateStyle: 'short', timeStyle: 'short' })}
+                          </td>
+                          <td className="py-3 font-semibold text-slate-900">
+                            <div>{log.user ? log.user.name : `RFID: ${log.rfid_uid}`}</div>
+                            {log.user?.house && (
+                              <div className="text-[10px] text-slate-400">
+                                {log.user.house.house_code || log.user.house.full_address}
+                              </div>
+                            )}
+                          </td>
+                          <td className="py-3 text-slate-600">
+                            {log.post_id || 'Pos Gerbang Utama'}
+                          </td>
+                          <td className="py-3 text-right">
+                            <span className="px-2.5 py-1 rounded-full bg-emerald-50 text-emerald-800 border border-emerald-200 font-bold text-[10px]">
+                              Akses Terbuka
+                            </span>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </div>
+
+            {/* Right Column (5 cols): Meja Pelayanan & Antrean Terpadu (SDA Pin 4) */}
+            <div className="lg:col-span-5 space-y-6">
+              {/* Active Session Card */}
+              <div className="bg-white rounded-3xl p-6 border border-slate-200 shadow-sm space-y-4">
+                <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+                  <div className="flex items-center gap-2">
+                    <Ticket className="w-5 h-5 text-emerald-600" />
+                    <div>
+                      <h5 className="font-extrabold text-sm text-slate-900">
+                        Meja Pelayanan Kios (SDA 4)
+                      </h5>
+                      <p className="text-[11px] text-slate-500">
+                        Warga yang saat ini sedang aktif dilayani.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                {activeKioskSession ? (
+                  <div className="p-4 rounded-2xl bg-emerald-50 border border-emerald-200 space-y-3">
+                    <div className="flex items-start justify-between">
+                      <div>
+                        <span className="px-2.5 py-0.5 rounded-full bg-emerald-600 text-white font-black text-[10px] uppercase">
+                          Sedang Dilayani
+                        </span>
+                        <div className="text-xl font-black text-slate-900 mt-1">
+                          Antrean #{activeKioskSession.queue_number}
+                        </div>
+                        <div className="text-sm font-bold text-slate-800">
+                          {activeKioskSession.citizen_name}
+                        </div>
+                        <div className="text-[10px] font-mono text-slate-500">
+                          UID: {activeKioskSession.rfid_uid}
+                        </div>
+                      </div>
+                    </div>
+
+                    <button
+                      onClick={async () => {
+                        const res = await fetchApi('/pelayanan/complete-session', {
+                          method: 'POST',
+                          headers: { 'Content-Type': 'application/json' },
+                          body: JSON.stringify({
+                            queue_id: activeKioskSession.id,
+                            service_type: 'Diselesaikan Pengurus',
+                            service_notes: 'Pengurus menandai sesi ini telah tuntas.',
+                          }),
+                        });
+                        if (res.success) {
+                          setAlertMsg({ type: 'success', text: res.message });
+                          await loadData();
+                        }
+                      }}
+                      className="w-full py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs rounded-xl shadow-sm transition active:scale-95"
+                    >
+                      Selesaikan Sesi Ini & Majukan Antrean
+                    </button>
+                  </div>
+                ) : (
+                  <div className="p-6 rounded-2xl bg-slate-50 border border-slate-200 text-center text-xs text-slate-400 space-y-1">
+                    <CheckCircle2 className="w-8 h-8 text-slate-300 mx-auto mb-1" />
+                    <div className="font-bold text-slate-600">Meja Pelayanan Sedang Kosong</div>
+                    <div>Belum ada warga yang men-tap kartu di kios pelayanan saat ini.</div>
+                  </div>
+                )}
+
+                {/* Waiting List */}
+                <div className="space-y-2 pt-2">
+                  <div className="text-xs font-bold text-slate-700 flex items-center justify-between">
+                    <span>Antrean Menunggu:</span>
+                    <span className="text-[11px] text-slate-400">{waitingKioskQueues.length} orang</span>
+                  </div>
+
+                  {waitingKioskQueues.length === 0 ? (
+                    <div className="text-center py-4 text-xs text-slate-400">
+                      Tidak ada antrean yang menunggu.
+                    </div>
+                  ) : (
+                    waitingKioskQueues.map((q: any) => (
+                      <div key={q.id} className="p-2.5 rounded-xl bg-slate-50 border border-slate-200 flex items-center justify-between text-xs">
+                        <div className="flex items-center gap-2.5">
+                          <span className="w-7 h-7 rounded-lg bg-amber-500 text-white font-black text-xs flex items-center justify-center">
+                            #{q.queue_number}
+                          </span>
+                          <div>
+                            <div className="font-bold text-slate-900">{q.citizen_name}</div>
+                            <div className="text-[10px] text-slate-400">
+                              Tap: {new Date(q.tapped_at).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })}
+                            </div>
+                          </div>
+                        </div>
+                        <span className="px-2 py-0.5 rounded-full bg-amber-100 text-amber-800 text-[10px] font-semibold">
+                          Menunggu
+                        </span>
+                      </div>
+                    ))
+                  )}
+                </div>
+              </div>
+
+              {/* History Log Pelayanan */}
+              <div className="bg-white rounded-3xl p-6 border border-slate-200 shadow-sm space-y-3">
+                <h5 className="font-extrabold text-sm text-slate-900 border-b border-slate-100 pb-2">
+                  Riwayat Pelayanan Selesai
+                </h5>
+
+                {kioskHistory.length === 0 ? (
+                  <div className="text-center py-6 text-xs text-slate-400">
+                    Belum ada riwayat pelayanan yang selesai.
+                  </div>
+                ) : (
+                  <div className="space-y-2 max-h-60 overflow-y-auto">
+                    {kioskHistory.map((h: any) => (
+                      <div key={h.id} className="p-2.5 rounded-xl bg-slate-50 border border-slate-200/80 text-xs">
+                        <div className="flex items-center justify-between">
+                          <span className="font-bold text-slate-900">{h.citizen_name}</span>
+                          <span className="text-[10px] text-slate-400">
+                            {new Date(h.completed_at || h.updated_at).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })}
+                          </span>
+                        </div>
+                        <div className="text-[11px] text-emerald-700 font-semibold mt-0.5">
+                          Layanan: {h.service_type || 'Selesai Mandiri'}
+                        </div>
+                        {h.service_notes && (
+                          <div className="text-[10px] text-slate-500 mt-0.5 italic">
+                            "{h.service_notes}"
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
         </div>
       )}
 

@@ -439,33 +439,6 @@ export default function Sidebar({
         </div>
       </div>
 
-      {/* ESP32 Virtual Hardware Simulator Bench Shortcut Card */}
-      <div className="pt-2">
-        <a
-          href="/simulator"
-          target="_blank"
-          rel="noopener noreferrer"
-          className="block p-3 rounded-2xl bg-gradient-to-br from-slate-900 to-slate-950 border border-emerald-500/30 text-white shadow-lg hover:border-emerald-400 transition group"
-        >
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <span className="w-2 h-2 rounded-full bg-emerald-400 animate-ping"></span>
-              <span className="text-[10px] font-black uppercase text-emerald-400 font-mono tracking-wider">
-                Virtual Hardware
-              </span>
-            </div>
-            <ExternalLink className="w-3.5 h-3.5 text-slate-400 group-hover:text-emerald-400 transition" />
-          </div>
-          <div className="text-xs font-bold text-slate-200 mt-1 flex items-center gap-1.5">
-            <Zap className="w-3.5 h-3.5 text-amber-400" />
-            <span>Simulator ESP32 AIO</span>
-          </div>
-          <p className="text-[10px] text-slate-400 mt-0.5 leading-snug">
-            LCD 16x2, RFID, Servo, & Loadcell live terhubung ke API!
-          </p>
-        </a>
-      </div>
-
       {/* Bottom Shortcuts: Panic Button & Logout */}
       <div className="pt-3 border-t border-slate-100 space-y-2">
         <button

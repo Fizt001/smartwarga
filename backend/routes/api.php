@@ -6,6 +6,7 @@ use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\ComplaintController;
 use App\Http\Controllers\Api\IoTController;
 use App\Http\Controllers\Api\IplController;
+use App\Http\Controllers\Api\KioskServiceController;
 use App\Http\Controllers\Api\KoperasiController;
 use App\Http\Controllers\Api\LetterController;
 use App\Http\Controllers\Api\PayrollExpenseController;
@@ -53,6 +54,8 @@ Route::prefix('iot')->group(function () {
     Route::get('/devices', [IoTController::class, 'listDevices']);
     Route::post('/heartbeat', [IoTController::class, 'heartbeat']);
     Route::post('/ktp/scan', [IoTController::class, 'scanKtp']);
+    Route::get('/ktp/latest-scan', [IoTController::class, 'getLatestKtpScan']);
+    Route::post('/pelayanan/tap', [KioskServiceController::class, 'tapKiosk']);
 });
 
 /*
@@ -67,6 +70,21 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get('/profile', [AuthController::class, 'profile']);
         Route::put('/profile', [AuthController::class, 'updateProfile']);
     });
+
+    // Registrasi & Pairing e-KTP Mandiri (RFID - Bisa ditautkan kapan saja)
+    Route::get('/warga/ktp/latest-scan', [IoTController::class, 'getLatestKtpScan']);
+    Route::post('/warga/ktp/pair', [IoTController::class, 'pairKtp']);
+    Route::delete('/warga/ktp/unpair', [IoTController::class, 'unpairKtp']);
+
+    // Kiosk Pelayanan Terpadu & Antrean Warga (SDA Pin 4)
+    Route::get('/pelayanan/active-session', [KioskServiceController::class, 'getActiveSession']);
+    Route::post('/pelayanan/complete-session', [KioskServiceController::class, 'completeSession']);
+    Route::post('/pelayanan/legalize-item', [KioskServiceController::class, 'legalizeItem']);
+    Route::post('/pelayanan/cancel-session', [KioskServiceController::class, 'cancelSession']);
+    Route::get('/pelayanan/history', [KioskServiceController::class, 'getHistory']);
+
+    // Log Akses Gerbang Tol Warga & Pengurus (SDA Pin 5)
+    Route::get('/warga/gate-logs', [KioskServiceController::class, 'getGateLogs']);
 
     // Warga Features (Protected: must be approved)
     Route::middleware('approved')->group(function () {
@@ -83,11 +101,6 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::put('/warga/family-members/{id}', [AuthController::class, 'updateFamilyMember']);
         Route::delete('/warga/family-members/{id}', [AuthController::class, 'deleteFamilyMember']);
         Route::post('/warga/add-family-kk', [AuthController::class, 'addFamilyKk']);
-
-        // Registrasi & Pairing e-KTP Mandiri (RFID)
-        Route::get('/warga/ktp/latest-scan', [IoTController::class, 'getLatestKtpScan']);
-        Route::post('/warga/ktp/pair', [IoTController::class, 'pairKtp']);
-        Route::delete('/warga/ktp/unpair', [IoTController::class, 'unpairKtp']);
 
         // Wallet
         Route::get('/wallet/balance', [WalletController::class, 'getBalance']);
@@ -155,6 +168,11 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::patch('/posyandu/immunizations/{id}', [PosyanduController::class, 'updateImmunization']);
         Route::get('/posyandu/lansia', [PosyanduController::class, 'listElderly']);
         Route::post('/posyandu/lansia', [PosyanduController::class, 'storeElderly']);
+        Route::get('/posyandu/queues', [PosyanduController::class, 'listQueues']);
+        Route::post('/posyandu/queues', [PosyanduController::class, 'storeQueue']);
+        Route::patch('/posyandu/queues/{id}/call', [PosyanduController::class, 'callQueue'])->middleware('role:super_admin,rw,rt,bendahara,sekretaris');
+        Route::patch('/posyandu/queues/{id}/complete', [PosyanduController::class, 'completeQueue'])->middleware('role:super_admin,rw,rt,bendahara,sekretaris');
+        Route::delete('/posyandu/queues/{id}', [PosyanduController::class, 'cancelQueue']);
 
         // IoT Monitoring & Logs
         Route::post('/iot/sirine/toggle', [IoTController::class, 'toggleSirine']);

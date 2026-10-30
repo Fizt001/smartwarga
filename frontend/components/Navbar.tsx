@@ -97,18 +97,6 @@ export default function Navbar({ onOpenPanic }: { onOpenPanic?: () => void }) {
             )}
           </button>
 
-          {/* Standalone ESP32 Hardware Simulator Link */}
-          <a
-            href="/simulator"
-            target="_blank"
-            rel="noopener noreferrer"
-            title="Buka Website Simulator Hardware ESP32 di Tab Baru"
-            className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-slate-900 hover:bg-slate-800 text-emerald-400 hover:text-emerald-300 text-xs font-bold transition shadow-sm border border-slate-700"
-          >
-            <Cpu className="w-3.5 h-3.5 text-emerald-400 animate-pulse" />
-            <span className="hidden md:inline">ESP32 Lab</span>
-          </a>
-
           {/* Panic Button Trigger (Direct header shortcut) */}
           {user && onOpenPanic && (
             <button

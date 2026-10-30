@@ -26,7 +26,13 @@ import {
   HeartHandshake,
   Car,
   Siren,
-  Phone
+  Phone,
+  Ticket,
+  Radio,
+  Users,
+  IdCard,
+  Globe,
+  Sparkles
 } from 'lucide-react';
 import ConfirmModal from '@/components/ConfirmModal';
 
@@ -65,9 +71,27 @@ export default function LayananView({ currentSubTab = 'surat', onSubTabChange }:
 
   const subTab = currentSubTab || internalSubTab;
 
+  const isFisikTab = (tab: string) => ['surat', 'aset', 'posyandu'].includes(tab);
+  const [activeCategory, setActiveCategory] = useState<'fisik' | 'online'>(
+    isFisikTab(subTab) ? 'fisik' : 'online'
+  );
+
+  useEffect(() => {
+    setActiveCategory(isFisikTab(subTab) ? 'fisik' : 'online');
+  }, [subTab]);
+
   const setSubTab = (newTab: 'surat' | 'umkm' | 'koperasi' | 'aset' | 'rukam' | 'posyandu') => {
     setInternalSubTab(newTab);
     onSubTabChange?.(newTab);
+  };
+
+  const handleSwitchCategory = (cat: 'fisik' | 'online') => {
+    setActiveCategory(cat);
+    if (cat === 'fisik' && !isFisikTab(subTab)) {
+      setSubTab('surat');
+    } else if (cat === 'online' && isFisikTab(subTab)) {
+      setSubTab('umkm');
+    }
   };
 
   // Data states
@@ -78,7 +102,15 @@ export default function LayananView({ currentSubTab = 'surat', onSubTabChange }:
   const [posyanduRecords, setPosyanduRecords] = useState<any[]>([]);
   const [immunizationList, setImmunizationList] = useState<any[]>([]);
   const [elderlyList, setElderlyList] = useState<any[]>([]);
-  const [posyanduSection, setPosyanduSection] = useState<'kms' | 'imunisasi' | 'lansia'>('kms');
+  const [posyanduSection, setPosyanduSection] = useState<'antrean' | 'kms' | 'imunisasi' | 'lansia'>('antrean');
+  const [posyanduQueueData, setPosyanduQueueData] = useState<any | null>(null);
+  const [showQueueModal, setShowQueueModal] = useState(false);
+  const [queueCategory, setQueueCategory] = useState<'balita' | 'lansia' | 'umum'>('balita');
+  const [queuePatientName, setQueuePatientName] = useState('');
+  const [queuePatientAge, setQueuePatientAge] = useState('');
+  const [queueComplaint, setQueueComplaint] = useState('');
+  const [queueRfidUid, setQueueRfidUid] = useState('');
+  const [isScanningKtpQueue, setIsScanningKtpQueue] = useState(false);
 
   // RUKAM & Ambulans States
   const [rukamReports, setRukamReports] = useState<any[]>([]);
@@ -172,14 +204,16 @@ export default function LayananView({ currentSubTab = 'surat', onSubTabChange }:
           if (ambRes.success) setAmbulances(ambRes.data || []);
           if (bookRes.success) setAmbulanceBookings(bookRes.data?.data || []);
         } else if (subTab === 'posyandu') {
-          const [kmsRes, imunRes, lansiaRes] = await Promise.all([
+          const [kmsRes, imunRes, lansiaRes, queueRes] = await Promise.all([
             fetchApi('/posyandu').catch(() => ({ success: false, data: { data: [] } })),
             fetchApi('/posyandu/immunizations').catch(() => ({ success: false, data: { data: [] } })),
             fetchApi('/posyandu/lansia').catch(() => ({ success: false, data: { data: [] } })),
+            fetchApi('/posyandu/queues').catch(() => ({ success: false, data: null })),
           ]);
           if (kmsRes.success) setPosyanduRecords(kmsRes.data?.data || []);
           if (imunRes.success) setImmunizationList(imunRes.data?.data || []);
           if (lansiaRes.success) setElderlyList(lansiaRes.data?.data || []);
+          if (queueRes?.success) setPosyanduQueueData(queueRes.data);
         }
       } catch {
         // ignore
@@ -387,37 +421,212 @@ export default function LayananView({ currentSubTab = 'surat', onSubTabChange }:
     });
   };
 
-  const menuTabs = [
-    { id: 'surat', label: 'Persuratan', icon: FileText },
-    { id: 'umkm', label: 'Etalase UMKM', icon: Store },
-    { id: 'koperasi', label: 'Koperasi', icon: Landmark },
-    { id: 'aset', label: 'Aset RT', icon: Package },
-    { id: 'rukam', label: 'RUKAM & Ambulans', icon: HeartHandshake },
-    { id: 'posyandu', label: 'Posyandu', icon: Baby },
+  const handleTakeQueue = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!queuePatientName.trim()) {
+      setAlert({ type: 'error', text: 'Nama pasien wajib diisi.' });
+      return;
+    }
+    setLoading(true);
+    try {
+      const res = await fetchApi('/posyandu/queues', {
+        method: 'POST',
+        body: JSON.stringify({
+          category: queueCategory,
+          patient_name: queuePatientName,
+          patient_age: queuePatientAge || undefined,
+          complaint: queueComplaint || undefined,
+          rfid_uid: queueRfidUid || undefined,
+        }),
+      });
+      if (res.success) {
+        setAlert({ type: 'success', text: res.message || 'Antrean berhasil diambil!' });
+        setShowQueueModal(false);
+        setQueuePatientName('');
+        setQueuePatientAge('');
+        setQueueComplaint('');
+        setQueueRfidUid('');
+        const qRes = await fetchApi('/posyandu/queues');
+        if (qRes.success) setPosyanduQueueData(qRes.data);
+      } else {
+        setAlert({ type: 'error', text: res.message || 'Gagal mengambil antrean.' });
+      }
+    } catch (err: any) {
+      setAlert({ type: 'error', text: err.message || 'Gagal mengambil antrean posyandu.' });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleCancelQueue = (queueId: number) => {
+    setConfirmDialog({
+      isOpen: true,
+      title: 'Batalkan Nomor Antrean?',
+      message: 'Apakah Anda yakin ingin membatalkan antrean pemeriksaan Posyandu hari ini?',
+      confirmText: 'Ya, Batalkan',
+      cancelText: 'Kembali',
+      variant: 'danger',
+      onConfirm: async () => {
+        setConfirmDialog((prev) => ({ ...prev, isOpen: false }));
+        try {
+          const res = await fetchApi(`/posyandu/queues/${queueId}`, { method: 'DELETE' });
+          if (res.success) {
+            setAlert({ type: 'success', text: 'Nomor antrean berhasil dibatalkan.' });
+            const qRes = await fetchApi('/posyandu/queues');
+            if (qRes.success) setPosyanduQueueData(qRes.data);
+          }
+        } catch (err: any) {
+          setAlert({ type: 'error', text: err.message || 'Gagal membatalkan antrean.' });
+        }
+      },
+    });
+  };
+
+  const handleScanKtpForQueue = async () => {
+    setIsScanningKtpQueue(true);
+    try {
+      const res = await fetchApi('/warga/ktp/latest-scan');
+      if (res.success && res.data) {
+        setQueueRfidUid(res.data.rfid_uid);
+        if (res.data.owner_name && !queuePatientName) {
+          setQueuePatientName(res.data.owner_name);
+        }
+        setAlert({ type: 'success', text: `e-KTP terdeteksi dari ESP32! UID: ${res.data.rfid_uid}` });
+      } else {
+        setAlert({ type: 'error', text: 'Belum ada kartu e-KTP yang di-tap di reader ESP32 dalam 90 detik terakhir. Silakan tap e-KTP sekarang.' });
+      }
+    } catch {
+      setAlert({ type: 'error', text: 'Gagal menghubungi scanner ESP32.' });
+    } finally {
+      setIsScanningKtpQueue(false);
+    }
+  };
+
+  const fisikTabs = [
+    { id: 'surat', label: 'Persuratan & SKCK', icon: FileText, desc: 'Draf surat & legalisasi fisik di Balai' },
+    { id: 'aset', label: 'Peminjaman Aset', icon: Package, desc: 'Booking inventaris & serah terima barang' },
+    { id: 'posyandu', label: 'Posyandu Digital', icon: Baby, desc: 'Antrean meja posyandu & rekam medis' },
+  ];
+
+  const onlineTabs = [
+    { id: 'umkm', label: 'Etalase UMKM', icon: Store, desc: 'Katalog jualan warga langsung ke WhatsApp' },
+    { id: 'koperasi', label: 'Koperasi Warga', icon: Landmark, desc: 'Simpan pinjam & permodalan digital' },
+    { id: 'rukam', label: 'RUKAM & Ambulans', icon: HeartHandshake, desc: 'Tanggap lelayu & pemesanan ambulans' },
   ];
 
   return (
     <div className="space-y-4">
-      {/* Sub-tab Navigation Buttons */}
-      <div className="flex gap-1.5 overflow-x-auto pb-1 scrollbar-none">
-        {menuTabs.map((item) => {
-          const Icon = item.icon;
-          const isActive = subTab === item.id;
-          return (
-            <button
-              key={item.id}
-              onClick={() => setSubTab(item.id as any)}
-              className={`flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold whitespace-nowrap transition ${
-                isActive
-                  ? 'bg-slate-900 text-white shadow-sm'
-                  : 'bg-white text-slate-600 border border-slate-200 hover:bg-slate-50'
-              }`}
-            >
-              <Icon className="w-3.5 h-3.5" />
-              <span>{item.label}</span>
-            </button>
-          );
-        })}
+      {/* 1. SEPARASI KATEGORI LAYANAN: FISIK (WAJIB TAP KTP) VS MANDIRI ONLINE */}
+      <div className="bg-white rounded-3xl p-3 border border-slate-200 shadow-sm space-y-3">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+          {/* Opsi 1: Layanan Wajib Hadir & Tap KTP */}
+          <button
+            type="button"
+            onClick={() => handleSwitchCategory('fisik')}
+            className={`p-3.5 rounded-2xl text-left transition flex items-start gap-3 border ${
+              activeCategory === 'fisik'
+                ? 'bg-gradient-to-r from-emerald-900 to-teal-900 text-white border-emerald-500 shadow-md ring-2 ring-emerald-500/20'
+                : 'bg-slate-50 text-slate-700 hover:bg-slate-100 border-slate-200/80'
+            }`}
+          >
+            <div className={`p-2.5 rounded-xl shrink-0 ${
+              activeCategory === 'fisik' ? 'bg-emerald-500/20 text-emerald-300' : 'bg-slate-200 text-slate-600'
+            }`}>
+              <IdCard className="w-5 h-5" />
+            </div>
+            <div>
+              <div className="flex items-center gap-1.5">
+                <span className="font-black text-xs sm:text-sm">Layanan Balai & Kios Pelayanan</span>
+                <span className={`text-[9px] font-extrabold uppercase px-1.5 py-0.5 rounded ${
+                  activeCategory === 'fisik' ? 'bg-emerald-400 text-emerald-950' : 'bg-slate-200 text-slate-600'
+                }`}>
+                  Wajib Tap KTP
+                </span>
+              </div>
+              <p className={`text-[11px] mt-0.5 leading-relaxed ${
+                activeCategory === 'fisik' ? 'text-emerald-100/90' : 'text-slate-500'
+              }`}>
+                Draf via web, proses legalitas & serah terima fisik sah di Reader Kios (SDA 4).
+              </p>
+            </div>
+          </button>
+
+          {/* Opsi 2: Layanan Mandiri Online */}
+          <button
+            type="button"
+            onClick={() => handleSwitchCategory('online')}
+            className={`p-3.5 rounded-2xl text-left transition flex items-start gap-3 border ${
+              activeCategory === 'online'
+                ? 'bg-gradient-to-r from-slate-900 to-blue-950 text-white border-blue-500 shadow-md ring-2 ring-blue-500/20'
+                : 'bg-slate-50 text-slate-700 hover:bg-slate-100 border-slate-200/80'
+            }`}
+          >
+            <div className={`p-2.5 rounded-xl shrink-0 ${
+              activeCategory === 'online' ? 'bg-blue-500/20 text-blue-300' : 'bg-slate-200 text-slate-600'
+            }`}>
+              <Globe className="w-5 h-5" />
+            </div>
+            <div>
+              <div className="flex items-center gap-1.5">
+                <span className="font-black text-xs sm:text-sm">Layanan Mandiri Web</span>
+                <span className={`text-[9px] font-extrabold uppercase px-1.5 py-0.5 rounded ${
+                  activeCategory === 'online' ? 'bg-blue-400 text-slate-950' : 'bg-slate-200 text-slate-600'
+                }`}>
+                  100% Online
+                </span>
+              </div>
+              <p className={`text-[11px] mt-0.5 leading-relaxed ${
+                activeCategory === 'online' ? 'text-blue-100/90' : 'text-slate-500'
+              }`}>
+                Pengajuan tuntas mandiri dari gadget warga tanpa perlu hadir secara fisik ke Balai.
+              </p>
+            </div>
+          </button>
+        </div>
+
+        {/* Banner Penjelasan Alur Hukum & Realita Lapangan */}
+        <div className={`p-3 rounded-2xl text-xs flex items-start gap-2.5 border ${
+          activeCategory === 'fisik'
+            ? 'bg-emerald-50 text-emerald-900 border-emerald-200'
+            : 'bg-blue-50 text-blue-900 border-blue-200'
+        }`}>
+          <div className="shrink-0 mt-0.5 font-bold">
+            {activeCategory === 'fisik' ? '🪪' : '💻'}
+          </div>
+          <div className="leading-relaxed">
+            {activeCategory === 'fisik' ? (
+              <span>
+                <strong>Prinsip Layanan Fisik:</strong> Formulir yang Anda isi di bawah ini berstatus <strong>Draf Pengajuan</strong>. Proses administrasi, serah terima berkas/alat, atau tanda tangan baru dinyatakan <strong>Sah & Resmi</strong> saat Anda hadir langsung di Balai Warga dan menempelkan kartu e-KTP / Kartu Warga di <strong>Reader Kios Pelayanan (SDA Pin 4)</strong>.
+              </span>
+            ) : (
+              <span>
+                <strong>Prinsip Layanan Online:</strong> Layanan dalam kategori ini tidak memerlukan kehadiran fisik ke Balai Warga. Transaksi, iklan UMKM, dan permohonan ambulans dapat diselesaikan secara langsung melalui sistem web dan komunikasi WhatsApp.
+              </span>
+            )}
+          </div>
+        </div>
+
+        {/* Sub-tab Filtered By Category */}
+        <div className="flex gap-1.5 overflow-x-auto pb-0.5 scrollbar-none pt-1 border-t border-slate-100">
+          {(activeCategory === 'fisik' ? fisikTabs : onlineTabs).map((item) => {
+            const Icon = item.icon;
+            const isActive = subTab === item.id;
+            return (
+              <button
+                key={item.id}
+                onClick={() => setSubTab(item.id as any)}
+                className={`flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold whitespace-nowrap transition ${
+                  isActive
+                    ? activeCategory === 'fisik' ? 'bg-emerald-700 text-white shadow-sm' : 'bg-slate-900 text-white shadow-sm'
+                    : 'bg-white text-slate-600 border border-slate-200 hover:bg-slate-50'
+                }`}
+              >
+                <Icon className="w-3.5 h-3.5" />
+                <span>{item.label}</span>
+              </button>
+            );
+          })}
+        </div>
       </div>
 
       {alert && (
@@ -465,17 +674,28 @@ export default function LayananView({ currentSubTab = 'surat', onSubTabChange }:
                   </div>
                   <div>
                     {letItem.status === 'rw_approved' ? (
-                      <span className="bg-emerald-100 text-emerald-700 text-xs font-bold px-2 py-0.5 rounded-full flex items-center gap-1">
-                        <CheckCircle2 className="w-3 h-3" /> Disetujui RW
-                      </span>
+                      <div className="text-right space-y-0.5">
+                        <span className="bg-emerald-100 text-emerald-800 text-[11px] font-extrabold px-2.5 py-0.5 rounded-full inline-flex items-center gap-1 border border-emerald-300">
+                          <CheckCircle2 className="w-3 h-3 text-emerald-600" /> Siap Diambil di Balai (Wajib Tap KTP)
+                        </span>
+                        <div className="text-[10px] text-emerald-700 font-medium">
+                          Silakan tap e-KTP di Balai untuk serah terima fisik
+                        </div>
+                      </div>
                     ) : letItem.status === 'rt_approved' ? (
-                      <span className="bg-blue-100 text-blue-700 text-xs font-bold px-2 py-0.5 rounded-full flex items-center gap-1">
-                        <Clock className="w-3 h-3" /> Validasi RW
-                      </span>
+                      <div className="text-right space-y-0.5">
+                        <span className="bg-blue-100 text-blue-800 text-[11px] font-bold px-2.5 py-0.5 rounded-full inline-flex items-center gap-1">
+                          <Clock className="w-3 h-3 text-blue-600" /> Menunggu Validasi RW
+                        </span>
+                        <div className="text-[10px] text-slate-400">Telah diverifikasi RT</div>
+                      </div>
                     ) : (
-                      <span className="bg-amber-100 text-amber-700 text-xs font-bold px-2 py-0.5 rounded-full flex items-center gap-1">
-                        <Clock className="w-3 h-3" /> Menunggu RT
-                      </span>
+                      <div className="text-right space-y-0.5">
+                        <span className="bg-amber-100 text-amber-800 text-[11px] font-bold px-2.5 py-0.5 rounded-full inline-flex items-center gap-1">
+                          <Clock className="w-3 h-3 text-amber-600" /> Draf Pengajuan (Menunggu RT)
+                        </span>
+                        <div className="text-[10px] text-slate-400">Menunggu verifikasi pengurus</div>
+                      </div>
                     )}
                   </div>
                 </div>
@@ -747,22 +967,29 @@ export default function LayananView({ currentSubTab = 'surat', onSubTabChange }:
                     </div>
                     <div>
                       {loan.status === 'requested' && (
-                        <span className="bg-amber-100 text-amber-800 text-[10px] font-bold px-2 py-0.5 rounded-full">
-                          Menunggu ACC RT
-                        </span>
+                        <div className="text-right space-y-0.5">
+                          <span className="bg-amber-100 text-amber-800 text-[10px] font-extrabold px-2.5 py-0.5 rounded-full border border-amber-300 inline-block">
+                            Draf Booking (Menunggu ACC RT)
+                          </span>
+                        </div>
                       )}
                       {loan.status === 'approved' && (
-                        <span className="bg-blue-100 text-blue-800 text-[10px] font-bold px-2 py-0.5 rounded-full">
-                          Disetujui (Sedang Dipinjam)
-                        </span>
+                        <div className="text-right space-y-0.5">
+                          <span className="bg-emerald-100 text-emerald-800 text-[10px] font-extrabold px-2.5 py-0.5 rounded-full border border-emerald-300 inline-flex items-center gap-1">
+                            <CheckCircle2 className="w-3 h-3 text-emerald-600" /> Disetujui RT (Wajib Tap KTP di Balai)
+                          </span>
+                          <div className="text-[10px] text-emerald-700 font-medium">
+                            Bawa e-KTP ke Balai untuk serah terima fisik barang
+                          </div>
+                        </div>
                       )}
                       {loan.status === 'returned' && (
-                        <span className="bg-emerald-100 text-emerald-800 text-[10px] font-bold px-2 py-0.5 rounded-full">
-                          Dikembalikan
+                        <span className="bg-slate-100 text-slate-700 text-[10px] font-bold px-2.5 py-0.5 rounded-full">
+                          Telah Dikembalikan (Sah)
                         </span>
                       )}
                       {loan.status === 'rejected' && (
-                        <span className="bg-red-100 text-red-800 text-[10px] font-bold px-2 py-0.5 rounded-full">
+                        <span className="bg-red-100 text-red-800 text-[10px] font-bold px-2.5 py-0.5 rounded-full">
                           Ditolak
                         </span>
                       )}
@@ -800,10 +1027,21 @@ export default function LayananView({ currentSubTab = 'surat', onSubTabChange }:
             </div>
 
             {/* Sub-section Switcher */}
-            <div className="flex gap-2 pt-2 border-t border-white/15 text-xs font-bold">
+            <div className="flex gap-2 pt-2 border-t border-white/15 text-xs font-bold overflow-x-auto pb-1 scrollbar-none">
+              <button
+                onClick={() => setPosyanduSection('antrean')}
+                className={`px-3 py-1.5 rounded-xl transition flex items-center gap-1.5 whitespace-nowrap ${
+                  posyanduSection === 'antrean'
+                    ? 'bg-white text-emerald-900 shadow-sm'
+                    : 'bg-white/10 text-white hover:bg-white/20'
+                }`}
+              >
+                <Ticket className="w-3.5 h-3.5" />
+                <span>Antrean Posyandu {posyanduQueueData?.my_queue ? '• Aktif' : ''}</span>
+              </button>
               <button
                 onClick={() => setPosyanduSection('kms')}
-                className={`px-3 py-1.5 rounded-xl transition flex items-center gap-1.5 ${
+                className={`px-3 py-1.5 rounded-xl transition flex items-center gap-1.5 whitespace-nowrap ${
                   posyanduSection === 'kms'
                     ? 'bg-white text-emerald-900 shadow-sm'
                     : 'bg-white/10 text-white hover:bg-white/20'
@@ -814,7 +1052,7 @@ export default function LayananView({ currentSubTab = 'surat', onSubTabChange }:
               </button>
               <button
                 onClick={() => setPosyanduSection('imunisasi')}
-                className={`px-3 py-1.5 rounded-xl transition flex items-center gap-1.5 ${
+                className={`px-3 py-1.5 rounded-xl transition flex items-center gap-1.5 whitespace-nowrap ${
                   posyanduSection === 'imunisasi'
                     ? 'bg-white text-emerald-900 shadow-sm'
                     : 'bg-white/10 text-white hover:bg-white/20'
@@ -825,7 +1063,7 @@ export default function LayananView({ currentSubTab = 'surat', onSubTabChange }:
               </button>
               <button
                 onClick={() => setPosyanduSection('lansia')}
-                className={`px-3 py-1.5 rounded-xl transition flex items-center gap-1.5 ${
+                className={`px-3 py-1.5 rounded-xl transition flex items-center gap-1.5 whitespace-nowrap ${
                   posyanduSection === 'lansia'
                     ? 'bg-white text-emerald-900 shadow-sm'
                     : 'bg-white/10 text-white hover:bg-white/20'
@@ -836,6 +1074,188 @@ export default function LayananView({ currentSubTab = 'surat', onSubTabChange }:
               </button>
             </div>
           </div>
+
+          {/* 0. SECTION ANTREAN POSYANDU */}
+          {posyanduSection === 'antrean' && (
+            <div className="space-y-4">
+              {/* Tiket Antrean Saya */}
+              {posyanduQueueData?.my_queue ? (
+                <div className={`rounded-3xl p-6 text-white shadow-lg border relative overflow-hidden ${
+                  posyanduQueueData.my_queue.status === 'calling'
+                    ? 'bg-gradient-to-r from-amber-600 to-emerald-700 border-amber-300 animate-pulse'
+                    : 'bg-gradient-to-r from-slate-900 to-emerald-950 border-emerald-500/30'
+                }`}>
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                    <div>
+                      <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-emerald-300">
+                        <Ticket className="w-4 h-4" />
+                        <span>Tiket Antrean Posyandu Hari Ini</span>
+                      </div>
+                      <div className="text-4xl font-black mt-2 tracking-tight">
+                        {posyanduQueueData.my_queue.queue_number}
+                      </div>
+                      <div className="text-sm font-semibold text-emerald-100 mt-1">
+                        Pasien: <span className="text-white font-bold">{posyanduQueueData.my_queue.patient_name}</span> ({posyanduQueueData.my_queue.category?.toUpperCase()})
+                      </div>
+                      {posyanduQueueData.my_queue.complaint && (
+                        <div className="text-xs text-emerald-200/80 mt-0.5">
+                          Keluhan/Tujuan: {posyanduQueueData.my_queue.complaint}
+                        </div>
+                      )}
+                    </div>
+                    <div className="flex flex-col sm:items-end gap-2">
+                      <div className="flex items-center gap-2">
+                        {posyanduQueueData.my_queue.status === 'calling' ? (
+                          <span className="px-3.5 py-1.5 rounded-full bg-amber-400 text-slate-950 font-black text-xs flex items-center gap-1.5 shadow-md">
+                            <Siren className="w-4 h-4 animate-bounce" /> SEDANG DIPANGGIL!
+                          </span>
+                        ) : (
+                          <span className="px-3.5 py-1.5 rounded-full bg-emerald-500/30 text-emerald-200 border border-emerald-400/30 font-bold text-xs flex items-center gap-1.5">
+                            <Clock className="w-3.5 h-3.5" /> Menunggu Giliran
+                          </span>
+                        )}
+                      </div>
+                      <button
+                        onClick={() => handleCancelQueue(posyanduQueueData.my_queue.id)}
+                        className="text-xs text-rose-300 hover:text-rose-100 font-semibold underline underline-offset-4 mt-2"
+                      >
+                        Batalkan Tiket Ini
+                      </button>
+                    </div>
+                  </div>
+                  {posyanduQueueData.my_queue.status === 'calling' && (
+                    <div className="mt-4 pt-3 border-t border-white/20 text-xs font-bold text-amber-200 flex items-center gap-2">
+                      📢 Giliran Anda telah dipanggil! Silakan segera menuju meja pemeriksaan Bidan / Kader Posyandu.
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <div className="bg-gradient-to-r from-emerald-50 to-teal-50 border border-emerald-200 rounded-3xl p-6 flex flex-col sm:flex-row items-center justify-between gap-4">
+                  <div className="space-y-1 text-center sm:text-left">
+                    <h5 className="font-extrabold text-base text-slate-800">
+                      Ambil Antrean Pemeriksaan Posyandu
+                    </h5>
+                    <p className="text-xs text-slate-600 max-w-xl">
+                      Daftar secara mandiri dari aplikasi atau tap e-KTP di scanner Kios ESP32 untuk mendapatkan nomor urut pemeriksaan Balita & Lansia.
+                    </p>
+                  </div>
+                  <button
+                    onClick={() => setShowQueueModal(true)}
+                    className="px-5 py-3 rounded-2xl bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold text-xs shadow-md transition flex items-center gap-2 whitespace-nowrap active:scale-95"
+                  >
+                    <Plus className="w-4 h-4" />
+                    <span>Ambil Antrean Sekarang</span>
+                  </button>
+                </div>
+              )}
+
+              {/* Status Antrean Posyandu Live */}
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                <div className="bg-white rounded-2xl p-4 border border-slate-200 shadow-sm text-center">
+                  <div className="text-[10px] uppercase font-bold text-slate-400">Sedang Dipanggil</div>
+                  <div className="text-2xl font-black text-emerald-600 mt-1">
+                    {posyanduQueueData?.calling_now?.queue_number || '-'}
+                  </div>
+                  <div className="text-[10px] text-slate-500 truncate mt-0.5">
+                    {posyanduQueueData?.calling_now?.patient_name || 'Belum ada panggilan'}
+                  </div>
+                </div>
+                <div className="bg-white rounded-2xl p-4 border border-slate-200 shadow-sm text-center">
+                  <div className="text-[10px] uppercase font-bold text-slate-400">Menunggu Giliran</div>
+                  <div className="text-2xl font-black text-amber-600 mt-1">
+                    {posyanduQueueData?.waiting_count || 0}
+                  </div>
+                  <div className="text-[10px] text-slate-500 mt-0.5">Pasien dalam antrean</div>
+                </div>
+                <div className="bg-white rounded-2xl p-4 border border-slate-200 shadow-sm text-center">
+                  <div className="text-[10px] uppercase font-bold text-slate-400">Selesai Diperiksa</div>
+                  <div className="text-2xl font-black text-blue-600 mt-1">
+                    {posyanduQueueData?.completed_count || 0}
+                  </div>
+                  <div className="text-[10px] text-slate-500 mt-0.5">Sudah tercatat KMS</div>
+                </div>
+                <div className="bg-white rounded-2xl p-4 border border-slate-200 shadow-sm text-center">
+                  <div className="text-[10px] uppercase font-bold text-slate-400">Total Terdaftar</div>
+                  <div className="text-2xl font-black text-slate-800 mt-1">
+                    {posyanduQueueData?.total || 0}
+                  </div>
+                  <div className="text-[10px] text-slate-500 mt-0.5">Hari ini</div>
+                </div>
+              </div>
+
+              {/* Tabel Daftar Antrean Hari Ini */}
+              <div className="bg-white rounded-3xl p-5 border border-slate-200 shadow-sm space-y-3">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <Users className="w-4 h-4 text-emerald-600" />
+                    <h5 className="font-extrabold text-sm text-slate-800">Daftar Antrean Hari Ini</h5>
+                  </div>
+                  <button
+                    onClick={async () => {
+                      const qRes = await fetchApi('/posyandu/queues');
+                      if (qRes.success) setPosyanduQueueData(qRes.data);
+                    }}
+                    className="text-xs text-slate-500 hover:text-emerald-600 font-semibold"
+                  >
+                    🔄 Segarkan
+                  </button>
+                </div>
+
+                {(!posyanduQueueData?.queues || posyanduQueueData.queues.length === 0) ? (
+                  <div className="text-center py-8 text-xs text-slate-400">
+                    Belum ada antrean yang terdaftar hari ini.
+                  </div>
+                ) : (
+                  <div className="space-y-2">
+                    {posyanduQueueData.queues.map((q: any) => (
+                      <div
+                        key={q.id}
+                        className={`flex items-center justify-between p-3 rounded-2xl border text-xs transition ${
+                          q.status === 'calling'
+                            ? 'bg-amber-50 border-amber-300 text-amber-950 font-bold'
+                            : q.status === 'completed'
+                            ? 'bg-slate-50/70 border-slate-200 text-slate-400'
+                            : 'bg-white border-slate-200 text-slate-700'
+                        }`}
+                      >
+                        <div className="flex items-center gap-3">
+                          <span className="font-black text-sm w-16">{q.queue_number}</span>
+                          <div>
+                            <div className="font-bold text-slate-900">{q.patient_name}</div>
+                            <div className="text-[10px] text-slate-500">
+                              Kategori: <span className="capitalize">{q.category}</span> {q.patient_age ? `• Usia: ${q.patient_age}` : ''}
+                            </div>
+                          </div>
+                        </div>
+                        <div>
+                          {q.status === 'calling' && (
+                            <span className="px-2.5 py-1 rounded-full bg-amber-200 text-amber-900 font-bold text-[10px]">
+                              📢 Dipanggil
+                            </span>
+                          )}
+                          {q.status === 'waiting' && (
+                            <span className="px-2.5 py-1 rounded-full bg-blue-100 text-blue-800 font-semibold text-[10px]">
+                              Menunggu
+                            </span>
+                          )}
+                          {q.status === 'completed' && (
+                            <span className="px-2.5 py-1 rounded-full bg-emerald-100 text-emerald-800 font-semibold text-[10px]">
+                              Selesai
+                            </span>
+                          )}
+                          {q.status === 'cancelled' && (
+                            <span className="px-2.5 py-1 rounded-full bg-slate-200 text-slate-600 text-[10px]">
+                              Batal
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
 
           {/* 1. SECTION KMS BALITA */}
           {posyanduSection === 'kms' && (
@@ -2004,6 +2424,145 @@ export default function LayananView({ currentSubTab = 'surat', onSubTabChange }:
                   className="flex-1 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-600 text-slate-900 text-xs font-black shadow-md shadow-amber-500/20"
                 >
                   Kirim Permintaan Ambulans
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Modal Ambil Antrean Posyandu */}
+      {showQueueModal && (
+        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 overflow-y-auto">
+          <div className="bg-white rounded-3xl max-w-lg w-full p-6 space-y-4 shadow-2xl border border-slate-100 my-8">
+            <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+              <div className="flex items-center gap-2">
+                <Ticket className="w-5 h-5 text-emerald-600" />
+                <h3 className="font-extrabold text-slate-800 text-base">Ambil Antrean Posyandu</h3>
+              </div>
+              <button
+                onClick={() => setShowQueueModal(false)}
+                className="text-slate-400 hover:text-slate-600 text-lg font-bold"
+              >
+                ✕
+              </button>
+            </div>
+
+            <form onSubmit={handleTakeQueue} className="space-y-4">
+              <div>
+                <label className="block text-xs font-bold text-slate-700 mb-1">Kategori Pemeriksaan:</label>
+                <div className="grid grid-cols-3 gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setQueueCategory('balita')}
+                    className={`py-2 px-3 rounded-xl text-xs font-bold border transition ${
+                      queueCategory === 'balita'
+                        ? 'bg-emerald-600 text-white border-emerald-600 shadow-sm'
+                        : 'bg-white text-slate-700 border-slate-200 hover:bg-slate-50'
+                    }`}
+                  >
+                    👶 Balita
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setQueueCategory('lansia')}
+                    className={`py-2 px-3 rounded-xl text-xs font-bold border transition ${
+                      queueCategory === 'lansia'
+                        ? 'bg-emerald-600 text-white border-emerald-600 shadow-sm'
+                        : 'bg-white text-slate-700 border-slate-200 hover:bg-slate-50'
+                    }`}
+                  >
+                    👵 Lansia
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setQueueCategory('umum')}
+                    className={`py-2 px-3 rounded-xl text-xs font-bold border transition ${
+                      queueCategory === 'umum'
+                        ? 'bg-emerald-600 text-white border-emerald-600 shadow-sm'
+                        : 'bg-white text-slate-700 border-slate-200 hover:bg-slate-50'
+                    }`}
+                  >
+                    🩺 Umum
+                  </button>
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-slate-700 mb-1">Nama Pasien (Balita / Lansia / Warga):</label>
+                <input
+                  type="text"
+                  required
+                  value={queuePatientName}
+                  onChange={(e) => setQueuePatientName(e.target.value)}
+                  placeholder="Contoh: Balita Muhammad / Ibu Siti Aminah"
+                  className="w-full text-xs px-3 py-2.5 rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-slate-700 mb-1">Usia Pasien (Bulan / Tahun):</label>
+                <input
+                  type="text"
+                  value={queuePatientAge}
+                  onChange={(e) => setQueuePatientAge(e.target.value)}
+                  placeholder="Contoh: 18 Bulan atau 68 Tahun"
+                  className="w-full text-xs px-3 py-2.5 rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-slate-700 mb-1">Keluhan / Keperluan Pemeriksaan:</label>
+                <textarea
+                  value={queueComplaint}
+                  onChange={(e) => setQueueComplaint(e.target.value)}
+                  placeholder="Contoh: Timbang KMS bulanan, imunisasi campak, atau cek tensi & gula darah."
+                  className="w-full text-xs px-3 py-2 rounded-xl border border-slate-300 h-16 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                />
+              </div>
+
+              {/* Integrasi Tap e-KTP Scanner ESP32 */}
+              <div className="bg-slate-50 border border-slate-200 rounded-2xl p-3 space-y-2">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-1.5 text-xs font-bold text-slate-700">
+                    <Radio className="w-3.5 h-3.5 text-emerald-600 animate-pulse" />
+                    <span>Verifikasi e-KTP / Kartu RFID (Opsional):</span>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={handleScanKtpForQueue}
+                    disabled={isScanningKtpQueue}
+                    className="px-2.5 py-1 rounded-lg bg-emerald-100 hover:bg-emerald-200 text-emerald-800 text-[11px] font-bold transition flex items-center gap-1"
+                  >
+                    {isScanningKtpQueue ? '⏳ Memeriksa...' : '📡 Pindai dari ESP32'}
+                  </button>
+                </div>
+                <input
+                  type="text"
+                  value={queueRfidUid}
+                  onChange={(e) => setQueueRfidUid(e.target.value)}
+                  placeholder="UID Kartu (Otomatis terisi jika tap di ESP32)"
+                  className="w-full text-xs px-3 py-1.5 rounded-lg border border-slate-300 font-mono"
+                />
+                <p className="text-[10px] text-slate-500">
+                  Tip: Tap e-KTP Anda di reader ESP32 (SDA Pin 4 atau Pin 5), lalu klik tombol di atas untuk mengisi UID secara otomatis.
+                </p>
+              </div>
+
+              <div className="flex gap-2 pt-2">
+                <button
+                  type="button"
+                  onClick={() => setShowQueueModal(false)}
+                  className="flex-1 py-2.5 rounded-xl border border-slate-200 text-xs font-bold text-slate-600 hover:bg-slate-50"
+                >
+                  Batal
+                </button>
+                <button
+                  type="submit"
+                  disabled={loading}
+                  className="flex-1 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold shadow-md shadow-emerald-600/20 active:scale-95 transition"
+                >
+                  {loading ? 'Memproses...' : 'Dapatkan Nomor Antrean'}
                 </button>
               </div>
             </form>

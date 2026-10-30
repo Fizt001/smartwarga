@@ -41,7 +41,9 @@ import {
   X,
   Gift,
   ChevronDown,
-  ChevronUp
+  ChevronUp,
+  Package,
+  HeartPulse
 } from 'lucide-react';
 import ConfirmModal from '@/components/ConfirmModal';
 import { ToastContainer, ToastItem } from '@/components/Toast';
@@ -65,6 +67,11 @@ export default function DashboardView({
   const [wasteRates, setWasteRates] = useState<any[]>([]);
   const [lastRonda, setLastRonda] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+
+  // Sesi Antrean Kios Pelayanan (SDA Pin 4) & Riwayat Gerbang (SDA Pin 5)
+  const [kioskQueueSession, setKioskQueueSession] = useState<any | null>(null);
+  const [kioskActionLoading, setKioskActionLoading] = useState(false);
+  const [myGateLogs, setMyGateLogs] = useState<any[]>([]);
 
   // Toast notifications state
   const [toasts, setToasts] = useState<ToastItem[]>([]);
@@ -234,6 +241,8 @@ export default function DashboardView({
       if (res.success) {
         setKtpSuccess(res.message);
         await refreshUser();
+        // Otomatis selesaikan sesi antrean kios jika ada agar antrean tertutup & giliran warga berikutnya maju
+        handleCompleteKioskSession('Registrasi e-KTP', 'Penautan kartu e-KTP fisik berhasil.');
         setTimeout(() => {
           setShowKtpModal(false);
           setKtpSuccess('');
@@ -326,6 +335,111 @@ export default function DashboardView({
     };
     loadDashboardData();
   }, [isApproved]);
+
+  // Polling Real-Time Sesi Antrean Kios Pelayanan (SDA Pin 4) & Riwayat Gerbang Tol (SDA Pin 5)
+  useEffect(() => {
+    if (!user) return;
+    const fetchKioskAndGate = async () => {
+      try {
+        const [qRes, gateRes] = await Promise.all([
+          fetchApi('/pelayanan/active-session').catch(() => ({ success: false })),
+          fetchApi('/warga/gate-logs').catch(() => ({ success: false })),
+        ]);
+        if (qRes.success && qRes.data) {
+          setKioskQueueSession(qRes.data);
+        }
+        if (gateRes.success && gateRes.data?.data) {
+          setMyGateLogs(gateRes.data.data);
+        }
+      } catch {
+        // ignore
+      }
+    };
+
+    fetchKioskAndGate();
+    const interval = setInterval(fetchKioskAndGate, 3000);
+    return () => clearInterval(interval);
+  }, [user]);
+
+  // Handlers Kios Pelayanan Terpadu
+  const handleCompleteKioskSession = async (serviceType: string, notes: string) => {
+    setKioskActionLoading(true);
+    try {
+      const res = await fetchApi('/pelayanan/complete-session', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          service_type: serviceType,
+          service_notes: notes,
+        }),
+      });
+      if (res.success) {
+        addToast('success', res.message, 'Pelayanan Selesai');
+        const qRes = await fetchApi('/pelayanan/active-session');
+        if (qRes.success) setKioskQueueSession(qRes.data);
+      } else {
+        addToast('error', res.message || 'Gagal menyelesaikan sesi.', 'Error');
+      }
+    } catch (err: any) {
+      addToast('error', err.message || 'Gagal menyelesaikan sesi pelayanan.', 'Error');
+    } finally {
+      setKioskActionLoading(false);
+    }
+  };
+
+  const handleLegalizeKioskItem = async (itemType: 'letter' | 'loan' | 'posyandu', itemId: number) => {
+    if (!kioskQueueSession?.my_queue?.id) return;
+    setKioskActionLoading(true);
+    try {
+      const res = await fetchApi('/pelayanan/legalize-item', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          queue_id: kioskQueueSession.my_queue.id,
+          item_type: itemType,
+          item_id: itemId,
+        }),
+      });
+      if (res.success) {
+        addToast('success', res.message || 'Permohonan berhasil disahkan via Tap KTP!', 'Sah & Terverifikasi');
+        const qRes = await fetchApi('/pelayanan/active-session');
+        if (qRes.success) setKioskQueueSession(qRes.data);
+      } else {
+        addToast('error', res.message || 'Gagal mengesahkan permohonan.', 'Error');
+      }
+    } catch (err: any) {
+      addToast('error', err.message || 'Terjadi kesalahan saat legalisasi permohonan.', 'Error');
+    } finally {
+      setKioskActionLoading(false);
+    }
+  };
+
+  const handleCancelKioskQueue = async (queueId: number) => {
+    setConfirmDialog({
+      isOpen: true,
+      title: 'Batalkan Antrean Pelayanan?',
+      message: 'Apakah Anda yakin ingin membatalkan antrean Anda di Kios Pelayanan?',
+      confirmText: 'Ya, Batalkan',
+      variant: 'danger',
+      onConfirm: async () => {
+        setConfirmDialog((prev) => ({ ...prev, isOpen: false }));
+        try {
+          const res = await fetchApi('/pelayanan/cancel-session', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ queue_id: queueId }),
+          });
+          if (res.success) {
+            addToast('info', res.message, 'Antrean Dibatalkan');
+            const qRes = await fetchApi('/pelayanan/active-session');
+            if (qRes.success) setKioskQueueSession(qRes.data);
+          }
+        } catch (err: any) {
+          addToast('error', err.message || 'Gagal membatalkan antrean.', 'Error');
+        }
+      },
+    });
+  };
 
   const openProfileModal = () => {
     if (!user) return;
@@ -881,8 +995,8 @@ export default function DashboardView({
         </div>
       </div>
 
-      {/* 2.5 Banner Akses Fisik e-KTP & Sensor RFID */}
-      {isApproved && (
+      {/* 2.5 Banner Akses Fisik e-KTP & Sensor RFID (Bisa diakses seluruh warga) */}
+      {user && (
         <div className={`rounded-3xl p-5 sm:p-6 transition border shadow-sm relative overflow-hidden ${
           user?.rfid_uid 
             ? 'bg-gradient-to-r from-emerald-950 via-slate-900 to-teal-950 text-white border-emerald-500/30' 
@@ -961,6 +1075,211 @@ export default function DashboardView({
               )}
             </div>
           </div>
+        </div>
+      )}
+
+      {/* 2.5. SESI ANTREAN KIOS PELAYANAN (SDA PIN 4) - HANYA MUNCUL JIKA SEDANG MELAKUKAN TAP KARTU */}
+      {kioskQueueSession?.my_queue && (
+        <div className="w-full">
+          {kioskQueueSession.is_my_turn ? (
+            /* CASE 1: GILIRAN ANDA SEDANG AKTIF! */
+            <div className="bg-gradient-to-r from-emerald-600 via-teal-700 to-slate-900 rounded-3xl p-6 text-white shadow-xl border-2 border-emerald-400 relative overflow-hidden">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                <div className="space-y-1">
+                  <div className="flex items-center gap-2">
+                    <span className="px-3 py-1 rounded-full bg-emerald-400 text-slate-950 font-black text-xs uppercase tracking-wider flex items-center gap-1.5 shadow-md">
+                      <Sparkles className="w-4 h-4" /> MEJA PELAYANAN SEDANG AKTIF
+                    </span>
+                    <span className="text-xs text-emerald-200 font-bold">
+                      Antrean #{kioskQueueSession.my_queue.queue_number}
+                    </span>
+                  </div>
+                  <h3 className="text-xl sm:text-2xl font-black text-white mt-1">
+                    Giliran Anda, {kioskQueueSession.my_queue.citizen_name}!
+                  </h3>
+                  <p className="text-xs text-emerald-100 max-w-xl">
+                    Anda berhasil absen lewat kartu RFID di Kios Pelayanan. Silakan pilih layanan yang ingin Anda lakukan di bawah ini. Begitu selesai, sesi Anda langsung tertutup otomatis untuk melayani antrean warga berikutnya.
+                  </p>
+                </div>
+
+                <button
+                  onClick={() => handleCompleteKioskSession('Selesai Mandiri', 'Warga telah menyelesaikan keperluannya di kios pelayanan.')}
+                  disabled={kioskActionLoading}
+                  className="px-5 py-2.5 rounded-2xl bg-white hover:bg-slate-100 text-slate-900 font-black text-xs shadow-lg transition active:scale-95 flex items-center gap-2 self-start sm:self-center whitespace-nowrap"
+                >
+                  <CheckCircle2 className="w-4 h-4 text-emerald-600" />
+                  <span>Selesai & Tutup Sesi</span>
+                </button>
+              </div>
+
+              {/* JIKA ADA DRAF PENGAJUAN / PERMOHONAN YANG SIAP DISAHKAN SEKARANG */}
+              {kioskQueueSession.active_pending_items && kioskQueueSession.active_pending_items.total_pending > 0 && (
+                <div className="mt-5 p-4 rounded-2xl bg-white/15 backdrop-blur-md border border-white/25 space-y-3">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <span className="w-2.5 h-2.5 rounded-full bg-emerald-300 animate-ping" />
+                      <h4 className="text-xs sm:text-sm font-black text-white">
+                        Draf Pengajuan Anda Siap Disahkan Sekarang ({kioskQueueSession.active_pending_items.total_pending})
+                      </h4>
+                    </div>
+                    <span className="text-[10px] uppercase font-extrabold px-2 py-0.5 rounded-full bg-emerald-400 text-slate-950">
+                      Tap KTP Terverifikasi
+                    </span>
+                  </div>
+                  <p className="text-xs text-emerald-100">
+                    Kartu e-KTP Anda telah terdeteksi di Meja Kios (SDA Pin 4). Klik tombol legalisasi di bawah ini untuk mengesahkan permohonan secara resmi:
+                  </p>
+
+                  <div className="space-y-2 pt-1">
+                    {/* 1. Pending Letters */}
+                    {kioskQueueSession.active_pending_items.pending_letters?.map((letter: any) => (
+                      <div key={`letter-${letter.id}`} className="bg-slate-900/60 rounded-xl p-3 border border-white/10 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                        <div className="flex items-start gap-2.5">
+                          <FileText className="w-4 h-4 text-blue-300 shrink-0 mt-0.5" />
+                          <div>
+                            <div className="font-bold text-xs text-white">
+                              Surat {letter.type.toUpperCase()}: <span className="font-normal text-slate-200">{letter.purpose}</span>
+                            </div>
+                            <div className="text-[10px] text-emerald-300 mt-0.5">
+                              Status: {letter.status === 'rw_approved' ? 'Telah Di-ACC Pengurus RW' : 'Draf Pengajuan'}
+                            </div>
+                          </div>
+                        </div>
+                        <button
+                          onClick={() => handleLegalizeKioskItem('letter', letter.id)}
+                          disabled={kioskActionLoading}
+                          className="px-3.5 py-1.5 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-black text-xs transition flex items-center justify-center gap-1.5 shadow whitespace-nowrap self-end sm:self-center"
+                        >
+                          <CheckCircle2 className="w-3.5 h-3.5" />
+                          <span>Sahkan & Serahkan Surat</span>
+                        </button>
+                      </div>
+                    ))}
+
+                    {/* 2. Pending Asset Loans */}
+                    {kioskQueueSession.active_pending_items.pending_loans?.map((loan: any) => (
+                      <div key={`loan-${loan.id}`} className="bg-slate-900/60 rounded-xl p-3 border border-white/10 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                        <div className="flex items-start gap-2.5">
+                          <Package className="w-4 h-4 text-amber-300 shrink-0 mt-0.5" />
+                          <div>
+                            <div className="font-bold text-xs text-white">
+                              Pinjam {loan.asset?.name || 'Aset Fasum'} ({loan.quantity} Unit)
+                            </div>
+                            <div className="text-[10px] text-emerald-300 mt-0.5">
+                              Periode: {loan.loan_date} s/d {loan.return_date} • Status: Siap Serah Terima Fisik
+                            </div>
+                          </div>
+                        </div>
+                        <button
+                          onClick={() => handleLegalizeKioskItem('loan', loan.id)}
+                          disabled={kioskActionLoading}
+                          className="px-3.5 py-1.5 rounded-xl bg-amber-400 hover:bg-amber-300 text-slate-950 font-black text-xs transition flex items-center justify-center gap-1.5 shadow whitespace-nowrap self-end sm:self-center"
+                        >
+                          <Package className="w-3.5 h-3.5" />
+                          <span>Sahkan Akad & Ambil Barang</span>
+                        </button>
+                      </div>
+                    ))}
+
+                    {/* 3. Pending Posyandu Queues */}
+                    {kioskQueueSession.active_pending_items.pending_posyandu_queues?.map((pos: any) => (
+                      <div key={`pos-${pos.id}`} className="bg-slate-900/60 rounded-xl p-3 border border-white/10 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                        <div className="flex items-start gap-2.5">
+                          <HeartPulse className="w-4 h-4 text-rose-300 shrink-0 mt-0.5" />
+                          <div>
+                            <div className="font-bold text-xs text-white">
+                              Antrean Posyandu #{pos.queue_number}: <span className="font-normal text-slate-200">{pos.patient_name} ({pos.category})</span>
+                            </div>
+                            <div className="text-[10px] text-emerald-300 mt-0.5">
+                              Status: Terdaftar • Menunggu Konfirmasi Masuk Meja
+                            </div>
+                          </div>
+                        </div>
+                        <button
+                          onClick={() => handleLegalizeKioskItem('posyandu', pos.id)}
+                          disabled={kioskActionLoading}
+                          className="px-3.5 py-1.5 rounded-xl bg-rose-400 hover:bg-rose-300 text-slate-950 font-black text-xs transition flex items-center justify-center gap-1.5 shadow whitespace-nowrap self-end sm:self-center"
+                        >
+                          <HeartPulse className="w-3.5 h-3.5" />
+                          <span>Konfirmasi Hadir di Posyandu</span>
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Pilihan Layanan Cepat Sesi Ini */}
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mt-5 pt-4 border-t border-white/20">
+                <button
+                  onClick={() => setShowKtpModal(true)}
+                  className="p-3.5 rounded-2xl bg-white/10 hover:bg-white/20 border border-white/20 text-left transition group active:scale-95"
+                >
+                  <IdCard className="w-5 h-5 text-indigo-300 mb-1.5 group-hover:scale-110 transition" />
+                  <div className="font-bold text-xs text-white">Registrasi / Tautkan KTP</div>
+                  <div className="text-[10px] text-emerald-200">Kaitkan UID kartu fisik ini</div>
+                </button>
+
+                <button
+                  onClick={() => onNavigateTab('layanan')}
+                  className="p-3.5 rounded-2xl bg-white/10 hover:bg-white/20 border border-white/20 text-left transition group active:scale-95"
+                >
+                  <Heart className="w-5 h-5 text-rose-300 mb-1.5 group-hover:scale-110 transition" />
+                  <div className="font-bold text-xs text-white">Posyandu Digital</div>
+                  <div className="text-[10px] text-emerald-200">KMS Balita & Lansia</div>
+                </button>
+
+                <button
+                  onClick={() => onNavigateTab('pengaduan')}
+                  className="p-3.5 rounded-2xl bg-white/10 hover:bg-white/20 border border-white/20 text-left transition group active:scale-95"
+                >
+                  <MessageSquareWarning className="w-5 h-5 text-amber-300 mb-1.5 group-hover:scale-110 transition" />
+                  <div className="font-bold text-xs text-white">Buat Pengaduan</div>
+                  <div className="text-[10px] text-emerald-200">Lapor keluhan / PJU mati</div>
+                </button>
+
+                <button
+                  onClick={() => onNavigateTab('layanan')}
+                  className="p-3.5 rounded-2xl bg-white/10 hover:bg-white/20 border border-white/20 text-left transition group active:scale-95"
+                >
+                  <FileText className="w-5 h-5 text-blue-300 mb-1.5 group-hover:scale-110 transition" />
+                  <div className="font-bold text-xs text-white">Surat Pengantar</div>
+                  <div className="text-[10px] text-emerald-200">Domisili, SKCK, Usaha</div>
+                </button>
+              </div>
+            </div>
+          ) : (
+            /* CASE 2: ANDA SEDANG MENUNGGU GILIRAN */
+            <div className="bg-gradient-to-r from-amber-500 via-orange-600 to-slate-900 rounded-3xl p-5 text-white shadow-lg border border-amber-300/40">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                <div className="flex items-center gap-3">
+                  <div className="w-12 h-12 rounded-2xl bg-white/10 backdrop-blur-md flex items-center justify-center border border-white/20 shrink-0">
+                    <Clock className="w-6 h-6 text-amber-200 animate-spin" />
+                  </div>
+                  <div>
+                    <div className="text-xs font-bold text-amber-200 uppercase tracking-wider">
+                      Antrean Kios Pelayanan • Nomor #{kioskQueueSession.my_queue.queue_number}
+                    </div>
+                    <div className="text-sm sm:text-base font-extrabold text-white mt-0.5">
+                      Mohon Menunggu: Meja Pelayanan Sedang Melayani <span className="underline decoration-amber-300 font-black">{kioskQueueSession.active_session?.citizen_name || 'Antrean Sebelum Anda'}</span>
+                    </div>
+                    <div className="text-xs text-amber-100/90 mt-0.5">
+                      {kioskQueueSession.people_ahead > 0 ? `${kioskQueueSession.people_ahead} orang lagi di depan Anda.` : 'Anda adalah antrean berikutnya!'} Harap standby di dekat Kios.
+                    </div>
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-2 self-end sm:self-center">
+                  <button
+                    onClick={() => handleCancelKioskQueue(kioskQueueSession.my_queue.id)}
+                    className="px-4 py-2 rounded-xl bg-white/10 hover:bg-white/20 text-white font-bold text-xs transition border border-white/20"
+                  >
+                    Batalkan Antrean
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
         </div>
       )}
 
@@ -1726,8 +2045,45 @@ export default function DashboardView({
           </div>
         </div>
 
-        {/* Right Column (4 cols): IoT Status Widget + Bank Sampah + Kontak Pengurus */}
+        {/* Right Column (4 cols): Riwayat Gerbang Tol + IoT Status + Kontak Pengurus */}
         <div className="lg:col-span-4 space-y-6">
+          {/* Riwayat Keluar-Masuk Gerbang Tol Warga (SDA Pin 5) */}
+          <div className="bg-white rounded-3xl p-5 border border-slate-200 shadow-sm space-y-3">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <DoorOpen className="w-4 h-4 text-emerald-600" />
+                <h4 className="text-xs font-black uppercase tracking-wider text-slate-800">
+                  Gerbang Tol Warga (SDA 5)
+                </h4>
+              </div>
+              <span className="text-[10px] font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200">
+                Akses Otomatis
+              </span>
+            </div>
+
+            {myGateLogs.length === 0 ? (
+              <div className="text-center py-6 text-slate-400 text-xs">
+                Belum ada riwayat tap gerbang keluar-masuk.
+              </div>
+            ) : (
+              <div className="space-y-2">
+                {myGateLogs.slice(0, 4).map((log: any) => (
+                  <div key={log.id} className="p-2.5 rounded-2xl bg-slate-50 border border-slate-200/80 flex items-center justify-between text-xs">
+                    <div>
+                      <div className="font-bold text-slate-800">{log.post_id || 'Pos Gerbang Utama'}</div>
+                      <div className="text-[10px] text-slate-400">
+                        {new Date(log.tapped_at).toLocaleString('id-ID', { dateStyle: 'short', timeStyle: 'short' })}
+                      </div>
+                    </div>
+                    <span className="px-2.5 py-1 rounded-full bg-emerald-100 text-emerald-800 font-bold text-[10px]">
+                      Palang Terbuka
+                    </span>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
           {/* Mini IoT Monitoring Widget */}
           <div className="bg-slate-900 text-white rounded-3xl p-5 shadow-xl space-y-4">
             <div className="flex items-center justify-between pb-3 border-b border-slate-800">

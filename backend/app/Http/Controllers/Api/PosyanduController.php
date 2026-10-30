@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Models\ElderlyHealthRecord;
 use App\Models\ImmunizationRecord;
+use App\Models\PosyanduQueue;
 use App\Models\PosyanduRecord;
 use App\Models\User;
 use Carbon\Carbon;
@@ -360,6 +361,152 @@ class PosyanduController extends Controller
                     'hipertensi' => $lansiaHipertensi,
                 ],
             ],
+        ]);
+    }
+
+    /**
+     * List Posyandu Queue for Today
+     */
+    public function listQueues(Request $request)
+    {
+        $date = $request->get('date', now()->toDateString());
+        $user = $request->user();
+
+        $queues = PosyanduQueue::with(['user.house', 'officer'])
+            ->whereDate('queue_date', $date)
+            ->orderByRaw("CASE 
+                WHEN status = 'calling' THEN 1 
+                WHEN status = 'waiting' THEN 2 
+                WHEN status = 'completed' THEN 3 
+                ELSE 4 END")
+            ->orderBy('id', 'asc')
+            ->get();
+
+        $callingNow = $queues->firstWhere('status', 'calling');
+        $waitingCount = $queues->where('status', 'waiting')->count();
+        $completedCount = $queues->where('status', 'completed')->count();
+
+        // Cari antrean aktif milik user login
+        $myQueue = $user ? $queues->where('user_id', $user->id)->whereIn('status', ['waiting', 'calling'])->first() : null;
+
+        return response()->json([
+            'success' => true,
+            'data' => [
+                'date' => $date,
+                'calling_now' => $callingNow,
+                'total' => $queues->count(),
+                'waiting_count' => $waitingCount,
+                'completed_count' => $completedCount,
+                'my_queue' => $myQueue,
+                'queues' => $queues,
+            ],
+        ]);
+    }
+
+    /**
+     * Take / Register Posyandu Queue Ticket
+     */
+    public function storeQueue(Request $request)
+    {
+        $validated = $request->validate([
+            'category' => 'required|in:balita,lansia,umum',
+            'patient_name' => 'required|string|max:150',
+            'patient_age' => 'nullable|string|max:50',
+            'complaint' => 'nullable|string|max:500',
+            'rfid_uid' => 'nullable|string|max:50',
+        ]);
+
+        $user = $request->user();
+        $date = now()->toDateString();
+        $category = $validated['category'];
+
+        // Tentukan prefix: B (Balita), L (Lansia), U (Umum)
+        $prefix = match ($category) {
+            'balita' => 'B',
+            'lansia' => 'L',
+            default => 'U',
+        };
+
+        // Hitung nomor urut hari ini untuk kategori ini
+        $countToday = PosyanduQueue::whereDate('queue_date', $date)
+            ->where('category', $category)
+            ->count();
+
+        $queueNumber = sprintf('%s-%03d', $prefix, $countToday + 1);
+
+        $queue = PosyanduQueue::create([
+            'queue_number' => $queueNumber,
+            'queue_date' => $date,
+            'category' => $category,
+            'user_id' => $user?->id,
+            'rfid_uid' => $validated['rfid_uid'] ?? $user?->rfid_uid,
+            'patient_name' => $validated['patient_name'],
+            'patient_age' => $validated['patient_age'] ?? null,
+            'complaint' => $validated['complaint'] ?? null,
+            'status' => 'waiting',
+        ]);
+
+        return response()->json([
+            'success' => true,
+            'message' => "Nomor antrean {$queueNumber} berhasil diambil. Silakan menunggu giliran.",
+            'data' => $queue->load('user.house'),
+        ], 201);
+    }
+
+    /**
+     * Call Queue (Petugas memanggil nomor antrean)
+     */
+    public function callQueue(Request $request, $id)
+    {
+        $queue = PosyanduQueue::findOrFail($id);
+        $queue->update([
+            'status' => 'calling',
+            'called_at' => now(),
+            'officer_id' => $request->user()->id,
+        ]);
+
+        return response()->json([
+            'success' => true,
+            'message' => "Nomor antrean {$queue->queue_number} sedang dipanggil.",
+            'data' => $queue->load(['user.house', 'officer']),
+        ]);
+    }
+
+    /**
+     * Complete Queue (Petugas menyelesaikan pemeriksaan)
+     */
+    public function completeQueue(Request $request, $id)
+    {
+        $queue = PosyanduQueue::findOrFail($id);
+        $queue->update([
+            'status' => 'completed',
+            'completed_at' => now(),
+            'officer_id' => $request->user()->id,
+            'notes' => $request->notes ?? $queue->notes,
+        ]);
+
+        return response()->json([
+            'success' => true,
+            'message' => "Pemeriksaan untuk antrean {$queue->queue_number} telah selesai.",
+            'data' => $queue->load(['user.house', 'officer']),
+        ]);
+    }
+
+    /**
+     * Cancel Queue
+     */
+    public function cancelQueue(Request $request, $id)
+    {
+        $queue = PosyanduQueue::findOrFail($id);
+        $queue->update([
+            'status' => 'cancelled',
+            'notes' => $request->notes ?? 'Dibatalkan',
+        ]);
+
+        return response()->json([
+            'success' => true,
+            'message' => "Antrean {$queue->queue_number} berhasil dibatalkan.",
+            'data' => $queue,
         ]);
     }
 }

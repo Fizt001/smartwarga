@@ -236,7 +236,8 @@ class IoTController extends Controller
         ]);
 
         $sirenDevice = IotDevice::where('device_type', 'siren')->first();
-        $isSirenOnline = $sirenDevice && $sirenDevice->last_ping && abs($sirenDevice->last_ping->diffInSeconds(now(), false)) <= 15;
+        // Berikan toleransi 45 detik agar tidak false-offline karena jeda paket hotspot WiFi
+        $isSirenOnline = $sirenDevice && $sirenDevice->last_ping && abs($sirenDevice->last_ping->diffInSeconds(now(), false)) <= 45;
 
         // Jika pengurus mencoba menyalakan sirine padahal hardware Node 2 OFFLINE
         if ($validated['is_active'] && ! $isSirenOnline) {
@@ -511,9 +512,16 @@ class IoTController extends Controller
             }
         }
 
+        $siren = SirenStatus::firstOrCreate(['id' => 1], [
+            'is_active' => false,
+            'reason' => 'Kondisi Normal Aman',
+        ]);
+
         return response()->json([
             'success' => true,
             'message' => 'Heartbeat acknowledged',
+            'siren_active' => (bool) $siren->is_active,
+            'siren_reason' => $siren->reason,
             'timestamp' => now()->toIso8601String(),
         ]);
     }

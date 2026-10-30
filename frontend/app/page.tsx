@@ -17,7 +17,6 @@ import LayananView from '@/components/views/LayananView';
 import PengaduanView from '@/components/views/PengaduanView';
 import IoTView from '@/components/views/IoTView';
 import PengurusView from '@/components/views/PengurusView';
-import SimulatorView from '@/components/views/SimulatorView';
 
 export default function HomePage() {
   const { user, loading, refreshUser, viewMode, isPengurus } = useAuth();
@@ -30,7 +29,7 @@ export default function HomePage() {
 
   const [activeTab, setActiveTabState] = useState<string>('dashboard');
   const [layananSubTab, setLayananSubTab] = useState<'surat' | 'umkm' | 'koperasi' | 'aset' | 'rukam' | 'posyandu'>('surat');
-  const [pengurusSubTab, setPengurusSubTab] = useState<'sensus' | 'ipl' | 'kegiatan' | 'surat' | 'approval' | 'topup' | 'aset' | 'koperasi' | 'posyandu' | 'rukam'>('sensus');
+  const [pengurusSubTab, setPengurusSubTab] = useState<'sensus' | 'ipl' | 'kegiatan' | 'surat' | 'approval' | 'topup' | 'aset' | 'koperasi' | 'posyandu' | 'rukam' | 'gerbang'>('sensus');
   const [showPanicModal, setShowPanicModal] = useState(false);
   const [showTopupModal, setShowTopupModal] = useState(false);
 
@@ -68,7 +67,7 @@ export default function HomePage() {
     const mainTab = parts[0]?.toLowerCase();
     const subTab = parts[1]?.toLowerCase();
 
-    const validTabs = ['dashboard', 'ipl', 'layanan', 'pengaduan', 'iot', 'pengurus', 'simulator'];
+    const validTabs = ['dashboard', 'ipl', 'layanan', 'pengaduan', 'iot', 'pengurus'];
     if (validTabs.includes(mainTab)) {
       setActiveTabState(mainTab);
       if (mainTab === 'layanan' && subTab) {
@@ -173,8 +172,6 @@ export default function HomePage() {
         return <PengaduanView />;
       case 'iot':
         return <IoTView />;
-      case 'simulator':
-        return <SimulatorView />;
       case 'pengurus':
         return (
           <PengurusView

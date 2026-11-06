@@ -517,30 +517,30 @@ export default function IplView({
       )}
 
       {/* 3. KALENDER 12 BULAN PEMBAYARAN IPL (JANUARI - DESEMBER) */}
-      <div className="bg-white rounded-3xl p-6 border border-slate-200 shadow-sm space-y-4">
+      <div className="bg-white rounded-2xl sm:rounded-3xl p-3 sm:p-6 border border-slate-200 shadow-sm space-y-3 sm:space-y-4">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
           <div>
-            <h3 className="font-black text-base text-slate-900 tracking-tight flex items-center gap-2">
-              <Calendar className="w-5 h-5 text-emerald-600" />
+            <h3 className="font-black text-sm sm:text-base text-slate-900 tracking-tight flex items-center gap-2">
+              <Calendar className="w-4 h-4 sm:w-5 sm:h-5 text-emerald-600" />
               <span>Kalender 12 Bulan Pembayaran IPL (Januari - Desember {selectedYear})</span>
             </h3>
-            <p className="text-xs text-slate-500 mt-0.5">
+            <p className="text-[11px] sm:text-xs text-slate-500 mt-0.5">
               Klik kotak bulan dengan status <strong className="text-rose-600">Belum Bayar</strong> untuk melunasi iuran via <strong>QRIS Mandiri</strong>.
             </p>
           </div>
 
-          <div className="flex flex-wrap items-center gap-2 text-xs">
+          <div className="flex flex-wrap items-center gap-2 text-[10px] sm:text-xs">
             <span className="flex items-center gap-1 text-slate-600 font-medium">
-              <span className="w-2.5 h-2.5 rounded-full bg-emerald-500"></span> Lunas (Sah)
+              <span className="w-2 sm:w-2.5 h-2 sm:h-2.5 rounded-full bg-emerald-500"></span> Lunas (Sah)
             </span>
             <span className="flex items-center gap-1 text-slate-600 font-medium">
-              <span className="w-2.5 h-2.5 rounded-full bg-amber-500"></span> Pending Bendahara
+              <span className="w-2 sm:w-2.5 h-2 sm:h-2.5 rounded-full bg-amber-500"></span> Pending Bendahara
             </span>
             <span className="flex items-center gap-1 text-slate-600 font-medium">
-              <span className="w-2.5 h-2.5 rounded-full bg-rose-500"></span> Tagihan Terbit (Belum Bayar)
+              <span className="w-2 sm:w-2.5 h-2 sm:h-2.5 rounded-full bg-rose-500"></span> Tagihan Terbit (Belum Bayar)
             </span>
             <span className="flex items-center gap-1 text-slate-400 font-medium">
-              <span className="w-2.5 h-2.5 rounded-full bg-slate-300"></span> Belum Diterbitkan Pengurus
+              <span className="w-2 sm:w-2.5 h-2 sm:h-2.5 rounded-full bg-slate-300"></span> Belum Diterbitkan Pengurus
             </span>
           </div>
         </div>
@@ -551,7 +551,7 @@ export default function IplView({
             <span>Memuat kalender 12 bulan tahun {selectedYear}...</span>
           </div>
         ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+          <div className="grid grid-cols-4 gap-1.5 sm:gap-4">
             {displayMonths.map((mItem: any) => {
               const isPaid = mItem.status === 'paid';
               const isPending = mItem.status === 'waiting_verification';
@@ -561,106 +561,100 @@ export default function IplView({
               return (
                 <div
                   key={mItem.month}
-                  className={`rounded-2xl p-4 border transition flex flex-col justify-between relative overflow-hidden shadow-sm ${
+                  className={`rounded-xl sm:rounded-2xl p-2 sm:p-4 border transition flex flex-col justify-between relative overflow-hidden shadow-xs hover:shadow-md ${
                     isPaid
                       ? 'bg-gradient-to-br from-emerald-50/70 to-white border-emerald-300 hover:border-emerald-400'
                       : isPending
                       ? 'bg-gradient-to-br from-amber-50/70 to-white border-amber-300 hover:border-amber-400'
                       : isUnpaid
-                      ? 'bg-gradient-to-br from-rose-50/60 to-white border-2 border-rose-300 hover:border-rose-400 hover:shadow-md'
+                      ? 'bg-gradient-to-br from-rose-50/60 to-white border-2 border-rose-300 hover:border-rose-400'
                       : 'bg-slate-50/70 border-2 border-dashed border-slate-300 text-slate-400'
                   }`}
                 >
                   {/* Top Bar: Month & Status Badge */}
                   <div>
-                    <div className="flex items-center justify-between mb-2">
-                      <span className={`text-xs font-black uppercase tracking-wider ${isNotGenerated ? 'text-slate-500' : 'text-slate-700'}`}>
-                        {mItem.month_name}
+                    <div className="flex items-center justify-between mb-1 sm:mb-2">
+                      <span className={`text-[10px] sm:text-xs font-black uppercase tracking-wider ${isNotGenerated ? 'text-slate-500' : 'text-slate-800'}`}>
+                        <span className="sm:hidden">{mItem.month_name.slice(0, 3)}</span>
+                        <span className="hidden sm:inline">{mItem.month_name}</span>
                       </span>
                       {isPaid && (
-                        <span className="bg-emerald-100 text-emerald-800 text-[10px] font-black px-2 py-0.5 rounded-full flex items-center gap-1 shadow-xs">
-                          <CheckCircle2 className="w-3 h-3 text-emerald-600" />
-                          <span>LUNAS</span>
+                        <span className="bg-emerald-100 text-emerald-800 text-[9px] sm:text-[10px] font-black px-1 sm:px-2 py-0.5 rounded-full flex items-center gap-0.5 shadow-2xs">
+                          <CheckCircle2 className="w-2.5 h-2.5 sm:w-3 sm:h-3 text-emerald-600" />
+                          <span className="hidden sm:inline">LUNAS</span>
                         </span>
                       )}
                       {isPending && (
-                        <span className="bg-amber-100 text-amber-800 text-[10px] font-black px-2 py-0.5 rounded-full flex items-center gap-1 shadow-xs">
-                          <Clock className="w-3 h-3 text-amber-600" />
-                          <span>VERIFIKASI</span>
+                        <span className="bg-amber-100 text-amber-800 text-[9px] sm:text-[10px] font-black px-1 sm:px-2 py-0.5 rounded-full flex items-center gap-0.5 shadow-2xs">
+                          <Clock className="w-2.5 h-2.5 sm:w-3 sm:h-3 text-amber-600" />
+                          <span className="hidden sm:inline">VERIFIKASI</span>
                         </span>
                       )}
                       {isUnpaid && (
-                        <span className="bg-rose-100 text-rose-800 text-[10px] font-black px-2 py-0.5 rounded-full flex items-center gap-1 shadow-xs">
-                          <AlertCircle className="w-3 h-3 text-rose-600" />
-                          <span>BELUM BAYAR</span>
+                        <span className="bg-rose-100 text-rose-800 text-[9px] sm:text-[10px] font-black px-1 sm:px-2 py-0.5 rounded-full flex items-center gap-0.5 shadow-2xs">
+                          <AlertCircle className="w-2.5 h-2.5 sm:w-3 sm:h-3 text-rose-600" />
+                          <span className="hidden sm:inline">BELUM BAYAR</span>
                         </span>
                       )}
                       {isNotGenerated && (
-                        <span className="bg-slate-200 text-slate-600 text-[10px] font-bold px-2 py-0.5 rounded-full flex items-center gap-1">
-                          <Clock className="w-3 h-3 text-slate-500" />
-                          <span>BELUM TERBIT</span>
+                        <span className="bg-slate-200 text-slate-600 text-[9px] sm:text-[10px] font-bold px-1 sm:px-2 py-0.5 rounded-full flex items-center gap-0.5">
+                          <Clock className="w-2.5 h-2.5 sm:w-3 sm:h-3 text-slate-500" />
+                          <span className="hidden sm:inline">BELUM TERBIT</span>
                         </span>
                       )}
                     </div>
 
-                    <div className={`text-lg font-black tracking-tight ${isNotGenerated ? 'text-slate-400' : 'text-slate-900'}`}>
+                    <div className={`text-xs sm:text-base font-black tracking-tight ${isNotGenerated ? 'text-slate-400' : 'text-slate-900'} truncate`}>
                       Rp {Number(mItem.amount).toLocaleString('id-ID')}
                     </div>
 
-                    <div className="text-[10px] text-slate-400 mt-1 space-y-0.5">
+                    <div className="text-[9px] sm:text-[10px] text-slate-400 mt-0.5 sm:mt-1 space-y-0.5 leading-tight">
                       {isNotGenerated ? (
-                        <div className="italic text-slate-400">
-                          Menunggu pengurus RT menerbitkan tagihan periode ini.
+                        <div className="italic text-slate-400 truncate">
+                          Belum diterbitkan
                         </div>
                       ) : (
                         <>
-                          <div>Kas RT: Rp {Number(mItem.base_ipl_amount).toLocaleString('id-ID')}</div>
-                          <div>Kas RW: Rp {Number(mItem.rw_contribution_amount).toLocaleString('id-ID')}</div>
+                          <div className="sm:hidden text-slate-500 truncate">
+                            RT: {Math.round(Number(mItem.base_ipl_amount) / 1000)}k • RW: {Math.round(Number(mItem.rw_contribution_amount) / 1000)}k
+                          </div>
+                          <div className="hidden sm:block">
+                            <div>Kas RT: Rp {Number(mItem.base_ipl_amount).toLocaleString('id-ID')}</div>
+                            <div>Kas RW: Rp {Number(mItem.rw_contribution_amount).toLocaleString('id-ID')}</div>
+                          </div>
                         </>
                       )}
                     </div>
                   </div>
 
                   {/* Bottom Action / Verification Details */}
-                  <div className="mt-4 pt-3 border-t border-slate-100">
+                  <div className="mt-2 sm:mt-4 pt-1.5 sm:pt-3 border-t border-slate-100">
                     {isPaid ? (
-                      <div className="text-[10px] text-emerald-700 font-semibold space-y-0.5">
-                        <div className="flex items-center gap-1">
-                          <ShieldCheck className="w-3 h-3 shrink-0" />
-                          <span>Sah ({mItem.payment_method?.toUpperCase() || 'QRIS'})</span>
-                        </div>
-                        {mItem.verified_by_name && (
-                          <div className="text-[9px] text-slate-500 truncate">
-                            ACC: {mItem.verified_by_name}
-                          </div>
-                        )}
+                      <div className="text-[9px] sm:text-[10px] text-emerald-700 font-bold bg-emerald-50 sm:bg-transparent p-1 sm:p-0 rounded-lg flex items-center justify-center sm:justify-start gap-1">
+                        <ShieldCheck className="w-3 h-3 shrink-0 text-emerald-600" />
+                        <span className="truncate">Sah ({mItem.payment_method?.toUpperCase() || 'QRIS'})</span>
                       </div>
                     ) : isPending ? (
-                      <div className="space-y-1">
-                        <div className="text-[10px] text-amber-800 font-bold flex items-center gap-1">
-                          <Clock className="w-3 h-3 text-amber-600 shrink-0" />
-                          <span>Menunggu ACC Bendahara RT</span>
-                        </div>
-                        <div className="text-[9px] text-slate-500">
-                          Metode: {mItem.payment_method?.toUpperCase() || 'QRIS'}
-                        </div>
+                      <div className="text-[9px] sm:text-[10px] text-amber-800 font-bold bg-amber-50 sm:bg-transparent p-1 sm:p-0 rounded-lg flex items-center justify-center sm:justify-start gap-1">
+                        <Clock className="w-3 h-3 text-amber-600 shrink-0" />
+                        <span className="truncate">Menunggu ACC</span>
                       </div>
                     ) : isUnpaid ? (
                       <button
                         onClick={() => handleOpenQrisModal(mItem)}
-                        className="w-full py-2 bg-gradient-to-r from-red-600 to-rose-600 hover:from-red-700 text-white rounded-xl text-xs font-black shadow-md shadow-rose-500/20 active:scale-95 transition flex items-center justify-center gap-1.5"
+                        className="w-full py-1 sm:py-2 bg-gradient-to-r from-red-600 to-rose-600 hover:from-red-700 text-white rounded-lg sm:rounded-xl text-[10px] sm:text-xs font-black shadow-xs active:scale-95 transition flex items-center justify-center gap-1"
                       >
-                        <QrCode className="w-3.5 h-3.5" />
-                        <span>Bayar via QRIS</span>
+                        <QrCode className="w-3 h-3 sm:w-3.5 sm:h-3.5 shrink-0" />
+                        <span className="truncate">Bayar QRIS</span>
                       </button>
                     ) : (
                       <button
                         disabled
-                        className="w-full py-2 bg-slate-100 text-slate-400 rounded-xl text-xs font-bold cursor-not-allowed border border-slate-200 flex items-center justify-center gap-1.5 opacity-70"
+                        className="w-full py-1 sm:py-2 bg-slate-100 text-slate-400 rounded-lg sm:rounded-xl text-[9px] sm:text-xs font-bold cursor-not-allowed border border-slate-200 flex items-center justify-center gap-1 opacity-70"
                         title="Tagihan untuk bulan ini belum diterbitkan oleh pengurus RT"
                       >
-                        <Lock className="w-3 h-3" />
-                        <span>Belum Diterbitkan</span>
+                        <Lock className="w-2.5 h-2.5 sm:w-3 sm:h-3 shrink-0" />
+                        <span className="truncate">Terkunci</span>
                       </button>
                     )}
                   </div>

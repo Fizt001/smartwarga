@@ -11,7 +11,8 @@ import {
   AlertCircle, 
   Camera, 
   User, 
-  Send 
+  Send,
+  RefreshCw
 } from 'lucide-react';
 
 export default function PengaduanView() {
@@ -135,41 +136,50 @@ export default function PengaduanView() {
 
   return (
     <div className="space-y-4">
-      <div className="flex items-center justify-between">
-        <div>
-          <h3 className="font-extrabold text-base text-slate-800 tracking-tight flex items-center gap-2">
-            <MessageSquareWarning className="w-5 h-5 text-amber-600" />
-            <span>Pusat Pengaduan & Aspirasi Warga</span>
-          </h3>
-          <p className="text-xs text-slate-500 mt-0.5">Sampaikan laporan fasilitas rusak, ketertiban, atau kebersihan lingkungan.</p>
+      {/* Header Banner & Tombol Buat Laporan */}
+      <div className="bg-white rounded-2xl sm:rounded-3xl p-3.5 sm:p-5 border border-slate-200/80 shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+        <div className="flex items-start gap-3">
+          <div className="w-10 h-10 rounded-2xl bg-amber-100 text-amber-700 flex items-center justify-center shrink-0 shadow-inner">
+            <MessageSquareWarning className="w-5 h-5" />
+          </div>
+          <div>
+            <h3 className="font-extrabold text-sm sm:text-base text-slate-900 tracking-tight">
+              Pusat Pengaduan & Aspirasi Warga
+            </h3>
+            <p className="text-[11px] sm:text-xs text-slate-500 mt-0.5 leading-relaxed">
+              Sampaikan laporan fasilitas rusak, ketertiban, atau kebersihan lingkungan.
+            </p>
+          </div>
         </div>
         <button
           onClick={() => setShowModal(true)}
-          className="px-3 py-1.5 bg-amber-600 hover:bg-amber-700 text-white rounded-xl text-xs font-bold flex items-center gap-1 shadow-sm transition"
+          className="px-4 py-2 bg-gradient-to-r from-amber-600 to-orange-600 hover:from-amber-700 hover:to-orange-700 text-white rounded-xl text-xs font-black flex items-center justify-center gap-1.5 shadow-md shadow-amber-600/20 active:scale-95 transition whitespace-nowrap self-stretch sm:self-center"
         >
-          <Plus className="w-3.5 h-3.5" />
+          <Plus className="w-4 h-4" />
           <span>Buat Laporan</span>
         </button>
       </div>
 
-      {/* Filter Tabs */}
-      <div className="flex gap-2 overflow-x-auto pb-1">
+      {/* Filter Tabs (Fleksibel Resize 4 Kolom di Mobile & Desktop) */}
+      <div className="grid grid-cols-4 gap-1.5 sm:gap-2 w-full">
         {[
-          { id: 'all', label: 'Semua Laporan' },
-          { id: 'laporan_masuk', label: 'Laporan Masuk' },
-          { id: 'diproses', label: 'Sedang Diproses' },
-          { id: 'selesai', label: 'Selesai' },
+          { id: 'all', label: 'Semua Laporan', shortLabel: 'Semua' },
+          { id: 'laporan_masuk', label: 'Laporan Masuk', shortLabel: 'Masuk' },
+          { id: 'diproses', label: 'Sedang Diproses', shortLabel: 'Diproses' },
+          { id: 'selesai', label: 'Selesai', shortLabel: 'Selesai' },
         ].map((f) => (
           <button
             key={f.id}
             onClick={() => setFilterStatus(f.id)}
-            className={`px-3 py-1.5 rounded-xl text-xs font-bold whitespace-nowrap transition ${
+            className={`flex items-center justify-center px-1 sm:px-3 py-2 rounded-xl text-[11px] sm:text-xs font-bold transition text-center min-w-0 w-full ${
               filterStatus === f.id
-                ? 'bg-amber-600 text-white shadow-sm'
+                ? 'bg-amber-600 text-white shadow-sm ring-1 ring-amber-500'
                 : 'bg-white text-slate-600 border border-slate-200 hover:bg-slate-50'
             }`}
+            title={f.label}
           >
-            {f.label}
+            <span className="truncate sm:hidden">{f.shortLabel}</span>
+            <span className="hidden sm:inline truncate">{f.label}</span>
           </button>
         ))}
       </div>
@@ -186,11 +196,18 @@ export default function PengaduanView() {
 
       {loading ? (
         <div className="bg-white rounded-2xl p-8 text-center text-slate-400 text-xs border border-slate-200">
-          Memuat riwayat pengaduan...
+          <RefreshCw className="w-6 h-6 animate-spin mx-auto mb-2 text-amber-600" />
+          <span>Memuat riwayat pengaduan...</span>
         </div>
       ) : complaints.length === 0 ? (
-        <div className="bg-white rounded-2xl p-8 text-center text-slate-400 text-xs border border-slate-200">
-          Belum ada riwayat pengaduan warga.
+        <div className="bg-white rounded-2xl sm:rounded-3xl p-8 text-center border border-slate-200 shadow-xs space-y-2">
+          <div className="w-12 h-12 rounded-2xl bg-amber-50 text-amber-600 flex items-center justify-center mx-auto">
+            <CheckCircle2 className="w-6 h-6" />
+          </div>
+          <h4 className="text-sm font-bold text-slate-800">Belum Ada Riwayat Pengaduan</h4>
+          <p className="text-xs text-slate-500 max-w-sm mx-auto leading-relaxed">
+            Lingkungan dalam kondisi aman dan tertib. Klik tombol <strong>Buat Laporan</strong> jika Anda ingin menyampaikan laporan fasilitas atau aspirasi baru.
+          </p>
         </div>
       ) : (
         complaints.map((item) => (
@@ -213,7 +230,7 @@ export default function PengaduanView() {
             {item.photo_path && (
               <div>
                 <img
-                  src={`http://smartwarga.test${item.photo_path}`}
+                  src={item.photo_path.startsWith('http') ? item.photo_path : item.photo_path}
                   alt="Foto Aduan"
                   className="rounded-xl max-h-48 object-cover border border-slate-200"
                 />

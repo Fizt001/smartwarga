@@ -170,7 +170,13 @@ export default function HomePage() {
       case 'pengaduan':
         return <PengaduanView />;
       case 'iot':
-        return <IoTView />;
+        return isPengurus ? <IoTView /> : (
+          <DashboardView
+            onNavigateTab={handleNavigate}
+            onOpenPanic={() => setShowPanicModal(true)}
+            onOpenTopup={() => setShowTopupModal(true)}
+          />
+        );
       case 'pengurus':
         return (
           <PengurusView

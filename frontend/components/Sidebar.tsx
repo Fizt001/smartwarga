@@ -66,13 +66,12 @@ export default function Sidebar({
     return activeTab === tabId;
   };
 
-  // 1. Navigation items for Warga (KK Utama)
+  // 1. Navigation items for Warga (KK Utama) - IoT Live disembunyikan, hanya tampil di role pengurus
   const residentNavItems = [
     { id: 'dashboard', label: 'Beranda Warga', icon: Home, desc: 'Ringkasan & Agenda Lingkungan' },
     { id: 'ipl', label: 'Iuran IPL Saya', icon: CreditCard, desc: 'Kalender 12 Bulan & QRIS Mandiri' },
     { id: 'layanan', label: 'Layanan Warga', icon: FileText, desc: 'Surat, UMKM, Aset & Koperasi' },
     { id: 'pengaduan', label: 'Pusat Pengaduan', icon: MessageSquareWarning, desc: 'Aspirasi & Lapor Fasilitas' },
-    { id: 'iot', label: 'Monitoring IoT Live', icon: Cpu, desc: 'Sirine, Ronda & Bank Sampah', isLive: true },
   ];
 
   // 2. Navigation items for Bendahara (Facilitator - Financial & Cash Authority)

@@ -77,13 +77,12 @@ export default function BottomNav({
       { id: 'iot', label: 'IoT Live', icon: Cpu },
     ];
   } else {
-    // Warga (KK Utama)
+    // Warga (KK Utama) - IoT Live disembunyikan, hanya tampil di role pengurus
     navItems = [
       { id: 'dashboard', label: 'Beranda', icon: Home },
       { id: 'ipl', label: 'IPL Saya', icon: CreditCard },
       { id: 'layanan', label: 'Layanan', icon: FileText },
       { id: 'pengaduan', label: 'Aduan', icon: MessageSquareWarning },
-      { id: 'iot', label: 'IoT Live', icon: Cpu },
     ];
   }
 

@@ -974,62 +974,27 @@ export default function DashboardView({
           </div>
         </div>
 
-        {/* Card 4: Status Keamanan IoT (50% di mobile) */}
-        <div className={`rounded-2xl sm:rounded-3xl p-3.5 sm:p-5 border transition flex flex-col justify-between shadow-sm ${
-          sirenStatus?.is_active 
-            ? 'bg-red-50 border-red-300 text-red-950 animate-pulse'
-            : 'bg-white border-slate-200 text-slate-900'
-        }`}>
+        {/* Card 4: Layanan Mandiri Warga (50% di mobile) */}
+        <div className="bg-white rounded-2xl sm:rounded-3xl p-3.5 sm:p-5 border border-slate-200 shadow-sm flex flex-col justify-between hover:border-emerald-500/50 hover:shadow-md transition">
           <div className="flex items-center justify-between">
-            <span className="text-[10px] sm:text-xs font-bold uppercase tracking-wider text-slate-500 truncate">Keamanan IoT</span>
-            <div className={`w-7 h-7 sm:w-9 sm:h-9 rounded-xl flex items-center justify-center shrink-0 ${
-              sirenStatus?.is_active 
-                ? 'bg-red-500 text-white animate-bounce' 
-                : iotOnlineCount === 0
-                ? 'bg-slate-100 text-slate-400'
-                : 'bg-emerald-100 text-emerald-700'
-            }`}>
-              <ShieldAlert className="w-3.5 h-3.5 sm:w-5 sm:h-5" />
+            <span className="text-[10px] sm:text-xs font-bold text-slate-500 uppercase tracking-wider truncate">Layanan Warga</span>
+            <div className="w-7 h-7 sm:w-9 sm:h-9 rounded-xl bg-teal-100 text-teal-700 flex items-center justify-center shrink-0">
+              <FileText className="w-3.5 h-3.5 sm:w-5 sm:h-5" />
             </div>
           </div>
           <div className="mt-2 sm:mt-3">
-            <div className="flex items-center gap-1.5">
-              <span className={`w-2 h-2 sm:w-2.5 sm:h-2.5 rounded-full shrink-0 ${
-                sirenStatus?.is_active 
-                  ? 'bg-red-600 animate-ping' 
-                  : iotOnlineCount === 0
-                  ? 'bg-rose-500'
-                  : 'bg-emerald-500'
-              }`}></span>
-              <span className="text-xs sm:text-base font-black tracking-tight truncate">
-                {sirenStatus?.is_active 
-                  ? 'ALARM AKTIF!' 
-                  : iotOnlineCount === 0
-                  ? 'Hardware Offline'
-                  : 'Kondisi Aman'}
-              </span>
+            <div className="text-xs sm:text-base font-black text-slate-900 tracking-tight truncate">
+              {announcements.length > 0 ? `${announcements.length} Agenda Lingkungan` : 'Surat & Aset Fasum'}
             </div>
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1 mt-2 pt-2 border-t border-slate-100">
-              <span className={`text-[10px] sm:text-[11px] font-bold truncate ${
-                iotOnlineCount === null
-                  ? 'text-slate-500'
-                  : iotOnlineCount === 0
-                  ? 'text-rose-600'
-                  : iotOnlineCount < iotTotalCount
-                  ? 'text-amber-600'
-                  : 'text-emerald-600'
-              }`}>
-                {iotOnlineCount === null
-                  ? 'Memeriksa IoT...'
-                  : iotOnlineCount === 0
-                  ? 'ESP32 Offline'
-                  : 'ESP32 Online'}
+              <span className="text-[10px] sm:text-[11px] text-slate-500 font-medium truncate">
+                Layanan Digital & Balai
               </span>
               <button
-                onClick={onOpenPanic}
-                className="text-[11px] sm:text-xs font-extrabold text-red-600 hover:text-red-700 whitespace-nowrap self-end sm:self-auto"
+                onClick={() => onNavigateTab('layanan')}
+                className="text-[11px] sm:text-xs font-extrabold text-teal-700 hover:text-teal-800 whitespace-nowrap self-end sm:self-auto"
               >
-                🚨 Panic Button
+                Buka Layanan
               </button>
             </div>
           </div>
@@ -2318,74 +2283,6 @@ export default function DashboardView({
                 ))}
               </div>
             )}
-          </div>
-
-          {/* Mini IoT Monitoring Widget */}
-          <div className="bg-slate-900 text-white rounded-3xl p-5 shadow-xl space-y-4">
-            <div className="flex items-center justify-between pb-3 border-b border-slate-800">
-              <div className="flex items-center gap-2">
-                <Radio className="w-4 h-4 text-emerald-400" />
-                <h4 className="font-extrabold text-xs uppercase tracking-wider text-slate-200">
-                  Status ESP32 AIO & IoT Live
-                </h4>
-              </div>
-              <span className="text-[10px] bg-emerald-500/20 text-emerald-400 px-2 py-0.5 rounded font-mono">
-                Real-Time
-              </span>
-            </div>
-
-            {/* Siren state mini */}
-            <div className="p-3 bg-slate-800/80 rounded-2xl border border-slate-700 flex items-center justify-between text-xs">
-              <div className="flex items-center gap-2.5">
-                <div className={`p-2 rounded-xl ${
-                  sirenStatus?.is_active 
-                    ? 'bg-red-500 text-white animate-bounce' 
-                    : iotOnlineCount === 0
-                    ? 'bg-rose-500/20 text-rose-400'
-                    : 'bg-slate-700 text-slate-300'
-                }`}>
-                  {sirenStatus?.is_active ? <Volume2 className="w-4 h-4" /> : <VolumeX className="w-4 h-4" />}
-                </div>
-                <div>
-                  <div className="font-bold text-slate-100">Sirine RT 01-03</div>
-                  <div className={`text-[10px] ${iotOnlineCount === 0 ? 'text-rose-400 font-semibold' : 'text-slate-400'}`}>
-                    {sirenStatus?.is_active ? 'BERBUNYI' : iotOnlineCount === 0 ? '🔴 Offline (Terputus)' : 'Siaga Aman'}
-                  </div>
-                </div>
-              </div>
-              <button
-                onClick={() => onNavigateTab('iot')}
-                className="text-[11px] font-bold text-emerald-400 hover:text-emerald-300"
-              >
-                Panel IoT
-              </button>
-            </div>
-
-            {/* Last Ronda tap mini */}
-            <div className="p-3 bg-slate-800/80 rounded-2xl border border-slate-700 flex items-center justify-between text-xs">
-              <div className="flex items-center gap-2.5">
-                <div className={`p-2 rounded-xl ${iotOnlineCount === 0 ? 'bg-rose-500/20 text-rose-400' : 'bg-blue-500/20 text-blue-400'}`}>
-                  <DoorOpen className="w-4 h-4" />
-                </div>
-                <div>
-                  <div className="font-bold text-slate-100">Pos Gerbang Utama</div>
-                  <div className={`text-[10px] truncate max-w-[130px] ${iotOnlineCount === 0 ? 'text-rose-400 font-semibold' : 'text-slate-400'}`}>
-                    {iotOnlineCount === 0 ? '🔴 Gate Offline' : (lastRonda ? `Tap: ${lastRonda.user?.name}` : 'Servo Otomatis Normal')}
-                  </div>
-                </div>
-              </div>
-              <span className={`text-[10px] ${iotOnlineCount === 0 ? 'text-rose-400 font-mono' : 'text-slate-400'}`}>
-                {iotOnlineCount === 0 ? 'Offline' : (lastRonda ? new Date(lastRonda.tapped_at).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }) : 'Aktif')}
-              </span>
-            </div>
-
-            {/* Quick simulation link */}
-            <button
-              onClick={() => onNavigateTab('iot')}
-              className="w-full py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold transition shadow-sm"
-            >
-              Buka Layar Monitoring IoT Lengkap
-            </button>
           </div>
 
           {/* DIAGRAM 2: Diagram Nilai Tukar Bank Sampah Mandiri (Horizontal Bar Chart) */}

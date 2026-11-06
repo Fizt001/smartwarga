@@ -800,28 +800,29 @@ export default function DashboardView({
         </div>
       ))}
 
-      {/* 2. Top Widescreen Stats Grid (4 Fluid Columns) */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        {/* Card 1: Saldo Dompet */}
-        <div className="bg-white rounded-3xl p-5 border border-slate-200 shadow-sm flex flex-col justify-between hover:border-emerald-500/50 hover:shadow-md transition">
+      {/* 2. Top Widescreen Stats Grid (Mode Mobile: Card 1 & 2 dibuat 50% kiri-kanan) */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+        {/* Card 1: Saldo Dompet (50% di mobile) */}
+        <div className="bg-white rounded-2xl sm:rounded-3xl p-3.5 sm:p-5 border border-slate-200 shadow-sm flex flex-col justify-between hover:border-emerald-500/50 hover:shadow-md transition">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">Dompet Warga</span>
-            <div className="w-9 h-9 rounded-xl bg-emerald-100 text-emerald-700 flex items-center justify-center">
-              <Wallet className="w-5 h-5" />
+            <span className="text-[10px] sm:text-xs font-bold text-slate-500 uppercase tracking-wider truncate">Dompet Warga</span>
+            <div className="w-7 h-7 sm:w-9 sm:h-9 rounded-xl bg-emerald-100 text-emerald-700 flex items-center justify-center shrink-0">
+              <Wallet className="w-3.5 h-3.5 sm:w-5 sm:h-5" />
             </div>
           </div>
-          <div className="mt-3">
-            <div className="text-2xl font-black text-slate-900 tracking-tight">
+          <div className="mt-2 sm:mt-3">
+            <div className="text-base sm:text-xl lg:text-2xl font-black text-slate-900 tracking-tight truncate">
               Rp {Number(user?.wallet?.balance || 0).toLocaleString('id-ID')}
             </div>
-            <div className="flex items-center justify-between mt-2 pt-2 border-t border-slate-100">
-              <span className="text-[11px] text-emerald-600 font-semibold flex items-center gap-1">
-                <TrendingUp className="w-3.5 h-3.5" /> Auto-Kredit Bank Sampah
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1 mt-2 pt-2 border-t border-slate-100">
+              <span className="text-[10px] sm:text-[11px] text-emerald-600 font-semibold flex items-center gap-1 truncate">
+                <TrendingUp className="w-3 h-3 sm:w-3.5 sm:h-3.5 shrink-0" />
+                <span className="truncate">Auto-Kredit Bank Sampah</span>
               </span>
               <button
                 onClick={onOpenTopup}
                 disabled={!isApproved}
-                className="text-xs font-extrabold text-emerald-700 hover:text-emerald-800 disabled:opacity-40"
+                className="text-[11px] sm:text-xs font-extrabold text-emerald-700 hover:text-emerald-800 disabled:opacity-40 self-end sm:self-auto"
               >
                 + Top-Up
               </button>
@@ -829,36 +830,36 @@ export default function DashboardView({
           </div>
         </div>
 
-        {/* Card 2: Status Tagihan IPL Akumulatif */}
-        <div className="bg-white rounded-3xl p-5 border border-slate-200 shadow-sm flex flex-col justify-between hover:border-blue-500/50 hover:shadow-md transition">
+        {/* Card 2: Status Tagihan IPL Akumulatif (50% di mobile) */}
+        <div className="bg-white rounded-2xl sm:rounded-3xl p-3.5 sm:p-5 border border-slate-200 shadow-sm flex flex-col justify-between hover:border-blue-500/50 hover:shadow-md transition">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">
+            <span className="text-[10px] sm:text-xs font-bold text-slate-500 uppercase tracking-wider truncate">
               {totalUnpaidCount > 1 ? 'Total Tagihan IPL' : 'Iuran IPL Warga'}
             </span>
-            <div className={`w-9 h-9 rounded-xl flex items-center justify-center ${
+            <div className={`w-7 h-7 sm:w-9 sm:h-9 rounded-xl flex items-center justify-center shrink-0 ${
               totalUnpaidCount > 0 ? 'bg-amber-100 text-amber-700' : 'bg-emerald-100 text-emerald-700'
             }`}>
-              <CreditCard className="w-5 h-5" />
+              <CreditCard className="w-3.5 h-3.5 sm:w-5 sm:h-5" />
             </div>
           </div>
-          <div className="mt-3">
-            <div className="text-xl font-black text-slate-900 tracking-tight flex items-center gap-2">
+          <div className="mt-2 sm:mt-3">
+            <div className="text-base sm:text-xl font-black text-slate-900 tracking-tight flex flex-col sm:flex-row sm:items-center gap-1">
               {totalUnpaidCount > 0 ? (
                 <>
-                  <span className="text-amber-600">Rp {Number(totalUnpaidAmount).toLocaleString('id-ID')}</span>
-                  <span className="text-[10px] bg-amber-100 text-amber-800 font-bold px-2 py-0.5 rounded-full whitespace-nowrap">
+                  <span className="text-amber-600 truncate">Rp {Number(totalUnpaidAmount).toLocaleString('id-ID')}</span>
+                  <span className="text-[9px] sm:text-[10px] bg-amber-100 text-amber-800 font-bold px-1.5 py-0.5 rounded-full w-fit">
                     {totalUnpaidCount === 1 ? 'Belum Lunas' : `${totalUnpaidCount} Bulan Belum Lunas`}
                   </span>
                 </>
               ) : (
-                <>
-                  <span className="text-emerald-700">Lunas / Bebas Tagihan</span>
-                  <CheckCircle2 className="w-4 h-4 text-emerald-600" />
-                </>
+                <div className="flex items-center gap-1">
+                  <span className="text-emerald-700 text-xs sm:text-base">Lunas / Bebas Tagihan</span>
+                  <CheckCircle2 className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-emerald-600 shrink-0" />
+                </div>
               )}
             </div>
-            <div className="flex items-center justify-between mt-2 pt-2 border-t border-slate-100">
-              <span className="text-[11px] text-slate-400 truncate max-w-[180px]">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1 mt-2 pt-2 border-t border-slate-100">
+              <span className="text-[10px] sm:text-[11px] text-slate-400 truncate max-w-[180px]">
                 {totalUnpaidCount > 1 
                   ? `Akumulasi ${totalUnpaidCount} bulan terbit` 
                   : totalUnpaidCount === 1 && billings[0]?.master
@@ -867,7 +868,7 @@ export default function DashboardView({
               </span>
               <button
                 onClick={() => onNavigateTab('ipl')}
-                className="text-xs font-extrabold text-blue-600 hover:text-blue-700 whitespace-nowrap"
+                className="text-[11px] sm:text-xs font-extrabold text-blue-600 hover:text-blue-700 whitespace-nowrap self-end sm:self-auto"
               >
                 Lihat Tagihan
               </button>
@@ -876,7 +877,7 @@ export default function DashboardView({
         </div>
 
         {/* Card 3: Identitas Hunian & Status KK */}
-        <div className="bg-white rounded-3xl p-5 border border-slate-200 shadow-sm flex flex-col justify-between hover:border-indigo-500/50 hover:shadow-md transition">
+        <div className="col-span-2 sm:col-span-1 lg:col-span-1 bg-white rounded-3xl p-5 border border-slate-200 shadow-sm flex flex-col justify-between hover:border-indigo-500/50 hover:shadow-md transition">
           <div className="flex items-center justify-between">
             <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">Unit Rumah & Kartu Keluarga</span>
             <div className="w-9 h-9 rounded-xl bg-indigo-100 text-indigo-700 flex items-center justify-center">
@@ -934,7 +935,7 @@ export default function DashboardView({
         </div>
 
         {/* Card 4: Status Keamanan IoT */}
-        <div className={`rounded-3xl p-5 border transition flex flex-col justify-between shadow-sm ${
+        <div className={`col-span-2 sm:col-span-1 lg:col-span-1 rounded-3xl p-5 border transition flex flex-col justify-between shadow-sm ${
           sirenStatus?.is_active 
             ? 'bg-red-50 border-red-300 text-red-950 animate-pulse'
             : 'bg-white border-slate-200 text-slate-900'

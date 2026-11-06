@@ -5,7 +5,6 @@ import { useAuth } from '@/lib/auth-context';
 import Navbar from '@/components/Navbar';
 import Sidebar from '@/components/Sidebar';
 import BottomNav from '@/components/BottomNav';
-import DeviceFrame from '@/components/DeviceFrame';
 import PanicModal from '@/components/PanicModal';
 import TopupModal from '@/components/TopupModal';
 
@@ -19,7 +18,7 @@ import IoTView from '@/components/views/IoTView';
 import PengurusView from '@/components/views/PengurusView';
 
 export default function HomePage() {
-  const { user, loading, refreshUser, viewMode, isPengurus } = useAuth();
+  const { user, loading, refreshUser, isPengurus } = useAuth();
 
   const getInitialSubTab = (role?: string): 'sensus' | 'ipl' | 'kegiatan' | 'surat' | 'approval' | 'topup' => {
     if (role === 'bendahara') return 'ipl';
@@ -202,31 +201,20 @@ export default function HomePage() {
       ) : (
         /* When logged in */
         <>
-          {viewMode === 'desktop' ? (
-            /* DESKTOP MODE: Full-Width Left Sidebar + Right Fluid Content */
-            <div className="flex-1 flex w-full">
-              <Sidebar
-                activeTab={activeTab}
-                setActiveTab={(tab) => handleNavigate(tab, undefined, true)}
-                pengurusSubTab={pengurusSubTab}
-                onNavigateTab={(tab, sub) => handleNavigate(tab, sub, true)}
-                onOpenPanic={() => setShowPanicModal(true)}
-                onOpenTopup={() => setShowTopupModal(true)}
-              />
-              <main className="flex-1 min-w-0 p-6 lg:p-8 pb-16">
-                {renderCurrentView()}
-              </main>
-            </div>
-          ) : (
-            /* MOBILE MODE: Phone Mockup Frame + Bottom Navigation */
-            <main className="flex-1 pb-16">
-              <DeviceFrame>
-                {renderCurrentView()}
-              </DeviceFrame>
+          <div className="flex-1 flex w-full">
+            <Sidebar
+              activeTab={activeTab}
+              setActiveTab={(tab) => handleNavigate(tab, undefined, true)}
+              pengurusSubTab={pengurusSubTab}
+              onNavigateTab={(tab, sub) => handleNavigate(tab, sub, true)}
+              onOpenPanic={() => setShowPanicModal(true)}
+              onOpenTopup={() => setShowTopupModal(true)}
+            />
+            <main className="flex-1 min-w-0 w-full p-4 sm:p-6 lg:p-8 pb-24 md:pb-12 max-w-7xl mx-auto">
+              {renderCurrentView()}
             </main>
-          )}
+          </div>
 
-          {/* Bottom Nav on Mobile Mode */}
           <BottomNav 
             activeTab={activeTab} 
             setActiveTab={(tab) => handleNavigate(tab, undefined, true)} 

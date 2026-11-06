@@ -29,11 +29,7 @@ export default function BottomNav({
   pengurusSubTab,
   onNavigateTab
 }: BottomNavProps) {
-  const { user, isPengurus, viewMode } = useAuth();
-
-  if (viewMode === 'desktop') {
-    return null;
-  }
+  const { user, isPengurus } = useAuth();
 
   const handleNav = (tabId: string, subTab?: string) => {
     if (onNavigateTab) {

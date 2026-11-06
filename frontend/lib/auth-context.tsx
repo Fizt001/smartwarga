@@ -11,8 +11,6 @@ interface AuthContextType {
   refreshUser: () => Promise<void>;
   isPengurus: boolean;
   isApproved: boolean;
-  viewMode: 'desktop' | 'mobile';
-  toggleViewMode: () => void;
 }
 
 const AuthContext = createContext<AuthContextType>({
@@ -23,20 +21,11 @@ const AuthContext = createContext<AuthContextType>({
   refreshUser: async () => {},
   isPengurus: false,
   isApproved: false,
-  viewMode: 'mobile',
-  toggleViewMode: () => {},
 });
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
-  const [viewMode, setViewMode] = useState<'desktop' | 'mobile'>('desktop');
-
-  useEffect(() => {
-    if (typeof window !== 'undefined' && window.innerWidth < 768) {
-      setViewMode('mobile');
-    }
-  }, []);
 
   const refreshUser = async () => {
     try {
@@ -81,10 +70,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
-  const toggleViewMode = () => {
-    setViewMode((prev) => (prev === 'mobile' ? 'desktop' : 'mobile'));
-  };
-
   const isPengurus = Boolean(
     user && ['super_admin', 'rw', 'rt', 'bendahara', 'sekretaris'].includes(user.role)
   );
@@ -101,8 +86,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         refreshUser,
         isPengurus,
         isApproved,
-        viewMode,
-        toggleViewMode,
       }}
     >
       {children}

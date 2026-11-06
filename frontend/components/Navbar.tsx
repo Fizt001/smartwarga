@@ -4,8 +4,6 @@ import React, { useEffect, useState } from 'react';
 import { useAuth } from '@/lib/auth-context';
 import { 
   Building2, 
-  Smartphone, 
-  Monitor, 
   LogOut, 
   AlertTriangle, 
   Bell, 
@@ -17,7 +15,7 @@ import {
 import { fetchApi } from '@/lib/api';
 
 export default function Navbar({ onOpenPanic }: { onOpenPanic?: () => void }) {
-  const { user, logout, isPengurus, viewMode, toggleViewMode } = useAuth();
+  const { user, logout, isPengurus } = useAuth();
   const [sirenActive, setSirenActive] = useState(false);
 
   // Poll siren status every 5s for top alert badge
@@ -78,25 +76,6 @@ export default function Navbar({ onOpenPanic }: { onOpenPanic?: () => void }) {
 
         {/* Right Action Items */}
         <div className="flex items-center gap-2 sm:gap-3">
-          {/* Toggle View Mode Button */}
-          <button
-            onClick={toggleViewMode}
-            title="Toggle Desktop vs Mobile Device View"
-            className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border border-slate-200 text-slate-600 hover:bg-slate-100 text-xs font-medium transition"
-          >
-            {viewMode === 'mobile' ? (
-              <>
-                <Smartphone className="w-3.5 h-3.5 text-emerald-600" />
-                <span className="hidden sm:inline">Mobile Frame</span>
-              </>
-            ) : (
-              <>
-                <Monitor className="w-3.5 h-3.5 text-blue-600" />
-                <span className="hidden sm:inline">Desktop Wide</span>
-              </>
-            )}
-          </button>
-
           {/* Panic Button Trigger (Direct header shortcut) */}
           {user && onOpenPanic && (
             <button

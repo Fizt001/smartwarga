@@ -292,7 +292,7 @@ export default function Sidebar({
     : 'MENU UTAMA WARGA (KK UTAMA)';
 
   return (
-    <aside className="w-72 bg-white border-r border-slate-200/90 h-[calc(100vh-4rem)] sticky top-16 flex flex-col justify-between p-4 shrink-0 shadow-sm z-30 overflow-y-auto">
+    <aside className="hidden md:flex w-72 bg-white border-r border-slate-200/90 h-[calc(100vh-4rem)] sticky top-16 flex-col justify-between p-4 shrink-0 shadow-sm z-30 overflow-y-auto">
       <div className="space-y-6">
         {/* Status Profile Card: Distinct for Pengurus vs Resident */}
         {user && (

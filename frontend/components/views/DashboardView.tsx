@@ -1319,47 +1319,51 @@ export default function DashboardView({
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
         {/* Left Column (8 cols): Layanan Cepat + Agenda & Pengumuman + Tagihan Aktif */}
         <div className="lg:col-span-8 space-y-6">
-          {/* Minimal Quick Action Bar (Minim Shortcut, Hemat Ruang di HP) */}
-          <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-none">
+          {/* Minimal Quick Action Bar (Fleksibel Resize 4 Kolom di Desktop & Mobile Tanpa Terpotong) */}
+          <div className="grid grid-cols-4 gap-1.5 sm:gap-2.5 w-full">
             <button
               onClick={() => onNavigateTab('ipl')}
               disabled={!isApproved}
-              className="flex items-center gap-2 px-3 py-2 rounded-xl bg-white hover:bg-emerald-50 border border-slate-200 text-xs font-bold text-slate-700 hover:text-emerald-700 shadow-2xs whitespace-nowrap active:scale-95 transition"
+              className="flex items-center justify-center gap-1.5 sm:gap-2 px-1.5 sm:px-3 py-2 rounded-xl bg-white hover:bg-emerald-50 border border-slate-200 text-[11px] sm:text-xs font-bold text-slate-700 hover:text-emerald-700 shadow-2xs min-w-0 transition active:scale-95"
+              title="Bayar IPL"
             >
-              <div className="w-5 h-5 rounded-lg bg-emerald-100 text-emerald-700 flex items-center justify-center">
+              <div className="w-5 h-5 rounded-lg bg-emerald-100 text-emerald-700 flex items-center justify-center shrink-0">
                 <CreditCard className="w-3 h-3" />
               </div>
-              <span>Bayar IPL</span>
+              <span className="truncate">Bayar IPL</span>
             </button>
 
             <button
               onClick={() => onNavigateTab('layanan')}
               disabled={!isApproved}
-              className="flex items-center gap-2 px-3 py-2 rounded-xl bg-white hover:bg-blue-50 border border-slate-200 text-xs font-bold text-slate-700 hover:text-blue-700 shadow-2xs whitespace-nowrap active:scale-95 transition"
+              className="flex items-center justify-center gap-1.5 sm:gap-2 px-1.5 sm:px-3 py-2 rounded-xl bg-white hover:bg-blue-50 border border-slate-200 text-[11px] sm:text-xs font-bold text-slate-700 hover:text-blue-700 shadow-2xs min-w-0 transition active:scale-95"
+              title="Surat Pengantar"
             >
-              <div className="w-5 h-5 rounded-lg bg-blue-100 text-blue-700 flex items-center justify-center">
+              <div className="w-5 h-5 rounded-lg bg-blue-100 text-blue-700 flex items-center justify-center shrink-0">
                 <FileText className="w-3 h-3" />
               </div>
-              <span>Surat Pengantar</span>
+              <span className="truncate">Surat Pengantar</span>
             </button>
 
             <button
               onClick={() => onNavigateTab('pengaduan')}
               disabled={!isApproved}
-              className="flex items-center gap-2 px-3 py-2 rounded-xl bg-white hover:bg-amber-50 border border-slate-200 text-xs font-bold text-slate-700 hover:text-amber-700 shadow-2xs whitespace-nowrap active:scale-95 transition"
+              className="flex items-center justify-center gap-1.5 sm:gap-2 px-1.5 sm:px-3 py-2 rounded-xl bg-white hover:bg-amber-50 border border-slate-200 text-[11px] sm:text-xs font-bold text-slate-700 hover:text-amber-700 shadow-2xs min-w-0 transition active:scale-95"
+              title="Pusat Aduan"
             >
-              <div className="w-5 h-5 rounded-lg bg-amber-100 text-amber-700 flex items-center justify-center">
+              <div className="w-5 h-5 rounded-lg bg-amber-100 text-amber-700 flex items-center justify-center shrink-0">
                 <MessageSquareWarning className="w-3 h-3" />
               </div>
-              <span>Pusat Aduan</span>
+              <span className="truncate">Pusat Aduan</span>
             </button>
 
             <button
               onClick={onOpenPanic}
-              className="flex items-center gap-2 px-3 py-2 rounded-xl bg-red-600 hover:bg-red-700 text-white text-xs font-black shadow-2xs whitespace-nowrap active:scale-95 transition ml-auto"
+              className="flex items-center justify-center gap-1.5 sm:gap-2 px-1.5 sm:px-3 py-2 rounded-xl bg-red-600 hover:bg-red-700 text-white text-[11px] sm:text-xs font-black shadow-2xs min-w-0 transition active:scale-95"
+              title="Tombol Darurat Panic"
             >
-              <ShieldAlert className="w-3.5 h-3.5 animate-pulse" />
-              <span>PANIC</span>
+              <ShieldAlert className="w-3.5 h-3.5 animate-pulse shrink-0" />
+              <span className="truncate">PANIC</span>
             </button>
           </div>
 

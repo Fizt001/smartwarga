@@ -61,6 +61,7 @@ export default function DashboardView({
   const [announcements, setAnnouncements] = useState<any[]>([]);
   const [billings, setBillings] = useState<any[]>([]);
   const [iplSummary, setIplSummary] = useState<any>(null);
+  const [calendarData, setCalendarData] = useState<any | null>(null);
   const [sirenStatus, setSirenStatus] = useState<any>(null);
   const [iotOnlineCount, setIotOnlineCount] = useState<number | null>(null);
   const [iotTotalCount, setIotTotalCount] = useState<number>(3);
@@ -72,6 +73,40 @@ export default function DashboardView({
   const [kioskQueueSession, setKioskQueueSession] = useState<any | null>(null);
   const [kioskActionLoading, setKioskActionLoading] = useState(false);
   const [myGateLogs, setMyGateLogs] = useState<any[]>([]);
+
+  const weeklyGateActivity = React.useMemo(() => {
+    const counts = [0, 0, 0, 0, 0, 0, 0];
+    myGateLogs.forEach((log) => {
+      try {
+        const d = new Date(log.tapped_at);
+        counts[d.getDay()] += 1;
+      } catch {}
+    });
+    return [
+      { day: 'Sen', count: counts[1] },
+      { day: 'Sel', count: counts[2] },
+      { day: 'Rab', count: counts[3] },
+      { day: 'Kam', count: counts[4] },
+      { day: 'Jum', count: counts[5] },
+      { day: 'Sab', count: counts[6] },
+      { day: 'Min', count: counts[0] },
+    ];
+  }, [myGateLogs]);
+
+  const monthsList = [
+    { num: 1, name: 'Jan' },
+    { num: 2, name: 'Feb' },
+    { num: 3, name: 'Mar' },
+    { num: 4, name: 'Apr' },
+    { num: 5, name: 'Mei' },
+    { num: 6, name: 'Jun' },
+    { num: 7, name: 'Jul' },
+    { num: 8, name: 'Agu' },
+    { num: 9, name: 'Sep' },
+    { num: 10, name: 'Okt' },
+    { num: 11, name: 'Nov' },
+    { num: 12, name: 'Des' },
+  ];
 
   // Toast notifications state
   const [toasts, setToasts] = useState<ToastItem[]>([]);
@@ -124,6 +159,7 @@ export default function DashboardView({
   const [familyLoading, setFamilyLoading] = useState(false);
   const [isKkUtamaOpen, setIsKkUtamaOpen] = useState(true);
   const [isKkPendukungOpen, setIsKkPendukungOpen] = useState(true);
+  const [isBiodataOpen, setIsBiodataOpen] = useState(false);
 
   // Modal Edit Biodata Pribadi (KK Utama)
   const [showProfileModal, setShowProfileModal] = useState(false);
@@ -326,6 +362,10 @@ export default function DashboardView({
 
         if (isApproved) {
           await loadFamilyMembers();
+          fetchApi(`/ipl/annual-calendar?year=${new Date().getFullYear()}`).then((cRes) => {
+            if (cRes?.success && cRes.data) setCalendarData(cRes.data);
+            else if (cRes?.calendar) setCalendarData(cRes);
+          }).catch(() => {});
         }
       } catch {
         // ignore
@@ -1279,59 +1319,164 @@ export default function DashboardView({
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
         {/* Left Column (8 cols): Layanan Cepat + Agenda & Pengumuman + Tagihan Aktif */}
         <div className="lg:col-span-8 space-y-6">
-          {/* Layanan Cepat Bar */}
-          <div className="bg-white rounded-3xl p-5 border border-slate-200 shadow-sm space-y-3">
-            <h4 className="text-xs font-black uppercase tracking-wider text-slate-400">
-              Pusat Layanan Cepat Warga
-            </h4>
+          {/* Minimal Quick Action Bar (Minim Shortcut, Hemat Ruang di HP) */}
+          <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-none">
+            <button
+              onClick={() => onNavigateTab('ipl')}
+              disabled={!isApproved}
+              className="flex items-center gap-2 px-3 py-2 rounded-xl bg-white hover:bg-emerald-50 border border-slate-200 text-xs font-bold text-slate-700 hover:text-emerald-700 shadow-2xs whitespace-nowrap active:scale-95 transition"
+            >
+              <div className="w-5 h-5 rounded-lg bg-emerald-100 text-emerald-700 flex items-center justify-center">
+                <CreditCard className="w-3 h-3" />
+              </div>
+              <span>Bayar IPL</span>
+            </button>
 
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-              <button
-                onClick={() => onNavigateTab('ipl')}
-                disabled={!isApproved}
-                className="p-4 rounded-2xl bg-slate-50 hover:bg-emerald-50/80 border border-slate-200/80 hover:border-emerald-400 text-left transition group active:scale-95 disabled:opacity-40"
-              >
-                <div className="w-10 h-10 rounded-xl bg-emerald-100 text-emerald-700 flex items-center justify-center mb-2.5 group-hover:scale-110 transition">
-                  <CreditCard className="w-5 h-5" />
-                </div>
-                <div className="font-bold text-xs text-slate-900 group-hover:text-emerald-700">Bayar IPL</div>
-                <div className="text-[10px] text-slate-500 mt-0.5">Potong dompet / transfer</div>
-              </button>
+            <button
+              onClick={() => onNavigateTab('layanan')}
+              disabled={!isApproved}
+              className="flex items-center gap-2 px-3 py-2 rounded-xl bg-white hover:bg-blue-50 border border-slate-200 text-xs font-bold text-slate-700 hover:text-blue-700 shadow-2xs whitespace-nowrap active:scale-95 transition"
+            >
+              <div className="w-5 h-5 rounded-lg bg-blue-100 text-blue-700 flex items-center justify-center">
+                <FileText className="w-3 h-3" />
+              </div>
+              <span>Surat Pengantar</span>
+            </button>
 
-              <button
-                onClick={() => onNavigateTab('layanan')}
-                disabled={!isApproved}
-                className="p-4 rounded-2xl bg-slate-50 hover:bg-blue-50/80 border border-slate-200/80 hover:border-blue-400 text-left transition group active:scale-95 disabled:opacity-40"
-              >
-                <div className="w-10 h-10 rounded-xl bg-blue-100 text-blue-700 flex items-center justify-center mb-2.5 group-hover:scale-110 transition">
-                  <FileText className="w-5 h-5" />
-                </div>
-                <div className="font-bold text-xs text-slate-900 group-hover:text-blue-700">Surat Pengantar</div>
-                <div className="text-[10px] text-slate-500 mt-0.5">SKCK, Domisili, SKTM</div>
-              </button>
+            <button
+              onClick={() => onNavigateTab('pengaduan')}
+              disabled={!isApproved}
+              className="flex items-center gap-2 px-3 py-2 rounded-xl bg-white hover:bg-amber-50 border border-slate-200 text-xs font-bold text-slate-700 hover:text-amber-700 shadow-2xs whitespace-nowrap active:scale-95 transition"
+            >
+              <div className="w-5 h-5 rounded-lg bg-amber-100 text-amber-700 flex items-center justify-center">
+                <MessageSquareWarning className="w-3 h-3" />
+              </div>
+              <span>Pusat Aduan</span>
+            </button>
 
-              <button
-                onClick={() => onNavigateTab('pengaduan')}
-                disabled={!isApproved}
-                className="p-4 rounded-2xl bg-slate-50 hover:bg-amber-50/80 border border-slate-200/80 hover:border-amber-400 text-left transition group active:scale-95 disabled:opacity-40"
-              >
-                <div className="w-10 h-10 rounded-xl bg-amber-100 text-amber-700 flex items-center justify-center mb-2.5 group-hover:scale-110 transition">
-                  <MessageSquareWarning className="w-5 h-5" />
-                </div>
-                <div className="font-bold text-xs text-slate-900 group-hover:text-amber-700">Pusat Aduan</div>
-                <div className="text-[10px] text-slate-500 mt-0.5">Lapor sampah / fasilitas</div>
-              </button>
+            <button
+              onClick={onOpenPanic}
+              className="flex items-center gap-2 px-3 py-2 rounded-xl bg-red-600 hover:bg-red-700 text-white text-xs font-black shadow-2xs whitespace-nowrap active:scale-95 transition ml-auto"
+            >
+              <ShieldAlert className="w-3.5 h-3.5 animate-pulse" />
+              <span>PANIC</span>
+            </button>
+          </div>
 
-              <button
-                onClick={onOpenPanic}
-                className="p-4 rounded-2xl bg-red-50 hover:bg-red-100/90 border border-red-200 text-left transition group active:scale-95 shadow-sm"
-              >
-                <div className="w-10 h-10 rounded-xl bg-red-600 text-white flex items-center justify-center mb-2.5 shadow-md shadow-red-500/30 group-hover:scale-110 transition">
-                  <ShieldAlert className="w-5 h-5 animate-pulse" />
+          {/* DIAGRAM 1: DIAGRAM STATUS & RIWAYAT PEMBAYARAN IPL (12 BULAN) */}
+          <div className="bg-white rounded-2xl sm:rounded-3xl p-4 sm:p-5 border border-slate-200 shadow-sm space-y-3">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+              <div className="flex items-center gap-2">
+                <div className="w-8 h-8 rounded-xl bg-emerald-100 text-emerald-700 flex items-center justify-center">
+                  <TrendingUp className="w-4 h-4" />
                 </div>
-                <div className="font-black text-xs text-red-700">PANIC BUTTON</div>
-                <div className="text-[10px] text-red-500 mt-0.5">Sinyal darurat sirine</div>
-              </button>
+                <div>
+                  <h4 className="text-xs sm:text-sm font-black text-slate-900">
+                    Diagram Riwayat IPL Tahun {new Date().getFullYear()}
+                  </h4>
+                  <p className="text-[10px] text-slate-500">
+                    Visualisasi status iuran kas RT & RW per bulan
+                  </p>
+                </div>
+              </div>
+              {calendarData?.summary && (
+                <div className="flex items-center gap-2 self-start sm:self-auto">
+                  <span className="text-[10px] font-extrabold px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 border border-emerald-200">
+                    {calendarData.summary.paid_count || 0} / 12 Bulan Lunas
+                  </span>
+                  <span className="text-xs font-black text-slate-800">
+                    {Math.round(((calendarData.summary.paid_count || 0) / Math.max(1, (calendarData.summary.paid_count || 0) + (calendarData.summary.unpaid_count || 0))) * 100)}%
+                  </span>
+                </div>
+              )}
+            </div>
+
+            {/* Progress Bar Persentase Pelunasan */}
+            <div className="space-y-1">
+              <div className="w-full bg-slate-100 rounded-full h-2 overflow-hidden flex">
+                <div 
+                  className="bg-emerald-500 h-full rounded-full transition-all duration-500"
+                  style={{ 
+                    width: `${Math.min(100, Math.round(((calendarData?.summary?.paid_count || 0) / 12) * 100))}%` 
+                  }}
+                />
+                <div 
+                  className="bg-amber-400 h-full transition-all duration-500"
+                  style={{ 
+                    width: `${Math.min(100, Math.round(((calendarData?.summary?.unpaid_count || 0) / 12) * 100))}%` 
+                  }}
+                />
+              </div>
+              <div className="flex items-center justify-between text-[10px] text-slate-500">
+                <span>Terbayar: Rp {Number(calendarData?.summary?.total_paid || 0).toLocaleString('id-ID')}</span>
+                <span className="text-amber-700 font-bold">
+                  Tunggakan: Rp {Number(calendarData?.summary?.total_unpaid || totalUnpaidAmount || 0).toLocaleString('id-ID')}
+                </span>
+              </div>
+            </div>
+
+            {/* Diagram Batang 12 Bulan (Jan s/d Des) */}
+            <div className="pt-1">
+              <div className="grid grid-cols-6 sm:grid-cols-12 gap-1.5 sm:gap-2">
+                {monthsList.map((m) => {
+                  const mData = calendarData?.calendar?.find((c: any) => c.month === m.num);
+                  const isPaid = mData?.status === 'paid';
+                  const isUnpaid = mData?.status === 'unpaid';
+                  const isWaiting = mData?.status === 'waiting_verification';
+
+                  return (
+                    <div 
+                      key={m.num}
+                      onClick={() => isUnpaid && onNavigateTab('ipl')}
+                      className={`flex flex-col items-center p-1.5 rounded-xl border text-center transition ${
+                        isPaid 
+                          ? 'bg-emerald-50/70 border-emerald-200 text-emerald-800' 
+                          : isWaiting
+                          ? 'bg-blue-50/70 border-blue-200 text-blue-800'
+                          : isUnpaid
+                          ? 'bg-amber-50/80 border-amber-300 text-amber-900 cursor-pointer hover:scale-105 shadow-2xs'
+                          : 'bg-slate-50 border-slate-200 text-slate-400 opacity-60'
+                      }`}
+                    >
+                      <span className="text-[10px] font-black">{m.name}</span>
+                      
+                      {/* Bar indicator */}
+                      <div className="w-full bg-white/60 rounded-full h-7 flex items-end justify-center my-1 overflow-hidden p-0.5">
+                        <div 
+                          className={`w-full rounded-md transition-all flex items-center justify-center text-[8px] font-bold ${
+                            isPaid 
+                              ? 'h-full bg-emerald-500 text-white' 
+                              : isWaiting
+                              ? 'h-4/5 bg-blue-500 text-white'
+                              : isUnpaid
+                              ? 'h-3/5 bg-amber-500 text-white animate-pulse'
+                              : 'h-1/4 bg-slate-300'
+                          }`}
+                        >
+                          {isPaid ? '✓' : isWaiting ? '⌛' : isUnpaid ? '!' : ''}
+                        </div>
+                      </div>
+
+                      <span className="text-[8px] font-bold tracking-tight">
+                        {isPaid ? 'Lunas' : isWaiting ? 'Verif' : isUnpaid ? 'Tagihan' : 'N/A'}
+                      </span>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Legend */}
+            <div className="flex items-center justify-center gap-4 text-[10px] pt-1 border-t border-slate-100 flex-wrap">
+              <span className="flex items-center gap-1.5 font-medium text-emerald-800">
+                <span className="w-2.5 h-2.5 rounded-full bg-emerald-500"></span> Lunas
+              </span>
+              <span className="flex items-center gap-1.5 font-medium text-amber-800">
+                <span className="w-2.5 h-2.5 rounded-full bg-amber-500"></span> Belum Lunas
+              </span>
+              <span className="flex items-center gap-1.5 font-medium text-slate-500">
+                <span className="w-2.5 h-2.5 rounded-full bg-slate-300"></span> Belum Terbit
+              </span>
             </div>
           </div>
 
@@ -1360,6 +1505,42 @@ export default function DashboardView({
                 <span className="px-3 py-1 bg-emerald-100 text-emerald-800 text-xs font-bold rounded-full">
                   Unit Rumah Terdata
                 </span>
+              </div>
+
+              {/* DIAGRAM 4: KOMPOSISI PENGHUNI RUMAH */}
+              <div className="p-3.5 bg-slate-50/80 rounded-2xl border border-slate-200/80 space-y-2">
+                <div className="flex items-center justify-between text-xs">
+                  <span className="font-extrabold text-slate-700 flex items-center gap-1.5">
+                    <Users className="w-3.5 h-3.5 text-emerald-600" />
+                    <span>Diagram Penghuni Unit Rumah</span>
+                  </span>
+                  <span className="font-black text-emerald-800 bg-emerald-100 px-2 py-0.5 rounded-full text-[10px]">
+                    {familyMembers.length || 1} Jiwa Terdata
+                  </span>
+                </div>
+
+                {/* Segmented Distribution Bar */}
+                <div className="w-full bg-slate-200 rounded-full h-2.5 overflow-hidden flex">
+                  <div 
+                    className="bg-emerald-600 h-full transition-all"
+                    style={{ width: `${Math.max(25, (kkUtamaMembers.length / Math.max(1, familyMembers.length)) * 100)}%` }}
+                    title="KK Utama"
+                  />
+                  <div 
+                    className="bg-teal-500 h-full transition-all"
+                    style={{ width: `${(kkPendukungMembers.length / Math.max(1, familyMembers.length)) * 100}%` }}
+                    title="KK Tambahan"
+                  />
+                </div>
+
+                <div className="flex items-center justify-between text-[10px] text-slate-600">
+                  <span className="flex items-center gap-1">
+                    <span className="w-2 h-2 rounded-full bg-emerald-600"></span> KK Utama ({kkUtamaMembers.length || 1} Jiwa)
+                  </span>
+                  <span className="flex items-center gap-1">
+                    <span className="w-2 h-2 rounded-full bg-teal-500"></span> KK Tambahan ({kkPendukungMembers.length} Jiwa)
+                  </span>
+                </div>
               </div>
 
               {/* KK Breakdown: KK Utama vs KK Pendukung */}
@@ -1447,69 +1628,81 @@ export default function DashboardView({
                       </p>
                     </div>
                   </div>
-                  {(user.is_head_of_house || user.kk_type === 'kk_utama') && (
+                  <div className="flex items-center gap-2 self-end sm:self-center">
                     <button
                       type="button"
-                      onClick={openProfileModal}
-                      className="px-3 py-1.5 bg-slate-900 hover:bg-slate-800 text-white rounded-xl text-xs font-bold flex items-center gap-1.5 shadow-sm transition active:scale-95 shrink-0 self-start sm:self-center"
+                      onClick={() => setIsBiodataOpen(!isBiodataOpen)}
+                      className="px-2.5 py-1 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg text-xs font-bold flex items-center gap-1 transition"
                     >
-                      <Edit3 className="w-3.5 h-3.5 text-blue-400" />
-                      <span>Edit Biodata Saya</span>
+                      <span>{isBiodataOpen ? 'Tutup Detail' : 'Lihat Biodata'}</span>
+                      <ChevronDown className={`w-3.5 h-3.5 transition ${isBiodataOpen ? 'rotate-180' : ''}`} />
                     </button>
-                  )}
+                    {(user.is_head_of_house || user.kk_type === 'kk_utama') && (
+                      <button
+                        type="button"
+                        onClick={openProfileModal}
+                        className="px-2.5 py-1 bg-slate-900 hover:bg-slate-800 text-white rounded-lg text-xs font-bold flex items-center gap-1 shadow-sm transition active:scale-95"
+                      >
+                        <Edit3 className="w-3 h-3 text-blue-400" />
+                        <span>Edit</span>
+                      </button>
+                    )}
+                  </div>
                 </div>
 
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 mt-2 bg-slate-50/80 p-3 rounded-2xl border border-slate-200/70 text-xs">
-                  <div>
-                    <span className="text-[10px] text-slate-400 font-bold uppercase block">NIK (No. KTP)</span>
-                    <span className="font-mono font-bold text-slate-800 text-[11px]">
-                      {user.nik || <span className="text-amber-600 font-normal italic">Belum diisi</span>}
-                    </span>
+                {isBiodataOpen && (
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 mt-2 bg-slate-50/80 p-3 rounded-2xl border border-slate-200/70 text-xs">
+                    <div>
+                      <span className="text-[10px] text-slate-400 font-bold uppercase block">NIK (No. KTP)</span>
+                      <span className="font-mono font-bold text-slate-800 text-[11px]">
+                        {user.nik || <span className="text-amber-600 font-normal italic">Belum diisi</span>}
+                      </span>
+                    </div>
+                    <div>
+                      <span className="text-[10px] text-slate-400 font-bold uppercase block">Nomor KK</span>
+                      <span className="font-mono font-bold text-slate-800 text-[11px]">
+                        {user.no_kk || user.house?.head_of_family?.no_kk || <span className="text-amber-600 font-normal italic">Belum diisi</span>}
+                      </span>
+                    </div>
+                    <div>
+                      <span className="text-[10px] text-slate-400 font-bold uppercase block">Tempat, Tgl Lahir</span>
+                      <span className="font-bold text-slate-800 text-[11px]">
+                        {(user as any).birth_place || '-'}{' '}
+                        {(user as any).birth_date ? `, ${new Date((user as any).birth_date).toLocaleDateString('id-ID', {day: 'numeric', month: 'short', year: 'numeric'})}` : ''}
+                      </span>
+                    </div>
+                    <div>
+                      <span className="text-[10px] text-slate-400 font-bold uppercase block">Jenis Kelamin / Agama</span>
+                      <span className="font-bold text-slate-800 text-[11px]">
+                        {(user as any).gender || 'Laki-laki'} / {(user as any).religion || 'Islam'}
+                      </span>
+                    </div>
+                    <div>
+                      <span className="text-[10px] text-slate-400 font-bold uppercase block">Pekerjaan</span>
+                      <span className="font-bold text-slate-800 text-[11px]">
+                        {(user as any).occupation || <span className="text-slate-400 font-normal">-</span>}
+                      </span>
+                    </div>
+                    <div>
+                      <span className="text-[10px] text-slate-400 font-bold uppercase block">Status Perkawinan</span>
+                      <span className="font-bold text-slate-800 text-[11px]">
+                        {(user as any).marital_status || 'Kawin'}
+                      </span>
+                    </div>
+                    <div>
+                      <span className="text-[10px] text-slate-400 font-bold uppercase block">Golongan Darah</span>
+                      <span className="font-bold text-slate-800 text-[11px]">
+                        {(user as any).blood_type || '-'}
+                      </span>
+                    </div>
+                    <div>
+                      <span className="text-[10px] text-slate-400 font-bold uppercase block">No. WhatsApp / HP</span>
+                      <span className="font-bold text-slate-800 text-[11px]">
+                        {user.phone || '-'}
+                      </span>
+                    </div>
                   </div>
-                  <div>
-                    <span className="text-[10px] text-slate-400 font-bold uppercase block">Nomor KK</span>
-                    <span className="font-mono font-bold text-slate-800 text-[11px]">
-                      {user.no_kk || user.house?.head_of_family?.no_kk || <span className="text-amber-600 font-normal italic">Belum diisi</span>}
-                    </span>
-                  </div>
-                  <div>
-                    <span className="text-[10px] text-slate-400 font-bold uppercase block">Tempat, Tgl Lahir</span>
-                    <span className="font-bold text-slate-800 text-[11px]">
-                      {(user as any).birth_place || '-'}{' '}
-                      {(user as any).birth_date ? `, ${new Date((user as any).birth_date).toLocaleDateString('id-ID', {day: 'numeric', month: 'short', year: 'numeric'})}` : ''}
-                    </span>
-                  </div>
-                  <div>
-                    <span className="text-[10px] text-slate-400 font-bold uppercase block">Jenis Kelamin / Agama</span>
-                    <span className="font-bold text-slate-800 text-[11px]">
-                      {(user as any).gender || 'Laki-laki'} / {(user as any).religion || 'Islam'}
-                    </span>
-                  </div>
-                  <div>
-                    <span className="text-[10px] text-slate-400 font-bold uppercase block">Pekerjaan</span>
-                    <span className="font-bold text-slate-800 text-[11px]">
-                      {(user as any).occupation || <span className="text-slate-400 font-normal">-</span>}
-                    </span>
-                  </div>
-                  <div>
-                    <span className="text-[10px] text-slate-400 font-bold uppercase block">Status Perkawinan</span>
-                    <span className="font-bold text-slate-800 text-[11px]">
-                      {(user as any).marital_status || 'Kawin'}
-                    </span>
-                  </div>
-                  <div>
-                    <span className="text-[10px] text-slate-400 font-bold uppercase block">Golongan Darah</span>
-                    <span className="font-bold text-slate-800 text-[11px]">
-                      {(user as any).blood_type || '-'}
-                    </span>
-                  </div>
-                  <div>
-                    <span className="text-[10px] text-slate-400 font-bold uppercase block">No. WhatsApp / HP</span>
-                    <span className="font-bold text-slate-800 text-[11px]">
-                      {user.phone || '-'}
-                    </span>
-                  </div>
-                </div>
+                )}
               </div>
 
               {/* Manajemen Kartu Keluarga & Anggota Serumah (Terpisah KK Utama & KK Pendukung) */}
@@ -2039,36 +2232,83 @@ export default function DashboardView({
 
         {/* Right Column (4 cols): Riwayat Gerbang Tol + IoT Status + Kontak Pengurus */}
         <div className="lg:col-span-4 space-y-6">
-          {/* Riwayat Keluar-Masuk Gerbang Tol Warga (SDA Pin 5) */}
-          <div className="bg-white rounded-3xl p-5 border border-slate-200 shadow-sm space-y-3">
+          {/* DIAGRAM 3: Aktivitas Keluar-Masuk Gerbang Tol Warga (SDA Pin 5) - Diagram Batang 7 Hari */}
+          <div className="bg-white rounded-2xl sm:rounded-3xl p-4 sm:p-5 border border-slate-200 shadow-sm space-y-3">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
-                <DoorOpen className="w-4 h-4 text-emerald-600" />
-                <h4 className="text-xs font-black uppercase tracking-wider text-slate-800">
-                  Gerbang Tol Warga (SDA 5)
-                </h4>
+                <div className="w-8 h-8 rounded-xl bg-emerald-100 text-emerald-700 flex items-center justify-center">
+                  <DoorOpen className="w-4 h-4" />
+                </div>
+                <div>
+                  <h4 className="text-xs sm:text-sm font-black text-slate-800">
+                    Aktivitas Gerbang Tol (7 Hari)
+                  </h4>
+                  <p className="text-[10px] text-slate-500">
+                    Frekuensi tap akses palang otomatis per hari
+                  </p>
+                </div>
               </div>
-              <span className="text-[10px] font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200">
-                Akses Otomatis
+              <span className="text-[10px] font-extrabold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200">
+                {weeklyGateActivity.reduce((acc, curr) => acc + curr.count, 0)}x Tap Minggu Ini
               </span>
             </div>
 
-            {myGateLogs.length === 0 ? (
-              <div className="text-center py-6 text-slate-400 text-xs">
-                Belum ada riwayat tap gerbang keluar-masuk.
-              </div>
-            ) : (
-              <div className="space-y-2">
-                {myGateLogs.slice(0, 4).map((log: any) => (
-                  <div key={log.id} className="p-2.5 rounded-2xl bg-slate-50 border border-slate-200/80 flex items-center justify-between text-xs">
-                    <div>
-                      <div className="font-bold text-slate-800">{log.post_id || 'Pos Gerbang Utama'}</div>
-                      <div className="text-[10px] text-slate-400">
-                        {new Date(log.tapped_at).toLocaleString('id-ID', { dateStyle: 'short', timeStyle: 'short' })}
-                      </div>
+            {/* Visual Bar Chart: 7 Hari (Sen s/d Min) */}
+            <div className="p-3 bg-slate-50/80 rounded-2xl border border-slate-100">
+              {(() => {
+                const maxCount = Math.max(1, ...weeklyGateActivity.map((x) => x.count));
+                const todayIdx = new Date().getDay();
+                // Map js getDay (0 = Min, 1 = Sen) to weeklyGateActivity index: Sen=0, Sel=1, Rab=2, Kam=3, Jum=4, Sab=5, Min=6
+                const dayToIdx = [6, 0, 1, 2, 3, 4, 5];
+                const currentDayMappedIdx = dayToIdx[todayIdx];
+
+                return (
+                  <div className="grid grid-cols-7 gap-1.5 sm:gap-2 items-end pt-2">
+                    {weeklyGateActivity.map((item, idx) => {
+                      const isToday = idx === currentDayMappedIdx;
+                      const heightPercent = item.count > 0 ? Math.max(20, Math.round((item.count / maxCount) * 100)) : 8;
+                      return (
+                        <div key={item.day} className="flex flex-col items-center gap-1.5">
+                          <span className={`text-[10px] font-bold ${item.count > 0 ? 'text-emerald-700' : 'text-slate-300'}`}>
+                            {item.count > 0 ? item.count : '0'}
+                          </span>
+                          <div className="w-full bg-slate-200/60 rounded-lg h-16 flex items-end p-0.5 overflow-hidden">
+                            <div
+                              className={`w-full rounded-md transition-all duration-500 ${
+                                isToday
+                                  ? 'bg-gradient-to-t from-emerald-600 to-teal-400 shadow-xs'
+                                  : item.count > 0
+                                  ? 'bg-emerald-500/70'
+                                  : 'bg-slate-300/40'
+                              }`}
+                              style={{ height: `${heightPercent}%` }}
+                            />
+                          </div>
+                          <span className={`text-[10px] font-bold ${isToday ? 'text-emerald-700 font-black underline' : 'text-slate-500'}`}>
+                            {item.day}
+                          </span>
+                        </div>
+                      );
+                    })}
+                  </div>
+                );
+              })()}
+            </div>
+
+            {/* Riwayat Tap Terakhir Ringkas */}
+            {myGateLogs.length > 0 && (
+              <div className="space-y-1.5 pt-1">
+                <div className="text-[10px] font-extrabold uppercase tracking-wider text-slate-400">
+                  Riwayat Tap Terakhir
+                </div>
+                {myGateLogs.slice(0, 2).map((log: any) => (
+                  <div key={log.id} className="p-2 rounded-xl bg-slate-50 border border-slate-200/70 flex items-center justify-between text-xs">
+                    <div className="flex items-center gap-2">
+                      <div className="w-2 h-2 rounded-full bg-emerald-500" />
+                      <span className="font-bold text-slate-700 text-[11px]">{log.post_id || 'Pos Gerbang Utama'}</span>
                     </div>
-                    <span className="px-2.5 py-1 rounded-full bg-emerald-100 text-emerald-800 font-bold text-[10px]">
-                      Palang Terbuka
+                    <span className="text-[10px] text-slate-500 font-mono">
+                      {new Date(log.tapped_at).toLocaleString('id-ID', { dateStyle: 'short', timeStyle: 'short' })}
                     </span>
                   </div>
                 ))}
@@ -2144,32 +2384,55 @@ export default function DashboardView({
             </button>
           </div>
 
-          {/* Bank Sampah Rates Widget */}
-          <div className="bg-white rounded-3xl p-5 border border-slate-200 shadow-sm space-y-3">
+          {/* DIAGRAM 2: Diagram Nilai Tukar Bank Sampah Mandiri (Horizontal Bar Chart) */}
+          <div className="bg-white rounded-2xl sm:rounded-3xl p-4 sm:p-5 border border-slate-200 shadow-sm space-y-3">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
-                <Recycle className="w-4 h-4 text-emerald-600" />
-                <h4 className="font-extrabold text-xs uppercase tracking-wider text-slate-800">
-                  Tarif Bank Sampah Mandiri
-                </h4>
+                <div className="w-8 h-8 rounded-xl bg-teal-100 text-teal-700 flex items-center justify-center">
+                  <Recycle className="w-4 h-4" />
+                </div>
+                <div>
+                  <h4 className="text-xs sm:text-sm font-black text-slate-800">
+                    Diagram Nilai Bank Sampah
+                  </h4>
+                  <p className="text-[10px] text-slate-500">
+                    Perbandingan kurs rupiah komoditas daur ulang
+                  </p>
+                </div>
               </div>
-              <span className="text-[10px] bg-emerald-50 text-emerald-700 font-bold px-2 py-0.5 rounded-full">
-                Node 3
+              <span className="text-[10px] bg-teal-50 text-teal-700 font-bold px-2 py-0.5 rounded-full border border-teal-200">
+                Auto-Kredit Dompet
               </span>
             </div>
-            <p className="text-xs text-slate-500 leading-relaxed">
-              Timbang sampah daur ulang di terminal balai warga. Saldo rupiah langsung ditambahkan ke Dompet Warga seketika.
-            </p>
 
-            <div className="grid grid-cols-2 gap-2 pt-1">
-              <div className="p-3 bg-slate-50 rounded-2xl border border-slate-200 text-center">
-                <div className="text-[11px] font-bold text-slate-500">Kaleng / Logam</div>
-                <div className="text-sm font-black text-emerald-700 mt-0.5">Rp 5.000 / kg</div>
-              </div>
-              <div className="p-3 bg-slate-50 rounded-2xl border border-slate-200 text-center">
-                <div className="text-[11px] font-bold text-slate-500">Botol / Plastik</div>
-                <div className="text-sm font-black text-emerald-700 mt-0.5">Rp 2.000 / kg</div>
-              </div>
+            {/* Diagram Batang Horizontal Perbandingan Nilai */}
+            <div className="space-y-2.5 pt-1">
+              {[
+                { name: 'Minyak Jelantah', unit: 'Liter', price: 6000, percent: 100, color: 'bg-amber-500' },
+                { name: 'Kaleng / Logam', unit: 'Kg', price: 5000, percent: 83, color: 'bg-indigo-500' },
+                { name: 'Botol Plastik PET', unit: 'Kg', price: 2000, percent: 33, color: 'bg-emerald-500' },
+                { name: 'Kardus / Kertas', unit: 'Kg', price: 1500, percent: 25, color: 'bg-blue-400' },
+              ].map((item) => (
+                <div key={item.name} className="space-y-1">
+                  <div className="flex items-center justify-between text-xs font-semibold">
+                    <span className="text-slate-700 text-[11px]">{item.name}</span>
+                    <span className="font-extrabold text-slate-900 text-xs">
+                      Rp {item.price.toLocaleString('id-ID')} <span className="text-[10px] text-slate-400 font-normal">/{item.unit}</span>
+                    </span>
+                  </div>
+                  <div className="w-full bg-slate-100 rounded-full h-2.5 overflow-hidden p-0.5">
+                    <div
+                      className={`h-full rounded-full ${item.color} transition-all duration-500`}
+                      style={{ width: `${item.percent}%` }}
+                    />
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            <div className="pt-1 border-t border-slate-100 text-[10px] text-slate-500 flex items-center justify-between">
+              <span>📍 Timbang mandiri di Balai Warga</span>
+              <span className="font-semibold text-emerald-700">Tap e-KTP langsung cair</span>
             </div>
           </div>
 

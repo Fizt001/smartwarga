@@ -376,12 +376,30 @@ class IplController extends Controller
      */
     public function rekapKasRtToRw(Request $request)
     {
+        $user = $request->user();
         $periodMonth = $request->get('period_month', now()->month);
         $periodYear = $request->get('period_year', now()->year);
 
+        // Identifikasi RT asal user
+        $userRt = null;
+        if ($user) {
+            $rawRt = $user->rt_number ?: ($user->house ? $user->house->rt_number : null);
+            if ($rawRt) {
+                $userRt = str_pad(ltrim((string)$rawRt, '0'), 2, '0', STR_PAD_LEFT);
+            }
+        }
+
+        // HANYA role 'rw' dan 'super_admin' yang berhak melihat rekapitulasi seluruh RT.
+        // Role warga maupun pengurus RT hanya boleh melihat arus kas RT mereka sendiri!
+        if ($user && in_array($user->role, ['rw', 'super_admin'])) {
+            $rtList = ['01', '02', '03'];
+        } else {
+            $rtList = [$userRt ?: '01'];
+        }
+
         $rekap = [];
 
-        foreach (['01', '02', '03'] as $rtNum) {
+        foreach ($rtList as $rtNum) {
             $master = IplMaster::where('rt_number', $rtNum)
                 ->where('period_month', $periodMonth)
                 ->where('period_year', $periodYear)

@@ -852,64 +852,86 @@ export default function IplView({
         </div>
       )}
 
-      {/* 6. REKAPITULASI TRANSPARANSI KAS RT KE RW */}
-      {rekap.length > 0 && (
-        <div className="bg-white rounded-3xl p-6 border border-slate-200 shadow-sm space-y-4">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-            <div>
-              <h4 className="font-extrabold text-sm text-slate-900 flex items-center gap-2">
-                <Building className="w-4 h-4 text-emerald-600" />
-                <span>Transparansi Dana Masuk: Rekapitulasi Kas RT & Setoran Kas RW</span>
-              </h4>
-              <p className="text-xs text-slate-500 mt-0.5">
-                Aliran dana dapat dipantau bersama oleh warga, pengurus RT, dan pengurus RW untuk akuntabilitas penuh.
-              </p>
-            </div>
-            <span className="text-[10px] font-bold px-2.5 py-1 bg-emerald-50 text-emerald-800 rounded-full border border-emerald-200 self-start">
-              Transparansi Terbuka
-            </span>
-          </div>
+      {/* 6. REKAPITULASI TRANSPARANSI KAS RT (Hanya RT milik warga, RW melihat seluruh RT) */}
+      {(() => {
+        const userRtNumber = user?.rt_number 
+          ? String(user.rt_number).padStart(2, '0') 
+          : user?.house?.rt_number 
+          ? String(user.house.rt_number).padStart(2, '0') 
+          : '01';
 
-          <div className="overflow-x-auto">
-            <table className="w-full text-left text-xs">
-              <thead className="bg-slate-50 text-slate-500 font-bold border-b border-slate-200">
-                <tr>
-                  <th className="py-2.5 px-3">Wilayah</th>
-                  <th className="py-2.5 px-3">Periode</th>
-                  <th className="py-2.5 px-3">Warga Lunas</th>
-                  <th className="py-2.5 px-3">Porsi Kas RT (Rp 30.000)</th>
-                  <th className="py-2.5 px-3">Porsi Kas RW (Rp 20.000)</th>
-                  <th className="py-2.5 px-3 font-bold text-slate-700">Total Iuran Terkumpul</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-100">
-                {rekap.map((item, idx) => (
-                  <tr key={idx} className="hover:bg-slate-50/50 transition">
-                    <td className="py-3 px-3 font-bold text-slate-800 flex items-center gap-1.5">
-                      <Building2 className="w-3.5 h-3.5 text-slate-400" />
-                      <span>RT {item.rt_number}</span>
-                    </td>
-                    <td className="py-3 px-3 text-slate-600">{item.period}</td>
-                    <td className="py-3 px-3">
-                      <span className="font-bold text-slate-900">{item.paid_warga_count}</span>
-                      <span className="text-slate-400 text-[10px]"> / 100 Rumah</span>
-                    </td>
-                    <td className="py-3 px-3 font-bold text-emerald-700">
-                      Rp {Number(item.kas_rt_terkumpul).toLocaleString('id-ID')}
-                    </td>
-                    <td className="py-3 px-3 font-bold text-indigo-700">
-                      Rp {Number(item.setoran_rw_wajib).toLocaleString('id-ID')}
-                    </td>
-                    <td className="py-3 px-3 font-black text-slate-900">
-                      Rp {Number(item.total_iuran).toLocaleString('id-ID')}
-                    </td>
+        const isRwOrSuperAdmin = Boolean(user && ['rw', 'super_admin'].includes(user.role));
+
+        const displayRekap = isRwOrSuperAdmin
+          ? rekap
+          : rekap.filter((item) => String(item.rt_number).padStart(2, '0') === userRtNumber);
+
+        if (displayRekap.length === 0) return null;
+
+        return (
+          <div className="bg-white rounded-2xl sm:rounded-3xl p-4 sm:p-6 border border-slate-200 shadow-sm space-y-4">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+              <div>
+                <h4 className="font-extrabold text-sm sm:text-base text-slate-900 flex items-center gap-2">
+                  <Building className="w-4 h-4 text-emerald-600" />
+                  <span>
+                    {isRwOrSuperAdmin
+                      ? 'Transparansi Dana Masuk: Rekapitulasi Seluruh Kas RT & Setoran Kas RW'
+                      : `Transparansi Dana Masuk: Rekapitulasi Kas Wilayah RT ${userRtNumber}`}
+                  </span>
+                </h4>
+                <p className="text-xs text-slate-500 mt-0.5">
+                  {isRwOrSuperAdmin
+                    ? 'Aliran dana seluruh RT dapat dipantau bersama oleh pengurus RW untuk akuntabilitas penuh.'
+                    : `Aliran dana iuran warga dan porsi kas di lingkungan RT ${userRtNumber} untuk akuntabilitas terbuka.`}
+                </p>
+              </div>
+              <span className="text-[10px] font-bold px-2.5 py-1 bg-emerald-50 text-emerald-800 rounded-full border border-emerald-200 self-start">
+                {isRwOrSuperAdmin ? 'Rekap Lintas RT (Tingkat RW)' : `Kas Terbuka RT ${userRtNumber}`}
+              </span>
+            </div>
+
+            <div className="overflow-x-auto">
+              <table className="w-full text-left text-xs">
+                <thead className="bg-slate-50 text-slate-500 font-bold border-b border-slate-200">
+                  <tr>
+                    <th className="py-2.5 px-3">Wilayah</th>
+                    <th className="py-2.5 px-3">Periode</th>
+                    <th className="py-2.5 px-3">Warga Lunas</th>
+                    <th className="py-2.5 px-3">Porsi Kas RT (Rp 30.000)</th>
+                    <th className="py-2.5 px-3">Porsi Kas RW (Rp 20.000)</th>
+                    <th className="py-2.5 px-3 font-bold text-slate-700">Total Iuran Terkumpul</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
+                </thead>
+                <tbody className="divide-y divide-slate-100">
+                  {displayRekap.map((item, idx) => (
+                    <tr key={idx} className="hover:bg-slate-50/50 transition">
+                      <td className="py-3 px-3 font-bold text-slate-800 flex items-center gap-1.5">
+                        <Building2 className="w-3.5 h-3.5 text-slate-400" />
+                        <span>RT {item.rt_number}</span>
+                      </td>
+                      <td className="py-3 px-3 text-slate-600">{item.period}</td>
+                      <td className="py-3 px-3">
+                        <span className="font-bold text-slate-900">{item.paid_warga_count}</span>
+                        <span className="text-slate-400 text-[10px]"> / 100 Rumah</span>
+                      </td>
+                      <td className="py-3 px-3 font-bold text-emerald-700">
+                        Rp {Number(item.kas_rt_terkumpul).toLocaleString('id-ID')}
+                      </td>
+                      <td className="py-3 px-3 font-bold text-indigo-700">
+                        Rp {Number(item.setoran_rw_wajib).toLocaleString('id-ID')}
+                      </td>
+                      <td className="py-3 px-3 font-black text-slate-900">
+                        Rp {Number(item.total_iuran).toLocaleString('id-ID')}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           </div>
-        </div>
-      )}
+        );
+      })()}
     </div>
   );
 }

@@ -876,101 +876,101 @@ export default function DashboardView({
           </div>
         </div>
 
-        {/* Card 3: Identitas Hunian & Status KK */}
-        <div className="col-span-2 sm:col-span-1 lg:col-span-1 bg-white rounded-3xl p-5 border border-slate-200 shadow-sm flex flex-col justify-between hover:border-indigo-500/50 hover:shadow-md transition">
+        {/* Card 3: Identitas Hunian & Status KK (50% di mobile) */}
+        <div className="bg-white rounded-2xl sm:rounded-3xl p-3.5 sm:p-5 border border-slate-200 shadow-sm flex flex-col justify-between hover:border-indigo-500/50 hover:shadow-md transition">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">Unit Rumah & Kartu Keluarga</span>
-            <div className="w-9 h-9 rounded-xl bg-indigo-100 text-indigo-700 flex items-center justify-center">
-              <Home className="w-5 h-5" />
+            <span className="text-[10px] sm:text-xs font-bold text-slate-500 uppercase tracking-wider truncate">Unit Rumah & KK</span>
+            <div className="w-7 h-7 sm:w-9 sm:h-9 rounded-xl bg-indigo-100 text-indigo-700 flex items-center justify-center shrink-0">
+              <Home className="w-3.5 h-3.5 sm:w-5 sm:h-5" />
             </div>
           </div>
-          <div className="mt-3">
+          <div className="mt-2 sm:mt-3">
             <div className="flex items-center gap-1.5">
-              <span className="font-mono text-xs font-black px-2 py-0.5 rounded bg-slate-900 text-white">
+              <span className="font-mono text-[10px] sm:text-xs font-black px-1.5 py-0.5 rounded bg-slate-900 text-white shrink-0">
                 {user?.house?.house_code || (user?.house ? `RT${user.house.rt_number}-${user.house.block}${user.house.number}` : 'RW 05')}
               </span>
               <span className="text-xs font-bold text-slate-800 truncate">
                 {user?.house?.full_address || displayAddress}
               </span>
             </div>
-            <div className="flex items-center justify-between mt-2 pt-2 border-t border-slate-100">
-              <span className="text-[11px] font-bold">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1 mt-2 pt-2 border-t border-slate-100">
+              <span className="text-[10px] sm:text-[11px] font-bold truncate">
                 {user?.is_head_of_house || user?.kk_type === 'kk_utama' ? (
-                  <span className="text-emerald-700 flex items-center gap-1">
-                    <UserCheck className="w-3.5 h-3.5" /> KK Utama (PJ Rumah)
+                  <span className="text-emerald-700 flex items-center gap-1 truncate">
+                    <UserCheck className="w-3 h-3 sm:w-3.5 sm:h-3.5 shrink-0" /> <span className="truncate">KK Utama</span>
                   </span>
                 ) : user?.kk_type === 'kk_pendukung' ? (
-                  <span className="text-teal-700 flex items-center gap-1">
-                    <Users className="w-3.5 h-3.5" /> KK Pendukung / Tambahan
+                  <span className="text-teal-700 flex items-center gap-1 truncate">
+                    <Users className="w-3 h-3 sm:w-3.5 sm:h-3.5 shrink-0" /> <span className="truncate">KK Tambahan</span>
                   </span>
                 ) : (
-                  <span className="text-slate-600">Anggota Keluarga</span>
+                  <span className="text-slate-600 truncate">Anggota Keluarga</span>
                 )}
               </span>
-              <span className="text-[10px] bg-indigo-50 text-indigo-700 font-bold px-2 py-0.5 rounded-full">
+              <span className="text-[9px] sm:text-[10px] bg-indigo-50 text-indigo-700 font-bold px-1.5 py-0.5 rounded-full w-fit self-end sm:self-auto">
                 {user?.role?.toUpperCase()}
               </span>
             </div>
 
             {(user?.is_head_of_house || user?.kk_type === 'kk_utama') && (
-              <div className="mt-2.5 pt-2 border-t border-slate-100 flex items-center justify-between">
-                <span className="text-[10px] text-slate-500 font-medium">KK Tambahan Serumah:</span>
+              <div className="mt-2 pt-2 border-t border-slate-100 flex items-center justify-between gap-1">
+                <span className="text-[9px] sm:text-[10px] text-slate-500 font-medium truncate hidden sm:inline">KK Tambahan:</span>
                 <button
                   type="button"
                   onClick={() => setShowAddKkModal(true)}
-                  className="text-[11px] font-extrabold text-indigo-600 hover:text-indigo-800 flex items-center gap-1 hover:underline"
+                  className="text-[10px] sm:text-[11px] font-extrabold text-indigo-600 hover:text-indigo-800 flex items-center gap-1 hover:underline ml-auto"
                 >
-                  <PlusCircle className="w-3.5 h-3.5" />
+                  <PlusCircle className="w-3 h-3 sm:w-3.5 sm:h-3.5 shrink-0" />
                   <span>+ Tambah KK</span>
                 </button>
               </div>
             )}
 
             {user?.house?.kk_pendukung && user.house.kk_pendukung.length > 0 && (
-              <div className="mt-2 text-[10px] text-teal-800 bg-teal-50 border border-teal-100 p-1.5 rounded-xl font-medium">
-                KK Tambahan: {user.house.kk_pendukung.map((k: any) => k.name).join(', ')}
+              <div className="mt-1.5 text-[9px] sm:text-[10px] text-teal-800 bg-teal-50 border border-teal-100 p-1.5 rounded-xl font-medium truncate">
+                KK: {user.house.kk_pendukung.map((k: any) => k.name).join(', ')}
               </div>
             )}
           </div>
         </div>
 
-        {/* Card 4: Status Keamanan IoT */}
-        <div className={`col-span-2 sm:col-span-1 lg:col-span-1 rounded-3xl p-5 border transition flex flex-col justify-between shadow-sm ${
+        {/* Card 4: Status Keamanan IoT (50% di mobile) */}
+        <div className={`rounded-2xl sm:rounded-3xl p-3.5 sm:p-5 border transition flex flex-col justify-between shadow-sm ${
           sirenStatus?.is_active 
             ? 'bg-red-50 border-red-300 text-red-950 animate-pulse'
             : 'bg-white border-slate-200 text-slate-900'
         }`}>
           <div className="flex items-center justify-between">
-            <span className="text-xs font-bold uppercase tracking-wider text-slate-500">Keamanan IoT Wilayah</span>
-            <div className={`w-9 h-9 rounded-xl flex items-center justify-center ${
+            <span className="text-[10px] sm:text-xs font-bold uppercase tracking-wider text-slate-500 truncate">Keamanan IoT</span>
+            <div className={`w-7 h-7 sm:w-9 sm:h-9 rounded-xl flex items-center justify-center shrink-0 ${
               sirenStatus?.is_active 
                 ? 'bg-red-500 text-white animate-bounce' 
                 : iotOnlineCount === 0
                 ? 'bg-slate-100 text-slate-400'
                 : 'bg-emerald-100 text-emerald-700'
             }`}>
-              <ShieldAlert className="w-5 h-5" />
+              <ShieldAlert className="w-3.5 h-3.5 sm:w-5 sm:h-5" />
             </div>
           </div>
-          <div className="mt-3">
-            <div className="flex items-center gap-2">
-              <span className={`w-2.5 h-2.5 rounded-full ${
+          <div className="mt-2 sm:mt-3">
+            <div className="flex items-center gap-1.5">
+              <span className={`w-2 h-2 sm:w-2.5 sm:h-2.5 rounded-full shrink-0 ${
                 sirenStatus?.is_active 
                   ? 'bg-red-600 animate-ping' 
                   : iotOnlineCount === 0
                   ? 'bg-rose-500'
                   : 'bg-emerald-500'
               }`}></span>
-              <span className="text-base font-black tracking-tight">
+              <span className="text-xs sm:text-base font-black tracking-tight truncate">
                 {sirenStatus?.is_active 
-                  ? 'ALARM SIRINE AKTIF!' 
+                  ? 'ALARM AKTIF!' 
                   : iotOnlineCount === 0
-                  ? 'Hardware ESP32 AIO Offline'
-                  : 'Kondisi Aman Siaga'}
+                  ? 'Hardware Offline'
+                  : 'Kondisi Aman'}
               </span>
             </div>
-            <div className="flex items-center justify-between mt-2 pt-2 border-t border-slate-100">
-              <span className={`text-[11px] font-bold ${
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1 mt-2 pt-2 border-t border-slate-100">
+              <span className={`text-[10px] sm:text-[11px] font-bold truncate ${
                 iotOnlineCount === null
                   ? 'text-slate-500'
                   : iotOnlineCount === 0
@@ -982,12 +982,12 @@ export default function DashboardView({
                 {iotOnlineCount === null
                   ? 'Memeriksa IoT...'
                   : iotOnlineCount === 0
-                  ? 'Hardware ESP32 AIO Offline'
-                  : 'ESP32 AIO Online (Gate, Sirine & Kios Siaga)'}
+                  ? 'ESP32 Offline'
+                  : 'ESP32 Online'}
               </span>
               <button
                 onClick={onOpenPanic}
-                className="text-xs font-extrabold text-red-600 hover:text-red-700"
+                className="text-[11px] sm:text-xs font-extrabold text-red-600 hover:text-red-700 whitespace-nowrap self-end sm:self-auto"
               >
                 🚨 Panic Button
               </button>

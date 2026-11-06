@@ -1030,51 +1030,51 @@ export default function LayananView({ currentSubTab = 'surat', onSubTabChange }:
               </span>
             </div>
 
-            {/* Sub-section Switcher */}
-            <div className="flex gap-2 pt-2 border-t border-white/15 text-xs font-bold overflow-x-auto pb-1 scrollbar-none">
+            {/* Sub-section Switcher (Fleksibel Resize 2x2 di Mobile, 1x4 di Desktop) */}
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-1.5 sm:gap-2 pt-2 border-t border-white/15 text-xs font-bold w-full">
               <button
                 onClick={() => setPosyanduSection('antrean')}
-                className={`px-3 py-1.5 rounded-xl transition flex items-center gap-1.5 whitespace-nowrap ${
+                className={`px-2 py-1.5 rounded-xl transition flex items-center justify-center gap-1.5 text-center min-w-0 ${
                   posyanduSection === 'antrean'
                     ? 'bg-white text-emerald-900 shadow-sm'
                     : 'bg-white/10 text-white hover:bg-white/20'
                 }`}
               >
-                <Ticket className="w-3.5 h-3.5" />
-                <span>Antrean Posyandu {posyanduQueueData?.my_queue ? '• Aktif' : ''}</span>
+                <Ticket className="w-3.5 h-3.5 shrink-0" />
+                <span className="truncate">Antrean {posyanduQueueData?.my_queue ? '• Aktif' : ''}</span>
               </button>
               <button
                 onClick={() => setPosyanduSection('kms')}
-                className={`px-3 py-1.5 rounded-xl transition flex items-center gap-1.5 whitespace-nowrap ${
+                className={`px-2 py-1.5 rounded-xl transition flex items-center justify-center gap-1.5 text-center min-w-0 ${
                   posyanduSection === 'kms'
                     ? 'bg-white text-emerald-900 shadow-sm'
                     : 'bg-white/10 text-white hover:bg-white/20'
                 }`}
               >
-                <Baby className="w-3.5 h-3.5" />
-                <span>KMS Balita ({posyanduRecords.length})</span>
+                <Baby className="w-3.5 h-3.5 shrink-0" />
+                <span className="truncate">KMS Balita ({posyanduRecords.length})</span>
               </button>
               <button
                 onClick={() => setPosyanduSection('imunisasi')}
-                className={`px-3 py-1.5 rounded-xl transition flex items-center gap-1.5 whitespace-nowrap ${
+                className={`px-2 py-1.5 rounded-xl transition flex items-center justify-center gap-1.5 text-center min-w-0 ${
                   posyanduSection === 'imunisasi'
                     ? 'bg-white text-emerald-900 shadow-sm'
                     : 'bg-white/10 text-white hover:bg-white/20'
                 }`}
               >
-                <Syringe className="w-3.5 h-3.5" />
-                <span>Jadwal Imunisasi ({immunizationList.length})</span>
+                <Syringe className="w-3.5 h-3.5 shrink-0" />
+                <span className="truncate">Imunisasi ({immunizationList.length})</span>
               </button>
               <button
                 onClick={() => setPosyanduSection('lansia')}
-                className={`px-3 py-1.5 rounded-xl transition flex items-center gap-1.5 whitespace-nowrap ${
+                className={`px-2 py-1.5 rounded-xl transition flex items-center justify-center gap-1.5 text-center min-w-0 ${
                   posyanduSection === 'lansia'
                     ? 'bg-white text-emerald-900 shadow-sm'
                     : 'bg-white/10 text-white hover:bg-white/20'
                 }`}
               >
-                <Activity className="w-3.5 h-3.5" />
-                <span>Kesehatan Lansia ({elderlyList.length})</span>
+                <Activity className="w-3.5 h-3.5 shrink-0" />
+                <span className="truncate">Lansia ({elderlyList.length})</span>
               </button>
             </div>
           </div>
@@ -1558,29 +1558,29 @@ export default function LayananView({ currentSubTab = 'surat', onSubTabChange }:
               </div>
             </div>
 
-            {/* Section Switcher */}
-            <div className="flex gap-2 pt-1 border-t border-white/15 text-xs font-bold">
+            {/* Section Switcher (Fleksibel Resize 2 Kolom) */}
+            <div className="grid grid-cols-2 gap-1.5 sm:gap-2 pt-1 border-t border-white/15 text-xs font-bold w-full">
               <button
                 onClick={() => setRukamSection('duka')}
-                className={`px-3 py-1.5 rounded-xl transition flex items-center gap-1.5 ${
+                className={`px-2.5 py-1.5 rounded-xl transition flex items-center justify-center gap-1.5 text-center min-w-0 ${
                   rukamSection === 'duka'
                     ? 'bg-white text-slate-900 shadow-sm'
                     : 'bg-white/10 text-white hover:bg-white/20'
                 }`}
               >
-                <HeartHandshake className="w-3.5 h-3.5" />
-                <span>Kabar Duka & Santunan ({rukamReports.length})</span>
+                <HeartHandshake className="w-3.5 h-3.5 shrink-0" />
+                <span className="truncate">Kabar Duka ({rukamReports.length})</span>
               </button>
               <button
                 onClick={() => setRukamSection('ambulans')}
-                className={`px-3 py-1.5 rounded-xl transition flex items-center gap-1.5 ${
+                className={`px-2.5 py-1.5 rounded-xl transition flex items-center justify-center gap-1.5 text-center min-w-0 ${
                   rukamSection === 'ambulans'
                     ? 'bg-white text-slate-900 shadow-sm'
                     : 'bg-white/10 text-white hover:bg-white/20'
                 }`}
               >
-                <Car className="w-3.5 h-3.5" />
-                <span>Armada & Booking Ambulans ({ambulanceBookings.length})</span>
+                <Car className="w-3.5 h-3.5 shrink-0" />
+                <span className="truncate">Ambulans ({ambulanceBookings.length})</span>
               </button>
             </div>
           </div>

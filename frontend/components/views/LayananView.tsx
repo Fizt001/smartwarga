@@ -503,15 +503,15 @@ export default function LayananView({ currentSubTab = 'surat', onSubTabChange }:
   };
 
   const fisikTabs = [
-    { id: 'surat', label: 'Persuratan & SKCK', icon: FileText, desc: 'Draf surat & legalisasi fisik di Balai' },
-    { id: 'aset', label: 'Peminjaman Aset', icon: Package, desc: 'Booking inventaris & serah terima barang' },
-    { id: 'posyandu', label: 'Posyandu Digital', icon: Baby, desc: 'Antrean meja posyandu & rekam medis' },
+    { id: 'surat', label: 'Persuratan & SKCK', shortLabel: 'Persuratan', icon: FileText, desc: 'Draf surat & legalisasi fisik di Balai' },
+    { id: 'aset', label: 'Peminjaman Aset', shortLabel: 'Pinjam Aset', icon: Package, desc: 'Booking inventaris & serah terima barang' },
+    { id: 'posyandu', label: 'Posyandu Digital', shortLabel: 'Posyandu', icon: Baby, desc: 'Antrean meja posyandu & rekam medis' },
   ];
 
   const onlineTabs = [
-    { id: 'umkm', label: 'Etalase UMKM', icon: Store, desc: 'Katalog jualan warga langsung ke WhatsApp' },
-    { id: 'koperasi', label: 'Koperasi Warga', icon: Landmark, desc: 'Simpan pinjam & permodalan digital' },
-    { id: 'rukam', label: 'RUKAM & Ambulans', icon: HeartHandshake, desc: 'Tanggap lelayu & pemesanan ambulans' },
+    { id: 'umkm', label: 'Etalase UMKM', shortLabel: 'UMKM', icon: Store, desc: 'Katalog jualan warga langsung ke WhatsApp' },
+    { id: 'koperasi', label: 'Koperasi Warga', shortLabel: 'Koperasi', icon: Landmark, desc: 'Simpan pinjam & permodalan digital' },
+    { id: 'rukam', label: 'RUKAM & Ambulans', shortLabel: 'Ambulans', icon: HeartHandshake, desc: 'Tanggap lelayu & pemesanan ambulans' },
   ];
 
   return (
@@ -606,8 +606,8 @@ export default function LayananView({ currentSubTab = 'surat', onSubTabChange }:
           </div>
         </div>
 
-        {/* Sub-tab Filtered By Category */}
-        <div className="flex gap-1.5 overflow-x-auto pb-0.5 scrollbar-none pt-1 border-t border-slate-100">
+        {/* Sub-tab Filtered By Category (Fleksibel Resize, 3 Kolom Responsif Tanpa Terpotong) */}
+        <div className="grid grid-cols-3 gap-1 sm:gap-2 pt-1 border-t border-slate-100 w-full">
           {(activeCategory === 'fisik' ? fisikTabs : onlineTabs).map((item) => {
             const Icon = item.icon;
             const isActive = subTab === item.id;
@@ -615,14 +615,18 @@ export default function LayananView({ currentSubTab = 'surat', onSubTabChange }:
               <button
                 key={item.id}
                 onClick={() => setSubTab(item.id as any)}
-                className={`flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold whitespace-nowrap transition ${
+                className={`flex items-center justify-center gap-1 sm:gap-1.5 px-1 sm:px-3 py-2 rounded-xl text-[11px] sm:text-xs font-bold transition min-w-0 w-full ${
                   isActive
-                    ? activeCategory === 'fisik' ? 'bg-emerald-700 text-white shadow-sm' : 'bg-slate-900 text-white shadow-sm'
+                    ? activeCategory === 'fisik'
+                      ? 'bg-emerald-700 text-white shadow-sm ring-1 ring-emerald-600'
+                      : 'bg-slate-900 text-white shadow-sm ring-1 ring-slate-800'
                     : 'bg-white text-slate-600 border border-slate-200 hover:bg-slate-50'
                 }`}
+                title={item.label}
               >
-                <Icon className="w-3.5 h-3.5" />
-                <span>{item.label}</span>
+                <Icon className="w-3.5 h-3.5 shrink-0" />
+                <span className="truncate sm:hidden">{item.shortLabel || item.label}</span>
+                <span className="hidden sm:inline truncate">{item.label}</span>
               </button>
             );
           })}

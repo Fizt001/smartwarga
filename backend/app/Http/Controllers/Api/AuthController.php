@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Models\House;
+use App\Models\PosyanduRecord;
 use App\Models\User;
 use App\Models\Wallet;
 use Illuminate\Http\Request;
@@ -531,7 +532,7 @@ class AuthController extends Controller
         if (!$user->house_id) {
             return response()->json([
                 'success' => true,
-                'data' => [],
+                'data' => [$user],
             ]);
         }
 
@@ -539,6 +540,23 @@ class AuthController extends Controller
             ->orderByRaw("FIELD(kk_type, 'kk_utama', 'kk_pendukung', 'anggota')")
             ->orderBy('id')
             ->get();
+
+        // Sertakan catatan balita posyandu milik user ini jika namanya belum tercatat sebagai user
+        $existingNames = $members->pluck('name')->map(fn($n) => strtolower(trim($n)))->toArray();
+        $posyanduChildren = PosyanduRecord::where('parent_user_id', $user->id)->get();
+        foreach ($posyanduChildren as $child) {
+            if (!in_array(strtolower(trim($child->child_name)), $existingNames)) {
+                $members->push((object)[
+                    'id' => 'posyandu_' . $child->id,
+                    'name' => $child->child_name,
+                    'birth_date' => $child->birth_date?->format('Y-m-d'),
+                    'relationship' => 'Anak / Balita',
+                    'gender' => $child->gender,
+                    'rfid_uid' => $child->rfid_uid,
+                ]);
+                $existingNames[] = strtolower(trim($child->child_name));
+            }
+        }
 
         return response()->json([
             'success' => true,

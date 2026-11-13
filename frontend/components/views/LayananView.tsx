@@ -13,6 +13,7 @@ import {
   Download, 
   Plus, 
   Clock, 
+  Check,
   CheckCircle2, 
   XCircle,
   ExternalLink,
@@ -112,6 +113,223 @@ export default function LayananView({ currentSubTab = 'surat', onSubTabChange }:
   const [queueRfidUid, setQueueRfidUid] = useState('');
   const [isScanningKtpQueue, setIsScanningKtpQueue] = useState(false);
 
+  // States untuk Anggota Keluarga / Auto-deteksi Pasien Posyandu
+  const [familyMembers, setFamilyMembers] = useState<any[]>([]);
+  const [selectedPatientMemberId, setSelectedPatientMemberId] = useState<string>('');
+  const [isManualPatientName, setIsManualPatientName] = useState(false);
+
+  // Helper kalkulasi kategori pemeriksaan dan format usia otomatis dari tanggal lahir
+  const calculatePatientAgeAndCategory = (birthDateStr?: string | null, fallbackAge?: string | number | null) => {
+    if (birthDateStr) {
+      const birth = new Date(birthDateStr);
+      if (!isNaN(birth.getTime())) {
+        const now = new Date();
+        let totalMonths = (now.getFullYear() - birth.getFullYear()) * 12 + (now.getMonth() - birth.getMonth());
+        if (now.getDate() < birth.getDate()) {
+          totalMonths--;
+        }
+        if (totalMonths < 0) totalMonths = 0;
+
+        const years = Math.floor(totalMonths / 12);
+        const remainingMonths = totalMonths % 12;
+
+        if (totalMonths < 60) {
+          // Balita (< 5 tahun / < 60 bulan)
+          return {
+            category: 'balita' as const,
+            ageText: years === 0 ? `${totalMonths} Bulan` : `${years} Thn ${remainingMonths} Bln (${totalMonths} Bulan)`,
+            years,
+            months: totalMonths,
+          };
+        } else if (years >= 60) {
+          // Lansia (>= 60 tahun)
+          return {
+            category: 'lansia' as const,
+            ageText: `${years} Tahun`,
+            years,
+            months: totalMonths,
+          };
+        } else {
+          // Umum (5 s/d 59 tahun)
+          return {
+            category: 'umum' as const,
+            ageText: `${years} Tahun`,
+            years,
+            months: totalMonths,
+          };
+        }
+      }
+    }
+
+    if (fallbackAge) {
+      const num = typeof fallbackAge === 'number' ? fallbackAge : parseInt(String(fallbackAge), 10);
+      if (!isNaN(num)) {
+        if (num < 5) {
+          return { category: 'balita' as const, ageText: `${num * 12} Bulan`, years: num, months: num * 12 };
+        } else if (num >= 60) {
+          return { category: 'lansia' as const, ageText: `${num} Tahun`, years: num, months: num * 12 };
+        } else {
+          return { category: 'umum' as const, ageText: `${num} Tahun`, years: num, months: num * 12 };
+        }
+      }
+    }
+
+    return { category: 'umum' as const, ageText: '', years: 0, months: 0 };
+  };
+
+  // Kompilasi daftar pasien dari akun keluarga, penghuni rumah, balita posyandu & lansia
+  const patientOptions = React.useMemo(() => {
+    const optionsMap = new Map<string, any>();
+
+    // 1. User login saat ini
+    if (user && user.name) {
+      const res = calculatePatientAgeAndCategory(user.birth_date);
+      optionsMap.set(user.name.toLowerCase().trim(), {
+        id: `user-${user.id}`,
+        name: user.name,
+        relationship: user.relationship || (user.is_head_of_house ? 'Kepala Keluarga' : 'Akun Utama'),
+        birth_date: user.birth_date || null,
+        gender: user.gender || null,
+        rfid_uid: user.rfid_uid || null,
+        detectedCategory: res.category,
+        detectedAgeText: res.ageText,
+      });
+    }
+
+    // 2. Anggota keluarga dari API /warga/family-members
+    if (Array.isArray(familyMembers)) {
+      familyMembers.forEach((m) => {
+        if (!m || !m.name) return;
+        const key = m.name.toLowerCase().trim();
+        const res = calculatePatientAgeAndCategory(m.birth_date);
+        optionsMap.set(key, {
+          id: String(m.id),
+          name: m.name,
+          relationship: m.relationship || (m.is_head_of_house ? 'Kepala Keluarga' : 'Anggota Keluarga'),
+          birth_date: m.birth_date || null,
+          gender: m.gender || null,
+          rfid_uid: m.rfid_uid || null,
+          detectedCategory: res.category,
+          detectedAgeText: res.ageText,
+        });
+      });
+    }
+
+    // 3. Penghuni rumah dari user.house.residents
+    if (Array.isArray(user?.house?.residents)) {
+      user.house.residents.forEach((r: any) => {
+        if (!r || !r.name) return;
+        const key = r.name.toLowerCase().trim();
+        if (!optionsMap.has(key)) {
+          const res = calculatePatientAgeAndCategory(r.birth_date);
+          optionsMap.set(key, {
+            id: `res-${r.id}`,
+            name: r.name,
+            relationship: r.relationship || 'Penghuni Rumah',
+            birth_date: r.birth_date || null,
+            gender: r.gender || null,
+            rfid_uid: r.rfid_uid || null,
+            detectedCategory: res.category,
+            detectedAgeText: res.ageText,
+          });
+        }
+      });
+    }
+
+    // 4. Balita dari data Posyandu KMS
+    if (Array.isArray(posyanduRecords)) {
+      posyanduRecords.forEach((p: any) => {
+        const cName = p.child_name || p.name;
+        if (!cName) return;
+        const key = cName.toLowerCase().trim();
+        if (!optionsMap.has(key)) {
+          const res = calculatePatientAgeAndCategory(
+            p.birth_date,
+            p.age_months ? Math.floor(p.age_months / 12) : null
+          );
+          optionsMap.set(key, {
+            id: `pos-${p.id || cName}`,
+            name: cName,
+            relationship: 'Anak / Balita',
+            birth_date: p.birth_date || null,
+            gender: p.gender || null,
+            rfid_uid: p.rfid_uid || null,
+            detectedCategory: p.birth_date ? res.category : 'balita',
+            detectedAgeText: p.birth_date ? res.ageText : (p.age_months ? `${p.age_months} Bulan` : 'Balita'),
+          });
+        }
+      });
+    }
+
+    // 5. Lansia dari data Posyandu Lansia
+    if (Array.isArray(elderlyList)) {
+      elderlyList.forEach((el: any) => {
+        const elName = el.elderly_name || el.name;
+        if (!elName) return;
+        const key = elName.toLowerCase().trim();
+        if (!optionsMap.has(key)) {
+          optionsMap.set(key, {
+            id: `eld-${el.id || elName}`,
+            name: elName,
+            relationship: 'Lansia',
+            birth_date: null,
+            gender: el.gender || null,
+            rfid_uid: null,
+            detectedCategory: 'lansia',
+            detectedAgeText: el.age ? `${el.age} Tahun` : 'Lansia',
+          });
+        }
+      });
+    }
+
+    return Array.from(optionsMap.values());
+  }, [user, familyMembers, posyanduRecords, elderlyList]);
+
+  // Handler pemilihan pasien dari daftar keluarga
+  const handleSelectPatientMember = (selectedId: string) => {
+    setSelectedPatientMemberId(selectedId);
+    if (selectedId === 'manual') {
+      setIsManualPatientName(true);
+      setQueuePatientName('');
+      setQueuePatientAge('');
+      return;
+    }
+    setIsManualPatientName(false);
+    const member = patientOptions.find((m) => String(m.id) === selectedId);
+    if (member) {
+      setQueuePatientName(member.name);
+      setQueueCategory(member.detectedCategory);
+      if (member.detectedAgeText) {
+        setQueuePatientAge(member.detectedAgeText);
+      }
+      if (member.rfid_uid) {
+        setQueueRfidUid(member.rfid_uid);
+      }
+    }
+  };
+
+  // Handler buka modal antrean dengan auto-select pasien pertama
+  const handleOpenQueueModal = () => {
+    setShowQueueModal(true);
+    fetchApi('/warga/family-members')
+      .then((res) => {
+        if (res && res.success && Array.isArray(res.data)) {
+          setFamilyMembers(res.data);
+        }
+      })
+      .catch(() => {});
+
+    if (patientOptions.length > 0 && (!queuePatientName || selectedPatientMemberId === '')) {
+      const preferred = patientOptions.find((p) => p.detectedCategory === 'balita') || patientOptions[0];
+      setSelectedPatientMemberId(String(preferred.id));
+      setIsManualPatientName(false);
+      setQueuePatientName(preferred.name);
+      setQueueCategory(preferred.detectedCategory);
+      if (preferred.detectedAgeText) setQueuePatientAge(preferred.detectedAgeText);
+      if (preferred.rfid_uid) setQueueRfidUid(preferred.rfid_uid);
+    }
+  };
+
   // RUKAM & Ambulans States
   const [rukamReports, setRukamReports] = useState<any[]>([]);
   const [rukamSummary, setRukamSummary] = useState<any | null>(null);
@@ -204,16 +422,18 @@ export default function LayananView({ currentSubTab = 'surat', onSubTabChange }:
           if (ambRes.success) setAmbulances(ambRes.data || []);
           if (bookRes.success) setAmbulanceBookings(bookRes.data?.data || []);
         } else if (subTab === 'posyandu') {
-          const [kmsRes, imunRes, lansiaRes, queueRes] = await Promise.all([
+          const [kmsRes, imunRes, lansiaRes, queueRes, famRes] = await Promise.all([
             fetchApi('/posyandu').catch(() => ({ success: false, data: { data: [] } })),
             fetchApi('/posyandu/immunizations').catch(() => ({ success: false, data: { data: [] } })),
             fetchApi('/posyandu/lansia').catch(() => ({ success: false, data: { data: [] } })),
             fetchApi('/posyandu/queues').catch(() => ({ success: false, data: null })),
+            fetchApi('/warga/family-members').catch(() => ({ success: false, data: [] })),
           ]);
           if (kmsRes.success) setPosyanduRecords(kmsRes.data?.data || []);
           if (imunRes.success) setImmunizationList(imunRes.data?.data || []);
           if (lansiaRes.success) setElderlyList(lansiaRes.data?.data || []);
           if (queueRes?.success) setPosyanduQueueData(queueRes.data);
+          if (famRes?.success && Array.isArray(famRes.data)) setFamilyMembers(famRes.data);
         }
       } catch {
         // ignore
@@ -446,6 +666,8 @@ export default function LayananView({ currentSubTab = 'surat', onSubTabChange }:
         setQueuePatientAge('');
         setQueueComplaint('');
         setQueueRfidUid('');
+        setSelectedPatientMemberId('');
+        setIsManualPatientName(false);
         const qRes = await fetchApi('/posyandu/queues');
         if (qRes.success) setPosyanduQueueData(qRes.data);
       } else {
@@ -1144,7 +1366,7 @@ export default function LayananView({ currentSubTab = 'surat', onSubTabChange }:
                     </p>
                   </div>
                   <button
-                    onClick={() => setShowQueueModal(true)}
+                    onClick={handleOpenQueueModal}
                     className="px-5 py-3 rounded-2xl bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold text-xs shadow-md transition flex items-center gap-2 whitespace-nowrap active:scale-95"
                   >
                     <Plus className="w-4 h-4" />
@@ -2453,65 +2675,127 @@ export default function LayananView({ currentSubTab = 'surat', onSubTabChange }:
             </div>
 
             <form onSubmit={handleTakeQueue} className="space-y-4">
+              {/* 1. Pemilihan Nama Pasien dari Anggota Keluarga / Penghuni Rumah */}
               <div>
-                <label className="block text-xs font-bold text-slate-700 mb-1">Kategori Pemeriksaan:</label>
+                <label className="block text-xs font-bold text-slate-700 mb-1 flex items-center justify-between">
+                  <span className="flex items-center gap-1.5">
+                    <Users className="w-3.5 h-3.5 text-emerald-600" />
+                    <span>Nama Pasien (Pilih Anggota Keluarga / Penghuni):</span>
+                  </span>
+                  {selectedPatientMemberId && selectedPatientMemberId !== 'manual' && (
+                    <span className="text-[10px] text-emerald-600 font-semibold">
+                      Terpilih Otomatis
+                    </span>
+                  )}
+                </label>
+
+                <select
+                  value={selectedPatientMemberId}
+                  onChange={(e) => handleSelectPatientMember(e.target.value)}
+                  className="w-full text-xs px-3.5 py-2.5 rounded-xl border border-slate-300 bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500 font-medium text-slate-800 shadow-sm"
+                >
+                  <option value="" disabled>-- Pilih Nama Anggota Keluarga / Balita / Lansia --</option>
+                  {patientOptions.map((opt) => (
+                    <option key={opt.id} value={opt.id}>
+                      {opt.detectedCategory === 'balita' ? '👶' : opt.detectedCategory === 'lansia' ? '👵' : '🩺'} {opt.name} ({opt.relationship || 'Penghuni'}) {opt.detectedAgeText ? `— ${opt.detectedAgeText}` : ''}
+                    </option>
+                  ))}
+                  <option value="manual">➕ Ketik Nama Pasien Lain (Manual)</option>
+                </select>
+
+                {/* Indikator Deteksi Otomatis Kategori & Usia */}
+                {selectedPatientMemberId && selectedPatientMemberId !== 'manual' && (
+                  <div className="mt-2 p-2.5 bg-emerald-50 border border-emerald-200 rounded-xl flex items-center justify-between text-xs text-emerald-900 animate-fade-in">
+                    <div className="flex items-center gap-2">
+                      <Sparkles className="w-4 h-4 text-emerald-600 shrink-0" />
+                      <div>
+                        <span className="font-bold">Auto-Deteksi Sistem: </span>
+                        Kategori <span className="uppercase font-black text-emerald-700">{queueCategory}</span>
+                        {queuePatientAge ? ` (Usia: ${queuePatientAge})` : ''}
+                      </div>
+                    </div>
+                    <span className="text-[10px] px-2 py-0.5 rounded-full bg-emerald-200 text-emerald-800 font-bold uppercase">
+                      Sinkron
+                    </span>
+                  </div>
+                )}
+              </div>
+
+              {/* Input Manual Pasien jika memilih opsi Manual */}
+              {isManualPatientName && (
+                <div className="animate-fade-in">
+                  <label className="block text-xs font-bold text-slate-700 mb-1">
+                    Nama Pasien Manual:
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    value={queuePatientName}
+                    onChange={(e) => setQueuePatientName(e.target.value)}
+                    placeholder="Contoh: Balita Muhammad / Ibu Siti Aminah"
+                    className="w-full text-xs px-3 py-2.5 rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-emerald-500 shadow-inner"
+                  />
+                </div>
+              )}
+
+              {/* 2. Kategori Pemeriksaan dengan Auto-Switch */}
+              <div>
+                <div className="flex items-center justify-between mb-1">
+                  <label className="block text-xs font-bold text-slate-700">Kategori Pemeriksaan:</label>
+                  <span className="text-[10px] text-slate-400">Otomatis terdeteksi dari tanggal lahir</span>
+                </div>
                 <div className="grid grid-cols-3 gap-2">
                   <button
                     type="button"
                     onClick={() => setQueueCategory('balita')}
-                    className={`py-2 px-3 rounded-xl text-xs font-bold border transition ${
+                    className={`py-2 px-3 rounded-xl text-xs font-bold border transition flex items-center justify-center gap-1.5 ${
                       queueCategory === 'balita'
                         ? 'bg-emerald-600 text-white border-emerald-600 shadow-sm'
                         : 'bg-white text-slate-700 border-slate-200 hover:bg-slate-50'
                     }`}
                   >
-                    👶 Balita
+                    <span>👶 Balita</span>
+                    {queueCategory === 'balita' && <Check className="w-3.5 h-3.5" />}
                   </button>
                   <button
                     type="button"
                     onClick={() => setQueueCategory('lansia')}
-                    className={`py-2 px-3 rounded-xl text-xs font-bold border transition ${
+                    className={`py-2 px-3 rounded-xl text-xs font-bold border transition flex items-center justify-center gap-1.5 ${
                       queueCategory === 'lansia'
                         ? 'bg-emerald-600 text-white border-emerald-600 shadow-sm'
                         : 'bg-white text-slate-700 border-slate-200 hover:bg-slate-50'
                     }`}
                   >
-                    👵 Lansia
+                    <span>👵 Lansia</span>
+                    {queueCategory === 'lansia' && <Check className="w-3.5 h-3.5" />}
                   </button>
                   <button
                     type="button"
                     onClick={() => setQueueCategory('umum')}
-                    className={`py-2 px-3 rounded-xl text-xs font-bold border transition ${
+                    className={`py-2 px-3 rounded-xl text-xs font-bold border transition flex items-center justify-center gap-1.5 ${
                       queueCategory === 'umum'
                         ? 'bg-emerald-600 text-white border-emerald-600 shadow-sm'
                         : 'bg-white text-slate-700 border-slate-200 hover:bg-slate-50'
                     }`}
                   >
-                    🩺 Umum
+                    <span>🩺 Umum</span>
+                    {queueCategory === 'umum' && <Check className="w-3.5 h-3.5" />}
                   </button>
                 </div>
               </div>
 
+              {/* 3. Usia Pasien */}
               <div>
-                <label className="block text-xs font-bold text-slate-700 mb-1">Nama Pasien (Balita / Lansia / Warga):</label>
-                <input
-                  type="text"
-                  required
-                  value={queuePatientName}
-                  onChange={(e) => setQueuePatientName(e.target.value)}
-                  placeholder="Contoh: Balita Muhammad / Ibu Siti Aminah"
-                  className="w-full text-xs px-3 py-2.5 rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-emerald-500"
-                />
-              </div>
-
-              <div>
-                <label className="block text-xs font-bold text-slate-700 mb-1">Usia Pasien (Bulan / Tahun):</label>
+                <div className="flex items-center justify-between mb-1">
+                  <label className="block text-xs font-bold text-slate-700">Usia Pasien (Bulan / Tahun):</label>
+                  <span className="text-[10px] text-slate-400">Otomatis terhitung</span>
+                </div>
                 <input
                   type="text"
                   value={queuePatientAge}
                   onChange={(e) => setQueuePatientAge(e.target.value)}
                   placeholder="Contoh: 18 Bulan atau 68 Tahun"
-                  className="w-full text-xs px-3 py-2.5 rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                  className="w-full text-xs px-3 py-2.5 rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-emerald-500 font-medium"
                 />
               </div>
 

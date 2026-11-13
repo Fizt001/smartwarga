@@ -1,7 +1,7 @@
 'use client';
 
-import React, { useState } from 'react';
-import { AlertOctagon, X, Volume2, ShieldAlert } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { X, Volume2, ShieldAlert, CheckCircle2, RefreshCw } from 'lucide-react';
 import { fetchApi } from '@/lib/api';
 
 export default function PanicModal({
@@ -15,13 +15,21 @@ export default function PanicModal({
 }) {
   const [location, setLocation] = useState(defaultLocation);
   const [loading, setLoading] = useState(false);
-  const [statusMsg, setStatusMsg] = useState('');
+  const [canceling, setCanceling] = useState(false);
+  const [statusMsg, setStatusMsg] = useState<{ text: string; type: 'success' | 'error' | 'info' } | null>(null);
+
+  useEffect(() => {
+    if (isOpen) {
+      setLocation(defaultLocation);
+      setStatusMsg(null);
+    }
+  }, [isOpen, defaultLocation]);
 
   if (!isOpen) return null;
 
   const triggerPanic = async () => {
     setLoading(true);
-    setStatusMsg('');
+    setStatusMsg(null);
     try {
       const res = await fetchApi('/iot/panic-button', {
         method: 'POST',
@@ -32,16 +40,51 @@ export default function PanicModal({
       });
 
       if (res.success) {
-        setStatusMsg('ALARM DARURAT BERHASIL DIAKTIFKAN! Petugas ronda & warga telah diberi tahu.');
+        setStatusMsg({
+          text: 'ALARM DARURAT BERHASIL DIAKTIFKAN! Petugas ronda & warga telah diberi tahu.',
+          type: 'success',
+        });
         setTimeout(() => {
           onClose();
-          setStatusMsg('');
-        }, 3000);
+          setStatusMsg(null);
+        }, 2500);
       }
     } catch (err: any) {
-      setStatusMsg(err.message || 'Gagal mengirim sinyal darurat.');
+      setStatusMsg({
+        text: err.message || 'Gagal mengirim sinyal darurat.',
+        type: 'error',
+      });
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleCancelSafe = async () => {
+    setCanceling(true);
+    setStatusMsg(null);
+    try {
+      // Matikan sirine dan tandai semua log darurat aktif menjadi selesai/handled
+      await fetchApi('/iot/sirine/toggle', {
+        method: 'POST',
+        body: JSON.stringify({
+          is_active: false,
+          reason: 'Kondisi Aman / Dibatalkan oleh Warga',
+        }),
+      });
+      setStatusMsg({
+        text: 'Kondisi aman dinyatakan. Sirine dan peringatan darurat telah dinonaktifkan.',
+        type: 'info',
+      });
+      setTimeout(() => {
+        onClose();
+        setStatusMsg(null);
+      }, 1200);
+    } catch (err: any) {
+      console.warn('Error turning off siren:', err);
+      // Tetap tutup modal agar user tidak terjebak
+      onClose();
+    } finally {
+      setCanceling(false);
     }
   };
 
@@ -49,8 +92,9 @@ export default function PanicModal({
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-fade-in">
       <div className="bg-white rounded-3xl max-w-md w-full p-6 shadow-2xl border-4 border-red-500 relative">
         <button
+          type="button"
           onClick={onClose}
-          className="absolute top-4 right-4 text-slate-400 hover:text-slate-600 p-1 rounded-full"
+          className="absolute top-4 right-4 text-slate-400 hover:text-slate-600 p-1 rounded-full transition"
         >
           <X className="w-6 h-6" />
         </button>
@@ -82,26 +126,47 @@ export default function PanicModal({
         </div>
 
         {statusMsg && (
-          <div className="mt-4 p-3 bg-red-50 border border-red-200 text-red-700 text-xs font-bold rounded-xl text-center">
-            {statusMsg}
+          <div
+            className={`mt-4 p-3 border text-xs font-bold rounded-xl text-center flex items-center justify-center gap-2 ${
+              statusMsg.type === 'success'
+                ? 'bg-red-50 border-red-200 text-red-700'
+                : statusMsg.type === 'info'
+                ? 'bg-emerald-50 border-emerald-200 text-emerald-800'
+                : 'bg-rose-50 border-rose-200 text-rose-700'
+            }`}
+          >
+            {statusMsg.type === 'info' ? (
+              <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+            ) : null}
+            <span>{statusMsg.text}</span>
           </div>
         )}
 
         <div className="mt-6 flex flex-col gap-2">
           <button
+            type="button"
             onClick={triggerPanic}
-            disabled={loading}
-            className="w-full py-3.5 bg-gradient-to-r from-red-600 to-rose-600 hover:from-red-700 hover:to-rose-700 text-white font-extrabold rounded-2xl shadow-lg shadow-red-500/30 flex items-center justify-center gap-2 transition active:scale-95 text-sm"
+            disabled={loading || canceling}
+            className="w-full py-3.5 bg-gradient-to-r from-red-600 to-rose-600 hover:from-red-700 hover:to-rose-700 text-white font-extrabold rounded-2xl shadow-lg shadow-red-500/30 flex items-center justify-center gap-2 transition active:scale-95 text-sm disabled:opacity-50"
           >
             <Volume2 className="w-5 h-5 animate-bounce" />
             {loading ? 'MENGIRIM SINYAL...' : 'BUNYIKAN SIRINE & BROADCAST DARURAT'}
           </button>
 
           <button
-            onClick={onClose}
-            className="w-full py-2.5 text-xs text-slate-500 hover:text-slate-800 font-semibold"
+            type="button"
+            onClick={handleCancelSafe}
+            disabled={loading || canceling}
+            className="w-full py-2.5 text-xs text-slate-500 hover:text-slate-800 font-semibold flex items-center justify-center gap-1.5 transition hover:bg-slate-50 rounded-xl"
           >
-            Batalkan (Kondisi Aman)
+            {canceling ? (
+              <>
+                <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                <span>Memproses Pembatalan...</span>
+              </>
+            ) : (
+              <span>Batalkan (Kondisi Aman)</span>
+            )}
           </button>
         </div>
       </div>

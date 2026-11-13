@@ -410,7 +410,112 @@ void handleApiStatus() {
   localServer.send(200, "application/json", resStr);
 }
 
+// GET / -> Halaman Web Captive Portal Mandiri ESP32 (Responsif Mobile)
+void handleRootPortal() {
+  setCorsHeaders();
+  String html = F(
+    "<!DOCTYPE html><html lang='id'><head><meta charset='UTF-8'>"
+    "<meta name='viewport' content='width=device-width,initial-scale=1.0'>"
+    "<title>SMART-WARGA | Setup Wi-Fi ESP32</title>"
+    "<style>"
+    "*{box-sizing:border-box;margin:0;padding:0;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif}"
+    "body{background:#f1f5f9;color:#0f172a;display:flex;justify-content:center;align-items:center;min-height:100vh;padding:16px}"
+    ".card{background:#ffffff;max-width:440px;width:100%;border-radius:24px;padding:24px;box-shadow:0 10px 25px -5px rgba(0,0,0,0.08);border:1px solid #e2e8f0}"
+    ".header{text-align:center;margin-bottom:20px}"
+    ".logo{width:48px;height:48px;background:linear-gradient(135deg,#059669,#0d9488);border-radius:14px;display:inline-flex;align-items:center;justify-content:center;color:#fff;font-size:24px;margin-bottom:10px}"
+    "h2{font-size:20px;font-weight:800;color:#0f172a}"
+    "p{font-size:12px;color:#64748b;margin-top:4px}"
+    ".form-group{margin-bottom:14px;text-align:left}"
+    "label{display:block;font-size:12px;font-weight:700;color:#334155;margin-bottom:6px}"
+    "select,input{width:100%;padding:12px 14px;border:1px solid #cbd5e1;border-radius:12px;font-size:14px;background:#f8fafc;outline:none;transition:0.2s}"
+    "select:focus,input:focus{border-color:#10b981;background:#fff;box-shadow:0 0 0 3px rgba(16,185,129,0.15)}"
+    ".btn-scan{background:#ecfdf5;color:#047857;border:1px solid #a7f3d0;padding:8px 12px;border-radius:10px;font-size:11px;font-weight:700;cursor:pointer;float:right;margin-top:-28px}"
+    ".btn-submit{width:100%;background:linear-gradient(135deg,#059669,#0d9488);color:#fff;border:none;padding:14px;border-radius:14px;font-size:14px;font-weight:800;cursor:pointer;margin-top:10px;box-shadow:0 4px 12px rgba(5,150,105,0.25)}"
+    ".status-box{display:none;padding:12px;border-radius:12px;font-size:12px;margin-top:14px;text-align:center;font-weight:600}"
+    ".success{background:#dcfce7;color:#166534;border:1px solid #bbf7d0}"
+    ".error{background:#fee2e2;color:#991b1b;border:1px solid #fecaca}"
+    "</style></head><body>"
+    "<div class='card'>"
+    "<div class='header'>"
+    "<div class='logo'>📶</div>"
+    "<h2>Setup Wi-Fi SMART-WARGA</h2>"
+    "<p>Hubungkan ESP32 AIO ke router Wi-Fi sekitar</p>"
+    "</div>"
+    "<div class='form-group'>"
+    "<label>Daftar Wi-Fi Sekitar</label>"
+    "<button type='button' class='btn-scan' onclick='scanWifi()'>Pindai Ulang</button>"
+    "<select id='wifiList' onchange='onSelectWifi()'><option value=''>-- Memindai jaringan Wi-Fi... --</option></select>"
+    "</div>"
+    "<div class='form-group'>"
+    "<label>Nama Wi-Fi (SSID)</label>"
+    "<input type='text' id='ssid' placeholder='Ketik SSID manual...'>"
+    "</div>"
+    "<div class='form-group'>"
+    "<label>Password Wi-Fi</label>"
+    "<input type='password' id='password' placeholder='Masukkan password Wi-Fi...'>"
+    "</div>"
+    "<div class='form-group'>"
+    "<label>Device Token (Opsional)</label>"
+    "<input type='text' id='token' placeholder='Token JSON dari web warga...'>"
+    "</div>"
+    "<button type='button' class='btn-submit' id='btnConnect' onclick='connectWifi()'>Hubungkan Perangkat</button>"
+    "<div id='statusBox' class='status-box'></div>"
+    "</div>"
+    "<script>"
+    "function scanWifi(){"
+    "var sel=document.getElementById('wifiList');"
+    "sel.innerHTML='<option>Sedang memindai Wi-Fi...</option>';"
+    "fetch('/api/wifi/scan').then(r=>r.json()).then(data=>{"
+    "sel.innerHTML='<option value=\"\">-- Pilih Wi-Fi Terdeteksi --</option>';"
+    "if(data.length===0){sel.innerHTML='<option value=\"\">Tidak ada Wi-Fi terdeteksi</option>';return;}"
+    "data.forEach(w=>{"
+    "var opt=document.createElement('option');"
+    "opt.value=w.ssid;opt.text=w.ssid+' ('+w.rssi+' dBm)'+(w.secure?' 🔒':'');"
+    "sel.appendChild(opt);"
+    "});"
+    "}).catch(e=>{"
+    "sel.innerHTML='<option value=\"\">Gagal memindai Wi-Fi</option>';"
+    "});"
+    "}"
+    "function onSelectWifi(){"
+    "var val=document.getElementById('wifiList').value;"
+    "if(val) document.getElementById('ssid').value=val;"
+    "}"
+    "function connectWifi(){"
+    "var s=document.getElementById('ssid').value.trim();"
+    "var p=document.getElementById('password').value;"
+    "var t=document.getElementById('token').value.trim();"
+    "var box=document.getElementById('statusBox');"
+    "var btn=document.getElementById('btnConnect');"
+    "if(!s){alert('Silakan pilih atau ketik nama Wi-Fi');return;}"
+    "btn.disabled=true;btn.innerText='Menghubungkan...';"
+    "box.className='status-box success';box.style.display='block';"
+    "box.innerText='Mengirim konfigurasi... ESP32 sedang menghubungkan ke '+s;"
+    "fetch('/api/wifi/connect',{method:'POST',headers:{'Content-Type':'application/json'},"
+    "body:JSON.stringify({ssid:s,password:p,device_token:t})})"
+    ".then(r=>r.json()).then(res=>{"
+    "box.innerText='Tersimpan! ESP32 beralih ke router. Periksa lampu LED atau layar LCD.';"
+    "}).catch(err=>{"
+    "box.className='status-box error';box.innerText='Gagal mengirim konfigurasi. Coba lagi.';"
+    "btn.disabled=false;btn.innerText='Hubungkan Perangkat';"
+    "});"
+    "}"
+    "window.onload=scanWifi;"
+    "</script></body></html>"
+  );
+  localServer.send(200, "text/html", html);
+}
+
 void setupLocalWebServer() {
+  // Halaman Root Portal Mandiri
+  localServer.on("/", HTTP_GET, handleRootPortal);
+
+  // Captive Portal Detection Endpoints (Android, iOS, Windows)
+  localServer.on("/generate_204", HTTP_GET, handleRootPortal);
+  localServer.on("/hotspot-detect.html", HTTP_GET, handleRootPortal);
+  localServer.on("/ncsi.txt", HTTP_GET, handleRootPortal);
+
+  // REST API Endpoints
   localServer.on("/api/wifi/scan", HTTP_OPTIONS, handleCorsPreflight);
   localServer.on("/api/wifi/scan", HTTP_GET, handleApiWifiScan);
 
@@ -425,12 +530,14 @@ void setupLocalWebServer() {
     if (localServer.method() == HTTP_OPTIONS) {
       localServer.send(204);
     } else {
-      localServer.send(404, "application/json", "{\"error\":\"Endpoint tidak ditemukan\"}");
+      // Redirect Captive Portal ke Root
+      localServer.sendHeader("Location", String("http://") + localServer.client().localIP().toString() + "/", true);
+      localServer.send(302, "text/plain", "");
     }
   });
 
   localServer.begin();
-  Serial.println("🌐 Local WebServer REST API (Port 80) Aktif!");
+  Serial.println("🌐 Local WebServer REST API & Captive Portal (Port 80) Aktif!");
 }
 
 // ==================================================================================================

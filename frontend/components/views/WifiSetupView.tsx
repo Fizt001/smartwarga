@@ -138,16 +138,11 @@ export default function WifiSetupView({ onSuccessReturn, onNavigateTab }: WifiSe
       }
       throw new Error('Tidak ada jaringan yang ditemukan.');
     } catch (err: any) {
-      console.warn('ESP32 direct scan failed (maybe not connected to AP):', err);
+      console.warn('ESP32 direct scan failed (maybe not connected to AP or blocked by HTTPS Mixed-Content):', err);
+      setScannedNetworks([]); // Kosongkan daftar agar tidak menampilkan data palsu/dummy
       setScanError(
-        'Belum tersambung ke hotspot ESP32 "SmartWarga-Setup". Silakan hubungkan Wi-Fi HP Anda ke "SmartWarga-Setup" atau masukkan nama Wi-Fi manual di bawah.'
+        'Pemindaian otomatis dari situs HTTPS dibatasi oleh keamanan browser (Mixed-Content / Private Network). Silakan ketik nama Wi-Fi Anda langsung pada kotak di bawah, atau sambungkan HP ke Wi-Fi "SmartWarga-Setup" dan buka browser ke http://192.168.4.1'
       );
-      // Fallback mock networks for convenience if testing
-      setScannedNetworks([
-        { ssid: 'Wi-Fi Rumah (Warga)', rssi: -58, secure: true },
-        { ssid: 'Hotspot_RT01', rssi: -68, secure: true },
-        { ssid: 'Pos_Ronda_AIO', rssi: -82, secure: false },
-      ]);
     } finally {
       setIsScanning(false);
     }
@@ -332,27 +327,51 @@ export default function WifiSetupView({ onSuccessReturn, onNavigateTab }: WifiSe
       <form onSubmit={handleConnectDevice} className="bg-white rounded-3xl p-6 sm:p-8 shadow-sm border border-slate-200/80 space-y-6">
         {/* Step 1: Wi-Fi Selection & Scanner */}
         <div className="space-y-3">
-          <div className="flex items-center justify-between">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
             <label className="text-sm font-bold text-slate-900 flex items-center gap-2">
               <Wifi className="w-4 h-4 text-emerald-600" />
-              1. Pilih / Masukkan Nama Wi-Fi (SSID)
+              1. Nama Jaringan Wi-Fi (SSID)
             </label>
-            <button
-              type="button"
-              onClick={scanWifiNetworks}
-              disabled={isScanning}
-              className="text-xs font-bold text-emerald-700 hover:text-emerald-800 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 px-3 py-1.5 rounded-xl transition flex items-center gap-1.5"
-            >
-              <RefreshCw className={`w-3.5 h-3.5 ${isScanning ? 'animate-spin' : ''}`} />
-              {isScanning ? 'Memindai Wi-Fi...' : 'Pindai Wi-Fi Sekitar'}
-            </button>
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={scanWifiNetworks}
+                disabled={isScanning}
+                className="text-xs font-bold text-emerald-700 hover:text-emerald-800 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 px-3 py-1.5 rounded-xl transition flex items-center gap-1.5"
+              >
+                <RefreshCw className={`w-3.5 h-3.5 ${isScanning ? 'animate-spin' : ''}`} />
+                {isScanning ? 'Memindai...' : 'Pindai Wi-Fi Sekitar'}
+              </button>
+              <a
+                href="http://192.168.4.1"
+                target="_blank"
+                rel="noreferrer"
+                className="text-xs font-bold text-blue-700 hover:text-blue-800 bg-blue-50 hover:bg-blue-100 border border-blue-200 px-3 py-1.5 rounded-xl transition flex items-center gap-1.5"
+                title="Buka portal offline langsung di ESP32"
+              >
+                <ExternalLink className="w-3.5 h-3.5" />
+                <span>Portal 192.168.4.1</span>
+              </a>
+            </div>
           </div>
 
-          {/* Scanned Network List if available */}
+          {/* SSID Direct Input */}
+          <div className="relative">
+            <input
+              type="text"
+              value={ssid}
+              onChange={(e) => setSsid(e.target.value)}
+              placeholder="Ketik nama Wi-Fi Anda (misal: Wi-Fi Rumah, Indihome, Hotspot HP)..."
+              required
+              className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-2xl text-sm font-semibold text-slate-900 focus:bg-white focus:ring-2 focus:ring-emerald-500 focus:outline-none transition shadow-inner"
+            />
+          </div>
+
+          {/* Scanned Network List if available from ESP32 */}
           {scannedNetworks.length > 0 && (
             <div className="space-y-1.5 bg-slate-50/70 p-3 rounded-2xl border border-slate-200/80 max-h-48 overflow-y-auto">
               <div className="text-[11px] font-bold text-slate-400 uppercase tracking-wider px-1">
-                Jaringan Terdeteksi di Sekitar ESP32:
+                Pilih Dari Jaringan Terdeteksi ({scannedNetworks.length}):
               </div>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 mt-1">
                 {scannedNetworks.map((net, idx) => {
@@ -386,23 +405,14 @@ export default function WifiSetupView({ onSuccessReturn, onNavigateTab }: WifiSe
           )}
 
           {scanError && (
-            <div className="p-3 bg-amber-50 border border-amber-200 rounded-xl text-xs text-amber-800 flex items-start gap-2">
+            <div className="p-3 bg-amber-50 border border-amber-200 rounded-xl text-xs text-amber-900 flex items-start gap-2.5 leading-relaxed">
               <Info className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
-              <div>{scanError}</div>
+              <div>
+                <span className="font-bold">Info Pemindaian: </span>
+                {scanError}
+              </div>
             </div>
           )}
-
-          {/* SSID Manual Input */}
-          <div className="relative">
-            <input
-              type="text"
-              value={ssid}
-              onChange={(e) => setSsid(e.target.value)}
-              placeholder="Contoh: MyHome_WiFi / Ketik SSID manual..."
-              required
-              className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-2xl text-sm font-semibold text-slate-900 focus:bg-white focus:ring-2 focus:ring-emerald-500 focus:outline-none transition"
-            />
-          </div>
         </div>
 
         {/* Step 2: Wi-Fi Password */}

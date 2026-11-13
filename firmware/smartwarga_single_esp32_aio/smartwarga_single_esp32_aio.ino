@@ -409,105 +409,112 @@ void handleApiStatus() {
   localServer.send(200, "application/json", resStr);
 }
 
+// Template HTML Captive Portal Disimpan di Flash Memory (PROGMEM) - Ringan & Bebas Crash
+const char PROGMEM PORTAL_HTML[] = R"rawliteral(<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>SMART-WARGA | Setup Wi-Fi ESP32</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif}
+body{background:#f8fafc;color:#0f172a;display:flex;justify-content:center;align-items:center;min-height:100vh;padding:16px}
+.card{background:#ffffff;max-width:440px;width:100%;border-radius:24px;padding:24px;box-shadow:0 10px 25px -5px rgba(0,0,0,0.08);border:1px solid #e2e8f0}
+.header{text-align:center;margin-bottom:20px}
+.logo{width:52px;height:52px;background:linear-gradient(135deg,#059669,#0d9488);border-radius:16px;display:inline-flex;align-items:center;justify-content:center;color:#fff;font-size:26px;margin-bottom:12px;box-shadow:0 6px 16px rgba(5,150,105,0.25)}
+h2{font-size:20px;font-weight:900;color:#0f172a;letter-spacing:-0.5px}
+p{font-size:12px;color:#64748b;margin-top:4px;line-height:1.4}
+.notice{background:#ecfdf5;border:1px solid #a7f3d0;border-radius:14px;padding:12px;font-size:11px;color:#065f46;margin-bottom:18px;line-height:1.4}
+.form-group{margin-bottom:14px;text-align:left}
+label{display:block;font-size:12px;font-weight:700;color:#334155;margin-bottom:6px}
+.btn-scan{background:#f1f5f9;color:#0f172a;border:1px solid #cbd5e1;padding:6px 12px;border-radius:8px;font-size:11px;font-weight:700;cursor:pointer;float:right;margin-top:-28px}
+select,input{width:100%;padding:12px 14px;border:1px solid #cbd5e1;border-radius:12px;font-size:14px;background:#f8fafc;outline:none;transition:0.2s}
+select:focus,input:focus{border-color:#10b981;background:#fff;box-shadow:0 0 0 3px rgba(16,185,129,0.15)}
+.btn-gen{background:#e0f2fe;color:#0369a1;border:1px solid #bae6fd;padding:6px 10px;border-radius:8px;font-size:11px;font-weight:700;cursor:pointer;float:right;margin-top:-28px}
+.btn-submit{width:100%;background:linear-gradient(135deg,#059669,#0d9488);color:#fff;border:none;padding:14px;border-radius:14px;font-size:14px;font-weight:800;cursor:pointer;margin-top:12px;box-shadow:0 4px 14px rgba(5,150,105,0.25)}
+.btn-submit:disabled{opacity:0.6;cursor:not-allowed}
+.status-box{display:none;padding:14px;border-radius:14px;font-size:12px;margin-top:16px;text-align:center;font-weight:700;line-height:1.5}
+.success{background:#dcfce7;color:#166534;border:1px solid #bbf7d0}
+.error{background:#fee2e2;color:#991b1b;border:1px solid #fecaca}
+</style>
+</head>
+<body>
+<div class="card">
+<div class="header">
+<div class="logo">📶</div>
+<h2>Setup Wi-Fi SMART-WARGA</h2>
+<p>Pindai & hubungkan modul IoT ESP32 ke router Wi-Fi rumah</p>
+</div>
+<div class="notice">
+💡 <strong>Petunjuk:</strong> Pilih nama Wi-Fi rumah Anda di bawah. Setelah menekan tombol <strong>Hubungkan</strong>, hotspot setup ini akan otomatis mati dan ESP32 akan langsung terhubung ke router.
+</div>
+<div class="form-group">
+<label>Pilih Wi-Fi Terdeteksi</label>
+<button type="button" class="btn-scan" onclick="scanWifi()">🔄 Pindai</button>
+<select id="wifiList" onchange="onSelectWifi()"><option value="">-- Memindai Wi-Fi sekitar... --</option></select>
+</div>
+<div class="form-group">
+<label>Nama Wi-Fi (SSID)</label>
+<input type="text" id="ssid" placeholder="Ketik SSID manual...">
+</div>
+<div class="form-group">
+<label>Password Wi-Fi</label>
+<input type="password" id="password" placeholder="Masukkan password Wi-Fi...">
+</div>
+<div class="form-group">
+<label>Device Token Autentikasi</label>
+<button type="button" class="btn-gen" onclick="generateToken()">⚡ Buat Token</button>
+<input type="text" id="token" placeholder="Token verifikasi sistem...">
+</div>
+<button type="button" class="btn-submit" id="btnConnect" onclick="connectWifi()">HUBUNGKAN PERANGKAT (OK)</button>
+<div id="statusBox" class="status-box"></div>
+</div>
+<script>
+function generateToken(){
+var rand=Math.random().toString(36).substring(2,10).toUpperCase();
+document.getElementById('token').value='SW-WARGA-'+rand;
+}
+function scanWifi(){
+var sel=document.getElementById('wifiList');
+sel.innerHTML='<option>Sedang memindai Wi-Fi sekitar...</option>';
+fetch('/api/wifi/scan').then(r=>r.json()).then(data=>{
+sel.innerHTML='<option value="">-- Pilih Wi-Fi Terdeteksi ('+data.length+') --</option>';
+if(data.length===0){sel.innerHTML='<option value="">Tidak ada Wi-Fi terdeteksi</option>';return;}
+data.forEach(w=>{
+var opt=document.createElement('option');
+opt.value=w.ssid;opt.text=w.ssid+' ('+w.rssi+' dBm)'+(w.secure?' 🔒':' (Terbuka)');
+sel.appendChild(opt);
+});
+}).catch(e=>{
+sel.innerHTML='<option value="">Gagal memindai. Ketik nama Wi-Fi manual di bawah.</option>';
+});
+}
+function onSelectWifi(){
+var val=document.getElementById('wifiList').value;
+if(val) document.getElementById('ssid').value=val;
+}
+function connectWifi(){
+var s=document.getElementById('ssid').value.trim();
+var p=document.getElementById('password').value;
+var t=document.getElementById('token').value.trim();
+var box=document.getElementById('statusBox');
+var btn=document.getElementById('btnConnect');
+if(!s){alert('Silakan pilih atau ketik nama Wi-Fi!');return;}
+btn.disabled=true;btn.innerText='Sedang Menghubungkan...';
+box.className='status-box success';box.style.display='block';
+box.innerHTML='✅ <strong>Konfigurasi Berhasil Diterima!</strong><br>Hotspot SmartWarga-Setup akan dinonaktifkan. ESP32 sekarang langsung menghubungkan ke Wi-Fi <u>'+s+'</u>. Periksa indikator LED atau LCD.';
+fetch('/api/wifi/connect',{method:'POST',headers:{'Content-Type':'application/json'},
+body:JSON.stringify({ssid:s,password:p,device_token:t})}).catch(e=>{});
+}
+window.onload=function(){generateToken();scanWifi();};
+</script>
+</body>
+</html>)rawliteral";
+
 // GET / -> Aplikasi Web Captive Portal Mandiri ESP32
 void handleRootPortal() {
   setCorsHeaders();
-  String html = F(
-    "<!DOCTYPE html><html lang='id'><head><meta charset='UTF-8'>"
-    "<meta name='viewport' content='width=device-width,initial-scale=1.0'>"
-    "<title>SMART-WARGA | Setup Wi-Fi ESP32</title>"
-    "<style>"
-    "*{box-sizing:border-box;margin:0;padding:0;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif}"
-    "body{background:#f8fafc;color:#0f172a;display:flex;justify-content:center;align-items:center;min-height:100vh;padding:16px}"
-    ".card{background:#ffffff;max-width:440px;width:100%;border-radius:24px;padding:24px;box-shadow:0 10px 25px -5px rgba(0,0,0,0.08);border:1px solid #e2e8f0}"
-    ".header{text-align:center;margin-bottom:20px}"
-    ".logo{width:52px;height:52px;background:linear-gradient(135deg,#059669,#0d9488);border-radius:16px;display:inline-flex;align-items:center;justify-content:center;color:#fff;font-size:26px;margin-bottom:12px;box-shadow:0 6px 16px rgba(5,150,105,0.25)}"
-    "h2{font-size:20px;font-weight:900;color:#0f172a;letter-spacing:-0.5px}"
-    "p{font-size:12px;color:#64748b;margin-top:4px;line-height:1.4}"
-    ".notice{background:#ecfdf5;border:1px solid #a7f3d0;border-radius:14px;padding:12px;font-size:11px;color:#065f46;margin-bottom:18px;line-height:1.4}"
-    ".form-group{margin-bottom:14px;text-align:left}"
-    "label{display:block;font-size:12px;font-weight:700;color:#334155;margin-bottom:6px}"
-    ".btn-scan{background:#f1f5f9;color:#0f172a;border:1px solid #cbd5e1;padding:6px 12px;border-radius:8px;font-size:11px;font-weight:700;cursor:pointer;float:right;margin-top:-28px}"
-    "select,input{width:100%;padding:12px 14px;border:1px solid #cbd5e1;border-radius:12px;font-size:14px;background:#f8fafc;outline:none;transition:0.2s}"
-    "select:focus,input:focus{border-color:#10b981;background:#fff;box-shadow:0 0 0 3px rgba(16,185,129,0.15)}"
-    ".btn-gen{background:#e0f2fe;color:#0369a1;border:1px solid #bae6fd;padding:6px 10px;border-radius:8px;font-size:11px;font-weight:700;cursor:pointer;float:right;margin-top:-28px}"
-    ".btn-submit{width:100%;background:linear-gradient(135deg,#059669,#0d9488);color:#fff;border:none;padding:14px;border-radius:14px;font-size:14px;font-weight:800;cursor:pointer;margin-top:12px;box-shadow:0 4px 14px rgba(5,150,105,0.25)}"
-    ".btn-submit:disabled{opacity:0.6;cursor:not-allowed}"
-    ".status-box{display:none;padding:14px;border-radius:14px;font-size:12px;margin-top:16px;text-align:center;font-weight:700;line-height:1.5}"
-    ".success{background:#dcfce7;color:#166534;border:1px solid #bbf7d0}"
-    ".error{background:#fee2e2;color:#991b1b;border:1px solid #fecaca}"
-    "</style></head><body>"
-    "<div class='card'>"
-    "<div class='header'>"
-    "<div class='logo'>📶</div>"
-    "<h2>Setup Wi-Fi SMART-WARGA</h2>"
-    "<p>Pindai & hubungkan modul IoT ESP32 ke router Wi-Fi rumah</p>"
-    "</div>"
-    "<div class='notice'>"
-    "💡 <strong>Petunjuk:</strong> Pilih nama Wi-Fi rumah Anda di bawah. Setelah menekan tombol <strong>Hubungkan</strong>, hotspot setup ini akan otomatis mati dan ESP32 akan langsung terhubung ke router."
-    "</div>"
-    "<div class='form-group'>"
-    "<label>Pilih Wi-Fi Terdeteksi</label>"
-    "<button type='button' class='btn-scan' onclick='scanWifi()'>🔄 Pindai</button>"
-    "<select id='wifiList' onchange='onSelectWifi()'><option value=''>-- Memindai Wi-Fi sekitar... --</option></select>"
-    "</div>"
-    "<div class='form-group'>"
-    "<label>Nama Wi-Fi (SSID)</label>"
-    "<input type='text' id='ssid' placeholder='Ketik SSID manual...'>"
-    "</div>"
-    "<div class='form-group'>"
-    "<label>Password Wi-Fi</label>"
-    "<input type='password' id='password' placeholder='Masukkan password Wi-Fi...'>"
-    "</div>"
-    "<div class='form-group'>"
-    "<label>Device Token Autentikasi</label>"
-    "<button type='button' class='btn-gen' onclick='generateToken()'>⚡ Buat Token</button>"
-    "<input type='text' id='token' placeholder='Token verifikasi sistem...'>"
-    "</div>"
-    "<button type='button' class='btn-submit' id='btnConnect' onclick='connectWifi()'>HUBUNGKAN PERANGKAT (OK)</button>"
-    "<div id='statusBox' class='status-box'></div>"
-    "</div>"
-    "<script>"
-    "function generateToken(){"
-    "var rand=Math.random().toString(36).substring(2,10).toUpperCase();"
-    "document.getElementById('token').value='SW-WARGA-'+rand;"
-    "}"
-    "function scanWifi(){"
-    "var sel=document.getElementById('wifiList');"
-    "sel.innerHTML='<option>Sedang memindai Wi-Fi sekitar...</option>';"
-    "fetch('/api/wifi/scan').then(r=>r.json()).then(data=>{"
-    "sel.innerHTML='<option value=\"\">-- Pilih Wi-Fi Terdeteksi ('+data.length+') --</option>';"
-    "if(data.length===0){sel.innerHTML='<option value=\"\">Tidak ada Wi-Fi terdeteksi</option>';return;}"
-    "data.forEach(w=>{"
-    "var opt=document.createElement('option');"
-    "opt.value=w.ssid;opt.text=w.ssid+' ('+w.rssi+' dBm)'+(w.secure?' 🔒':' (Terbuka)');"
-    "sel.appendChild(opt);"
-    "});"
-    "}).catch(e=>{"
-    "sel.innerHTML='<option value=\"\">Gagal memindai. Ketik nama Wi-Fi manual di bawah.</option>';"
-    "});"
-    "}"
-    "function onSelectWifi(){"
-    "var val=document.getElementById('wifiList').value;"
-    "if(val) document.getElementById('ssid').value=val;"
-    "}"
-    "function connectWifi(){"
-    "var s=document.getElementById('ssid').value.trim();"
-    "var p=document.getElementById('password').value;"
-    "var t=document.getElementById('token').value.trim();"
-    "var box=document.getElementById('statusBox');"
-    "var btn=document.getElementById('btnConnect');"
-    "if(!s){alert('Silakan pilih atau ketik nama Wi-Fi!');return;}"
-    "btn.disabled=true;btn.innerText='Sedang Menghubungkan...';"
-    "box.className='status-box success';box.style.display='block';"
-    "box.innerHTML='✅ <strong>Konfigurasi Berhasil Diterima!</strong><br>Hotspot SmartWarga-Setup akan dinonaktifkan. ESP32 sekarang langsung menghubungkan ke Wi-Fi <u>'+s+'</u>. Periksa indikator LED atau LCD.';"
-    "fetch('/api/wifi/connect',{method:'POST',headers:{'Content-Type':'application/json'},"
-    "body:JSON.stringify({ssid:s,password:p,device_token:t})}).catch(e=>{});"
-    "}"
-    "window.onload=function(){generateToken();scanWifi();};"
-    "</script></body></html>"
-  );
-  localServer.send(200, "text/html", html);
+  localServer.send_P(200, "text/html", PORTAL_HTML);
 }
 
 void setupLocalWebServer() {
@@ -534,8 +541,8 @@ void setupLocalWebServer() {
     if (localServer.method() == HTTP_OPTIONS) {
       localServer.send(204);
     } else {
-      // Redirect Captive Portal ke Root
-      localServer.sendHeader("Location", String("http://") + localServer.client().localIP().toString() + "/", true);
+      // Redirect Captive Portal ke Root (Gunakan IP Statis 192.168.4.1 agar tidak Null Pointer)
+      localServer.sendHeader("Location", "http://192.168.4.1/", true);
       localServer.send(302, "text/plain", "");
     }
   });
@@ -549,8 +556,8 @@ void setupLocalWebServer() {
 // ==================================================================================================
 void startApProvisioningMode() {
   currentSystemMode = SYSTEM_MODE_AP_PROVISIONING;
-  WiFi.disconnect(true);
-  delay(100);
+  WiFi.disconnect();
+  delay(50);
 
   // Nyalakan OPEN HOTSPOT (Tanpa Password) agar HP langsung connect tanpa ditanya password
   WiFi.mode(WIFI_AP_STA);
@@ -1053,11 +1060,15 @@ void setup() {
   // Inisialisasi Dual RFID RC522
   setupSmartRfid();
 
-  // Inisialisasi WebServer & Captive Portal
-  setupLocalWebServer();
-
   // Baca Kredensial NVS
   loadCredentialsFromNVS();
+
+  // Siapkan network stack Wi-Fi sebelum WebServer dijalankan
+  WiFi.persistent(false);
+  WiFi.mode(WIFI_AP_STA);
+
+  // Inisialisasi WebServer & Captive Portal
+  setupLocalWebServer();
 
   // Jika ada SSID tersimpan, coba hubungkan ke router rumah
   if (savedSsid.length() > 0) {

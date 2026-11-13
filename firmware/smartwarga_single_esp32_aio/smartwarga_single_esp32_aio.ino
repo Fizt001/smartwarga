@@ -121,22 +121,24 @@ SystemMode currentSystemMode = SYSTEM_MODE_AP_PROVISIONING;
 KioskMode currentKioskMode = MODE_PELAYANAN_TERPADU;
 
 // Timers
-unsigned long lastHeartbeatTime   = 0;
+unsigned long lastHeartbeatTime = 0;
 const unsigned long HEARTBEAT_INTERVAL = 8000; // Kirim tiap 8 detik
-unsigned long lastSirenCheckTime  = 0;
-const unsigned long SIREN_CHECK_INTERVAL = 2000; // Cek status sirine tiap 2 detik
-unsigned long lastModeBtnPress    = 0;
-unsigned long lastPanicBtnPress   = 0;
-unsigned long lastSerialDot       = 0;
-unsigned long sirenPulseTimer     = 0;
-bool sirenPulseState              = false;
-bool isSirenAlarming              = false;
-bool webSirenActive               = false;
-String webSirenReason             = "";
+unsigned long lastSirenCheckTime = 0;
+const unsigned long SIREN_CHECK_INTERVAL =
+    2000; // Cek status sirine tiap 2 detik
+unsigned long lastModeBtnPress = 0;
+unsigned long lastPanicBtnPress = 0;
+unsigned long lastSerialDot = 0;
+unsigned long sirenPulseTimer = 0;
+bool sirenPulseState = false;
+bool isSirenAlarming = false;
+bool webSirenActive = false;
+String webSirenReason = "";
 
 // Deteksi Otomatis Putus Wi-Fi
 unsigned long wifiDisconnectStartTime = 0;
-const unsigned long WIFI_DISCONNECT_GRACE_PERIOD = 5000; // Toleransi 5 detik sebelum membuka Hotspot Terbuka
+const unsigned long WIFI_DISCONNECT_GRACE_PERIOD =
+    5000; // Toleransi 5 detik sebelum membuka Hotspot Terbuka
 
 // Flag permintaan reconnect dari Web Portal
 bool pendingWifiConnect = false;
@@ -1166,14 +1168,18 @@ void setup() {
 void loop() {
   unsigned long now = millis();
 
-  // 1. MONITOR KONEKSI: Jika Wi-Fi router terputus saat STA Online, langsung kembali ke Open Hotspot Setup
+  // 1. MONITOR KONEKSI: Jika Wi-Fi router terputus saat STA Online, langsung
+  // kembali ke Open Hotspot Setup
   if (currentSystemMode == SYSTEM_MODE_STA_ONLINE) {
     if (WiFi.status() != WL_CONNECTED) {
       if (wifiDisconnectStartTime == 0) {
         wifiDisconnectStartTime = now;
-        Serial.println("\n⚠️ [WiFi] Sinyal router terputus! Toleransi 5 detik sebelum membuka Hotspot Setup...");
-      } else if (now - wifiDisconnectStartTime >= WIFI_DISCONNECT_GRACE_PERIOD) {
-        Serial.println("\n🚨 [WiFi TERPUTUS] Router hilang! Otomatis membuka Hotspot Terbuka (SmartWarga-Setup)...");
+        Serial.println("\n⚠️ [WiFi] Sinyal router terputus! Toleransi 5 detik "
+                       "sebelum membuka Hotspot Setup...");
+      } else if (now - wifiDisconnectStartTime >=
+                 WIFI_DISCONNECT_GRACE_PERIOD) {
+        Serial.println("\n🚨 [WiFi TERPUTUS] Router hilang! Otomatis membuka "
+                       "Hotspot Terbuka (SmartWarga-Setup)...");
         wifiDisconnectStartTime = 0;
         startApProvisioningMode();
         displayLcd("WIFI TERPUTUS!", "SmartWarga-Setup");
@@ -1192,10 +1198,12 @@ void loop() {
   // 3. Layani Permintaan Web Portal (Port 80)
   localServer.handleClient();
 
-  // 4. Eksekusi Permintaan Koneksi dari Portal Web (Matikan AP & Hubungkan ke Router)
+  // 4. Eksekusi Permintaan Koneksi dari Portal Web (Matikan AP & Hubungkan ke
+  // Router)
   if (pendingWifiConnect) {
     pendingWifiConnect = false;
-    Serial.printf("\n🔄 [PROVISIONING] Menerima konfigurasi baru! Mematikan hotspot & menghubungkan ke: %s\n",
+    Serial.printf("\n🔄 [PROVISIONING] Menerima konfigurasi baru! Mematikan "
+                  "hotspot & menghubungkan ke: %s\n",
                   pendingSsid.c_str());
     delay(1000);
     connectToSavedWifi(20);

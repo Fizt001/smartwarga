@@ -1,35 +1,33 @@
 /*
  * ==================================================================================================
- * SMART-WARGA: ALL-IN-ONE (AIO) IOT CONTROLLER FIRMWARE (v3.5 DYNAMIC PROVISIONING & NVS)
+ * SMART-WARGA: ALL-IN-ONE (AIO) IOT CONTROLLER FIRMWARE (v4.0 CAPTIVE PORTAL & AUTO-SWITCH)
  * Target Hardware: Single ESP32 DevKit V1 (30-pin / 38-pin)
  * 
- * FITUR ARSITEKTUR TERBARU:
- * 1. ZERO HARDCODED WI-FI:
- *    - Kredensial Wi-Fi (SSID, Password) dan Token Perangkat disimpan di NVS via Preferences.h
- * 2. AUTOMATIC AP PROVISIONING (CAPTIVE PORTAL / REST API):
- *    - Jika belum terkonfigurasi atau gagal konek ke router, otomatis menyalakan Access Point (AP)
- *      SSID: "SmartWarga-Setup" | Password: "12345678" | IP: 192.168.4.1
- *    - Menjalankan WebServer lokal REST API (Port 80) dengan header CORS lengkap:
- *      * GET  /api/wifi/scan    -> Scan Wi-Fi sekitar & return JSON [{ssid, rssi, secure}]
- *      * POST /api/wifi/connect -> Terima JSON {ssid, password, device_token}, simpan ke NVS,
- *                                  dan coba hubungkan ke router
- *      * GET  /api/status       -> Cek status mode (AP / STA), IP, dan koneksi
- * 3. VALIDASI & HANDSHAKE SERVER:
- *    - Setelah terkoneksi ke router (STA), ESP32 mengirim heartbeat ke server web dengan device_token
- *      sehingga status perangkat di web langsung berubah menjadi ONLINE HIJAU.
- * 4. DUAL RFID RC522:
- *    - Reader 1 (SDA: GPIO 5) -> Gerbang Tol / Akses Masuk + Palang Servo (GPIO 13)
- *    - Reader 2 (SDA: GPIO 4) -> Kios Pelayanan & Antrean Terpadu / Bank Sampah
- * 5. LAYAR LCD 16x2 I2C (Alamat 0x27):
- *    - Menampilkan panduan setup AP (192.168.4.1) saat offline, status kartu & antrean saat online.
- * 6. SIRINE WILAYAH & TOMBOL PANIK (GPIO 27):
- *    - Polling status sirine dari server tiap 2 detik, buzzer aktif & LED 2 menyala otomatis.
+ * ALUR PROVISIONING TERBARU:
+ * 1. MODE DEFAULT (BELUM ADA WI-FI / PUTUS):
+ *    - ESP32 memancarkan OPEN HOTSPOT (Tanpa Password): "SmartWarga-Setup"
+ *    - DNS Server (Port 53) aktif -> Handphone otomatis membuka pop-up Captive Portal
+ *    - Layar LCD 16x2 menampilkan: "SETUP AP: AKTIF" | "SmartWarga-Setup"
+ * 
+ * 2. APLIKASI WEB DI DALAM ESP32 (PORTAL 192.168.4.1):
+ *    - Menampilkan aplikasi pemindai Wi-Fi sekitar yang tertangkap nyata oleh antena ESP32
+ *    - Warga tinggal mengeklik nama Wi-Fi rumahnya (SSID)
+ *    - Memasukkan password Wi-Fi rumah
+ *    - Ada tombol "Generate Token Otomatis" untuk validasi autentikasi
+ *    - Klik tombol "HUBUNGKAN PERANGKAT"
+ * 
+ * 3. EKSEKUSI & PERALIHAN OTOMATIS:
+ *    - ESP32 menyimpan konfigurasi ke NVS (Preferences.h)
+ *    - Hotspot pancingan "SmartWarga-Setup" OTOMATIS MATI & HILANG (WiFi.softAPdisconnect(true))
+ *    - ESP32 langsung beralih ke Mode STA dan NYANGKUT ke Wi-Fi rumah warga
+ *    - Melakukan handshake heartbeat ke server web -> Status di dasbor warga berubah jadi ONLINE (HIJAU)
  * ==================================================================================================
  */
 
 #include <WiFi.h>
 #include <WiFiAP.h>
 #include <WebServer.h>
+#include <DNSServer.h>
 #include <Preferences.h>
 #include <HTTPClient.h>
 #include <SPI.h>
@@ -40,10 +38,11 @@
 #include <ArduinoJson.h>
 
 // ==================================================================================================
-// 1. KONFIGURASI DEFAULT SERVER & AP MODE
+// 1. KONFIGURASI DEFAULT SERVER & OPEN HOTSPOT AP
 // ==================================================================================================
+// Open Hotspot (Tanpa Password) agar HP warga bisa langsung tap & connect instan
 const char* AP_SSID_NAME     = "SmartWarga-Setup";
-const char* AP_PASSWORD      = "12345678";
+const byte DNS_PORT          = 53;
 const IPAddress AP_LOCAL_IP(192, 168, 4, 1);
 const IPAddress AP_GATEWAY(192, 168, 4, 1);
 const IPAddress AP_SUBNET(255, 255, 255, 0);
@@ -92,6 +91,7 @@ String apiBaseUrl       = DEFAULT_API_BASE_URL;
 // 3. OBJEK & VARIABEL GLOBAL
 // ==================================================================================================
 Preferences preferences;
+DNSServer dnsServer;
 WebServer localServer(80);
 MFRC522* rfid1 = nullptr; // Reader 1 di Pin 5 (Gerbang)
 MFRC522* rfid2 = nullptr; // Reader 2 di Pin 4 (Kios)
@@ -99,9 +99,9 @@ Servo gateServo;
 LiquidCrystal_I2C lcd(0x27, 16, 2);
 
 enum SystemMode {
-  SYSTEM_MODE_AP_PROVISIONING, // Mode Access Point untuk Setup Wi-Fi via Web
-  SYSTEM_MODE_STA_ONLINE,       // Mode Normal Terhubung ke Router & Server
-  SYSTEM_MODE_STA_CONNECTING    // Mode Transisi Menghubungkan ke Wi-Fi
+  SYSTEM_MODE_AP_PROVISIONING, // Mode Open Hotspot Pancingan untuk Setup Wi-Fi
+  SYSTEM_MODE_STA_ONLINE,       // Mode Normal Terhubung ke Router Rumah & Server Web
+  SYSTEM_MODE_STA_CONNECTING    // Mode Menghubungkan ke Wi-Fi Router
 };
 
 enum KioskMode {
@@ -128,14 +128,14 @@ bool isSirenAlarming              = false;
 bool webSirenActive               = false;
 String webSirenReason             = "";
 
-// Flag permintaan reconnect dari WebServer
+// Flag permintaan reconnect dari Web Portal
 bool pendingWifiConnect           = false;
 String pendingSsid                = "";
 String pendingPassword            = "";
 
 // Forward declarations
 void startApProvisioningMode();
-bool connectToSavedWifi(int timeoutSeconds = 18);
+bool connectToSavedWifi(int timeoutSeconds = 20);
 void sendHeartbeatToWeb();
 void updateIdleLcd();
 void displayLcd(String line1, String line2);
@@ -222,7 +222,7 @@ void displayLcd(String line1, String line2) {
 
 void updateIdleLcd() {
   if (currentSystemMode == SYSTEM_MODE_AP_PROVISIONING) {
-    displayLcd("SETUP AP: AKTIF", "IP: 192.168.4.1");
+    displayLcd("HOTSPOT TERBUKA", "SmartWarga-Setup");
     return;
   }
 
@@ -299,13 +299,13 @@ void resetCredentialsNVS() {
   savedSsid = "";
   savedPassword = "";
   savedDeviceToken = "";
-  Serial.println("⚠️ [NVS] Kredensial telah di-reset! Beralih ke Mode AP Setup.");
+  Serial.println("⚠️ [NVS] Kredensial telah di-reset! Menyalakan kembali Open Hotspot Setup.");
   beepReject();
   startApProvisioningMode();
 }
 
 // ==================================================================================================
-// 7. REST API ENDPOINTS PADA LOCAL WEBSERVER (PORT 80)
+// 7. APLIKASI WEB CAPTIVE PORTAL & REST API ESP32 (PORT 80)
 // ==================================================================================================
 void setCorsHeaders() {
   localServer.sendHeader("Access-Control-Allow-Origin", "*");
@@ -313,20 +313,19 @@ void setCorsHeaders() {
   localServer.sendHeader("Access-Control-Allow-Headers", "Content-Type, Authorization, X-Requested-With");
 }
 
-// Handle CORS Preflight OPTIONS
 void handleCorsPreflight() {
   setCorsHeaders();
   localServer.send(204);
 }
 
-// GET /api/wifi/scan -> Scan Wi-Fi & Return JSON Array
+// GET /api/wifi/scan -> Scan Wi-Fi Real Hardware & Return JSON
 void handleApiWifiScan() {
   setCorsHeaders();
-  Serial.println("🔍 [REST API] Menerima request pemindaian Wi-Fi (/api/wifi/scan)...");
+  Serial.println("🔍 [ANTENA ESP32] Memindai jaringan Wi-Fi sekitar...");
   displayLcd("MEMINDAI WIFI...", "MOHON TUNGGU..");
 
   int n = WiFi.scanNetworks();
-  Serial.printf("✅ Ditemukan %d jaringan Wi-Fi di sekitar ESP32.\n", n);
+  Serial.printf("✅ Ditemukan %d jaringan Wi-Fi nyata di sekitar ESP32.\n", n);
 
   DynamicJsonDocument doc(2048);
   JsonArray array = doc.to<JsonArray>();
@@ -348,7 +347,7 @@ void handleApiWifiScan() {
   updateIdleLcd();
 }
 
-// POST /api/wifi/connect -> Terima payload {ssid, password, device_token}
+// POST /api/wifi/connect -> Simpan ke NVS, matikan hotspot, lalu nyangkut ke router
 void handleApiWifiConnect() {
   setCorsHeaders();
 
@@ -358,7 +357,7 @@ void handleApiWifiConnect() {
   }
 
   String body = localServer.arg("plain");
-  Serial.printf("📥 [REST API] Payload Konfigurasi Diterima: %s\n", body.c_str());
+  Serial.printf("📥 [SETUP] Konfigurasi Diterima: %s\n", body.c_str());
 
   DynamicJsonDocument doc(1024);
   DeserializationError err = deserializeJson(doc, body);
@@ -376,19 +375,19 @@ void handleApiWifiConnect() {
     return;
   }
 
-  // Simpan ke NVS Preferences
+  // Simpan ke Flash NVS
   saveCredentialsToNVS(reqSsid, reqPassword, reqToken);
 
-  // Response sukses ke Web Frontend
+  // Balas respons sukses ke browser HP terlebih dahulu sebelum AP dimatikan
   DynamicJsonDocument resDoc(256);
   resDoc["success"] = true;
-  resDoc["message"] = "Konfigurasi diterima. Menghubungkan ESP32 ke Wi-Fi router...";
+  resDoc["message"] = "Konfigurasi tersimpan. Hotspot setup dimatikan & ESP32 sedang menghubungkan ke " + reqSsid;
   resDoc["ssid"] = reqSsid;
   String resStr;
   serializeJson(resDoc, resStr);
   localServer.send(200, "application/json", resStr);
 
-  // Jadwalkan koneksi di loop utama
+  // Jadwalkan peralihan koneksi di loop utama
   pendingSsid = reqSsid;
   pendingPassword = reqPassword;
   pendingWifiConnect = true;
@@ -410,7 +409,7 @@ void handleApiStatus() {
   localServer.send(200, "application/json", resStr);
 }
 
-// GET / -> Halaman Web Captive Portal Mandiri ESP32 (Responsif Mobile)
+// GET / -> Aplikasi Web Captive Portal Mandiri ESP32
 void handleRootPortal() {
   setCorsHeaders();
   String html = F(
@@ -419,19 +418,22 @@ void handleRootPortal() {
     "<title>SMART-WARGA | Setup Wi-Fi ESP32</title>"
     "<style>"
     "*{box-sizing:border-box;margin:0;padding:0;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif}"
-    "body{background:#f1f5f9;color:#0f172a;display:flex;justify-content:center;align-items:center;min-height:100vh;padding:16px}"
+    "body{background:#f8fafc;color:#0f172a;display:flex;justify-content:center;align-items:center;min-height:100vh;padding:16px}"
     ".card{background:#ffffff;max-width:440px;width:100%;border-radius:24px;padding:24px;box-shadow:0 10px 25px -5px rgba(0,0,0,0.08);border:1px solid #e2e8f0}"
     ".header{text-align:center;margin-bottom:20px}"
-    ".logo{width:48px;height:48px;background:linear-gradient(135deg,#059669,#0d9488);border-radius:14px;display:inline-flex;align-items:center;justify-content:center;color:#fff;font-size:24px;margin-bottom:10px}"
-    "h2{font-size:20px;font-weight:800;color:#0f172a}"
-    "p{font-size:12px;color:#64748b;margin-top:4px}"
+    ".logo{width:52px;height:52px;background:linear-gradient(135deg,#059669,#0d9488);border-radius:16px;display:inline-flex;align-items:center;justify-content:center;color:#fff;font-size:26px;margin-bottom:12px;box-shadow:0 6px 16px rgba(5,150,105,0.25)}"
+    "h2{font-size:20px;font-weight:900;color:#0f172a;letter-spacing:-0.5px}"
+    "p{font-size:12px;color:#64748b;margin-top:4px;line-height:1.4}"
+    ".notice{background:#ecfdf5;border:1px solid #a7f3d0;border-radius:14px;padding:12px;font-size:11px;color:#065f46;margin-bottom:18px;line-height:1.4}"
     ".form-group{margin-bottom:14px;text-align:left}"
     "label{display:block;font-size:12px;font-weight:700;color:#334155;margin-bottom:6px}"
+    ".btn-scan{background:#f1f5f9;color:#0f172a;border:1px solid #cbd5e1;padding:6px 12px;border-radius:8px;font-size:11px;font-weight:700;cursor:pointer;float:right;margin-top:-28px}"
     "select,input{width:100%;padding:12px 14px;border:1px solid #cbd5e1;border-radius:12px;font-size:14px;background:#f8fafc;outline:none;transition:0.2s}"
     "select:focus,input:focus{border-color:#10b981;background:#fff;box-shadow:0 0 0 3px rgba(16,185,129,0.15)}"
-    ".btn-scan{background:#ecfdf5;color:#047857;border:1px solid #a7f3d0;padding:8px 12px;border-radius:10px;font-size:11px;font-weight:700;cursor:pointer;float:right;margin-top:-28px}"
-    ".btn-submit{width:100%;background:linear-gradient(135deg,#059669,#0d9488);color:#fff;border:none;padding:14px;border-radius:14px;font-size:14px;font-weight:800;cursor:pointer;margin-top:10px;box-shadow:0 4px 12px rgba(5,150,105,0.25)}"
-    ".status-box{display:none;padding:12px;border-radius:12px;font-size:12px;margin-top:14px;text-align:center;font-weight:600}"
+    ".btn-gen{background:#e0f2fe;color:#0369a1;border:1px solid #bae6fd;padding:6px 10px;border-radius:8px;font-size:11px;font-weight:700;cursor:pointer;float:right;margin-top:-28px}"
+    ".btn-submit{width:100%;background:linear-gradient(135deg,#059669,#0d9488);color:#fff;border:none;padding:14px;border-radius:14px;font-size:14px;font-weight:800;cursor:pointer;margin-top:12px;box-shadow:0 4px 14px rgba(5,150,105,0.25)}"
+    ".btn-submit:disabled{opacity:0.6;cursor:not-allowed}"
+    ".status-box{display:none;padding:14px;border-radius:14px;font-size:12px;margin-top:16px;text-align:center;font-weight:700;line-height:1.5}"
     ".success{background:#dcfce7;color:#166534;border:1px solid #bbf7d0}"
     ".error{background:#fee2e2;color:#991b1b;border:1px solid #fecaca}"
     "</style></head><body>"
@@ -439,12 +441,15 @@ void handleRootPortal() {
     "<div class='header'>"
     "<div class='logo'>📶</div>"
     "<h2>Setup Wi-Fi SMART-WARGA</h2>"
-    "<p>Hubungkan ESP32 AIO ke router Wi-Fi sekitar</p>"
+    "<p>Pindai & hubungkan modul IoT ESP32 ke router Wi-Fi rumah</p>"
+    "</div>"
+    "<div class='notice'>"
+    "💡 <strong>Petunjuk:</strong> Pilih nama Wi-Fi rumah Anda di bawah. Setelah menekan tombol <strong>Hubungkan</strong>, hotspot setup ini akan otomatis mati dan ESP32 akan langsung terhubung ke router."
     "</div>"
     "<div class='form-group'>"
-    "<label>Daftar Wi-Fi Sekitar</label>"
-    "<button type='button' class='btn-scan' onclick='scanWifi()'>Pindai Ulang</button>"
-    "<select id='wifiList' onchange='onSelectWifi()'><option value=''>-- Memindai jaringan Wi-Fi... --</option></select>"
+    "<label>Pilih Wi-Fi Terdeteksi</label>"
+    "<button type='button' class='btn-scan' onclick='scanWifi()'>🔄 Pindai</button>"
+    "<select id='wifiList' onchange='onSelectWifi()'><option value=''>-- Memindai Wi-Fi sekitar... --</option></select>"
     "</div>"
     "<div class='form-group'>"
     "<label>Nama Wi-Fi (SSID)</label>"
@@ -455,26 +460,31 @@ void handleRootPortal() {
     "<input type='password' id='password' placeholder='Masukkan password Wi-Fi...'>"
     "</div>"
     "<div class='form-group'>"
-    "<label>Device Token (Opsional)</label>"
-    "<input type='text' id='token' placeholder='Token JSON dari web warga...'>"
+    "<label>Device Token Autentikasi</label>"
+    "<button type='button' class='btn-gen' onclick='generateToken()'>⚡ Buat Token</button>"
+    "<input type='text' id='token' placeholder='Token verifikasi sistem...'>"
     "</div>"
-    "<button type='button' class='btn-submit' id='btnConnect' onclick='connectWifi()'>Hubungkan Perangkat</button>"
+    "<button type='button' class='btn-submit' id='btnConnect' onclick='connectWifi()'>HUBUNGKAN PERANGKAT (OK)</button>"
     "<div id='statusBox' class='status-box'></div>"
     "</div>"
     "<script>"
+    "function generateToken(){"
+    "var rand=Math.random().toString(36).substring(2,10).toUpperCase();"
+    "document.getElementById('token').value='SW-WARGA-'+rand;"
+    "}"
     "function scanWifi(){"
     "var sel=document.getElementById('wifiList');"
-    "sel.innerHTML='<option>Sedang memindai Wi-Fi...</option>';"
+    "sel.innerHTML='<option>Sedang memindai Wi-Fi sekitar...</option>';"
     "fetch('/api/wifi/scan').then(r=>r.json()).then(data=>{"
-    "sel.innerHTML='<option value=\"\">-- Pilih Wi-Fi Terdeteksi --</option>';"
+    "sel.innerHTML='<option value=\"\">-- Pilih Wi-Fi Terdeteksi ('+data.length+') --</option>';"
     "if(data.length===0){sel.innerHTML='<option value=\"\">Tidak ada Wi-Fi terdeteksi</option>';return;}"
     "data.forEach(w=>{"
     "var opt=document.createElement('option');"
-    "opt.value=w.ssid;opt.text=w.ssid+' ('+w.rssi+' dBm)'+(w.secure?' 🔒':'');"
+    "opt.value=w.ssid;opt.text=w.ssid+' ('+w.rssi+' dBm)'+(w.secure?' 🔒':' (Terbuka)');"
     "sel.appendChild(opt);"
     "});"
     "}).catch(e=>{"
-    "sel.innerHTML='<option value=\"\">Gagal memindai Wi-Fi</option>';"
+    "sel.innerHTML='<option value=\"\">Gagal memindai. Ketik nama Wi-Fi manual di bawah.</option>';"
     "});"
     "}"
     "function onSelectWifi(){"
@@ -487,20 +497,14 @@ void handleRootPortal() {
     "var t=document.getElementById('token').value.trim();"
     "var box=document.getElementById('statusBox');"
     "var btn=document.getElementById('btnConnect');"
-    "if(!s){alert('Silakan pilih atau ketik nama Wi-Fi');return;}"
-    "btn.disabled=true;btn.innerText='Menghubungkan...';"
+    "if(!s){alert('Silakan pilih atau ketik nama Wi-Fi!');return;}"
+    "btn.disabled=true;btn.innerText='Sedang Menghubungkan...';"
     "box.className='status-box success';box.style.display='block';"
-    "box.innerText='Mengirim konfigurasi... ESP32 sedang menghubungkan ke '+s;"
+    "box.innerHTML='✅ <strong>Konfigurasi Berhasil Diterima!</strong><br>Hotspot SmartWarga-Setup akan dinonaktifkan. ESP32 sekarang langsung menghubungkan ke Wi-Fi <u>'+s+'</u>. Periksa indikator LED atau LCD.';"
     "fetch('/api/wifi/connect',{method:'POST',headers:{'Content-Type':'application/json'},"
-    "body:JSON.stringify({ssid:s,password:p,device_token:t})})"
-    ".then(r=>r.json()).then(res=>{"
-    "box.innerText='Tersimpan! ESP32 beralih ke router. Periksa lampu LED atau layar LCD.';"
-    "}).catch(err=>{"
-    "box.className='status-box error';box.innerText='Gagal mengirim konfigurasi. Coba lagi.';"
-    "btn.disabled=false;btn.innerText='Hubungkan Perangkat';"
-    "});"
+    "body:JSON.stringify({ssid:s,password:p,device_token:t})}).catch(e=>{});"
     "}"
-    "window.onload=scanWifi;"
+    "window.onload=function(){generateToken();scanWifi();};"
     "</script></body></html>"
   );
   localServer.send(200, "text/html", html);
@@ -510,7 +514,7 @@ void setupLocalWebServer() {
   // Halaman Root Portal Mandiri
   localServer.on("/", HTTP_GET, handleRootPortal);
 
-  // Captive Portal Detection Endpoints (Android, iOS, Windows)
+  // Captive Portal Detection Endpoints (Android, Apple iOS/macOS, Windows)
   localServer.on("/generate_204", HTTP_GET, handleRootPortal);
   localServer.on("/hotspot-detect.html", HTTP_GET, handleRootPortal);
   localServer.on("/ncsi.txt", HTTP_GET, handleRootPortal);
@@ -541,27 +545,31 @@ void setupLocalWebServer() {
 }
 
 // ==================================================================================================
-// 8. MANAJEMEN MODE KONEKSI (AP PROVISIONING VS STA ONLINE)
+// 8. MANAJEMEN MODE KONEKSI (OPEN AP PANCINGAN VS STA ONLINE)
 // ==================================================================================================
 void startApProvisioningMode() {
   currentSystemMode = SYSTEM_MODE_AP_PROVISIONING;
   WiFi.disconnect(true);
   delay(100);
 
+  // Nyalakan OPEN HOTSPOT (Tanpa Password) agar HP langsung connect tanpa ditanya password
   WiFi.mode(WIFI_AP_STA);
   WiFi.softAPConfig(AP_LOCAL_IP, AP_GATEWAY, AP_SUBNET);
-  WiFi.softAP(AP_SSID_NAME, AP_PASSWORD);
+  WiFi.softAP(AP_SSID_NAME); // OPEN HOTSPOT TANPA PASSWORD!
+
+  // Nyalakan DNS Server untuk Captive Portal Otomatis
+  dnsServer.start(DNS_PORT, "*", AP_LOCAL_IP);
 
   Serial.println("\n=================================================================");
-  Serial.println("        🛠️ MODE AP PROVISIONING (SETUP WI-FI) DIAKTIFKAN        ");
+  Serial.println("   📡 OPEN HOTSPOT PANCINGAN AKTIF: " + String(AP_SSID_NAME));
   Serial.println("=================================================================");
-  Serial.printf("SSID Hotspot  : %s\n", AP_SSID_NAME);
-  Serial.printf("Password      : %s\n", AP_PASSWORD);
-  Serial.printf("IP Gateway    : %s\n", WiFi.softAPIP().toString().c_str());
-  Serial.println("Silakan buka Dashboard Warga menu 'Koneksi Wi-Fi IoT' untuk setup.");
+  Serial.println("1. Hubungkan Wi-Fi Handphone Anda ke: " + String(AP_SSID_NAME));
+  Serial.println("2. Handphone akan otomatis membuka pop-up Sign in Wi-Fi");
+  Serial.println("   atau buka browser ke: http://192.168.4.1");
+  Serial.println("3. Pilih Wi-Fi rumah, isi password, klik HUBUNGKAN");
   Serial.println("=================================================================\n");
 
-  displayLcd("SETUP AP: AKTIF", "192.168.4.1");
+  displayLcd("HOTSPOT TERBUKA", "SmartWarga-Setup");
   digitalWrite(PIN_LED_STATUS, LOW);
 }
 
@@ -572,10 +580,10 @@ bool connectToSavedWifi(int timeoutSeconds) {
   }
 
   currentSystemMode = SYSTEM_MODE_STA_CONNECTING;
-  Serial.printf("\n[WiFi] Menghubungkan ke Router: %s ", savedSsid.c_str());
-  displayLcd("KONEKSI WIFI...", savedSsid);
+  Serial.printf("\n[WiFi] Menghubungkan ke Router Rumah: %s ", savedSsid.c_str());
+  displayLcd("KONEKSI KE:", savedSsid);
 
-  WiFi.mode(WIFI_AP_STA);
+  // Mulai koneksi ke router
   WiFi.begin(savedSsid.c_str(), savedPassword.c_str());
 
   int attempts = 0;
@@ -590,9 +598,19 @@ bool connectToSavedWifi(int timeoutSeconds) {
 
   if (WiFi.status() == WL_CONNECTED) {
     currentSystemMode = SYSTEM_MODE_STA_ONLINE;
+    
+    // =======================================================================
+    // MATIKAN TOTAL HOTSPOT PANCINGAN! (Hotspot langsung hilang dari udara)
+    // =======================================================================
+    dnsServer.stop();
+    WiFi.softAPdisconnect(true);
+    WiFi.mode(WIFI_STA); // Beralih murni ke mode Station terhubung ke router rumah
+
     digitalWrite(PIN_LED_STATUS, HIGH);
-    Serial.println("\n✅ [WiFi] Sukses Terhubung!");
+    Serial.println("\n✅ [WiFi] Sukses Terhubung ke Router Rumah!");
     Serial.printf("IP ESP32 : %s\n", WiFi.localIP().toString().c_str());
+    Serial.println("📴 [HOTSPOT] Hotspot pancingan SmartWarga-Setup telah DIMATIKAN.");
+    
     displayLcd("WIFI TERHUBUNG!", WiFi.localIP().toString());
     beepSuccess();
     delay(1200);
@@ -602,7 +620,7 @@ bool connectToSavedWifi(int timeoutSeconds) {
     updateIdleLcd();
     return true;
   } else {
-    Serial.println("\n❌ [WiFi] Gagal terhubung ke router. Kembali ke Mode AP Setup.");
+    Serial.println("\n❌ [WiFi] Gagal terhubung ke router. Menyalakan kembali Open Hotspot Setup.");
     digitalWrite(PIN_LED_STATUS, LOW);
     displayLcd("GAGAL KONEK WIFI", "KEMBALI KE SETUP");
     beepReject();
@@ -1000,13 +1018,13 @@ void setup() {
 
   Serial.println("\n");
   Serial.println("=================================================================");
-  Serial.println("    SMART-WARGA: AIO IOT CONTROLLER v3.5 (DYNAMIC PROVISIONING) ");
+  Serial.println(" SMART-WARGA: AIO IOT CONTROLLER v4.0 (AUTO-CAPTIVE PROVISION)   ");
   Serial.println("=================================================================");
   Serial.println("PETUNJUK SERIAL MONITOR:");
   Serial.println("  't' + Enter -> Simulasi Tap Kartu Kios (Pin 4)");
   Serial.println("  'g' + Enter -> Simulasi Tap Kartu Gerbang (Pin 5)");
   Serial.println("  'p' + Enter -> Tes Tombol Panik");
-  Serial.println("  'r' + Enter -> Reset NVS Wi-Fi & Kembali ke Mode AP Setup");
+  Serial.println("  'r' + Enter -> Reset NVS Wi-Fi & Buka Open Hotspot Setup");
   Serial.println("  's' + Enter -> Cek Status Sirine dari Web");
   Serial.println("  'm' + Enter -> Ganti Mode Layanan Kios");
   Serial.println("  'w' + Enter -> Kirim Heartbeat Manual");
@@ -1035,19 +1053,19 @@ void setup() {
   // Inisialisasi Dual RFID RC522
   setupSmartRfid();
 
-  // Inisialisasi Local WebServer REST API (Port 80)
+  // Inisialisasi WebServer & Captive Portal
   setupLocalWebServer();
 
   // Baca Kredensial NVS
   loadCredentialsFromNVS();
 
-  // Jika ada SSID tersimpan, coba hubungkan ke router
+  // Jika ada SSID tersimpan, coba hubungkan ke router rumah
   if (savedSsid.length() > 0) {
     if (!connectToSavedWifi(15)) {
       startApProvisioningMode();
     }
   } else {
-    Serial.println("⚠️ Belum ada konfigurasi Wi-Fi. Mengaktifkan Mode AP Provisioning...");
+    Serial.println("⚠️ Belum ada konfigurasi Wi-Fi. Mengaktifkan Open Hotspot Setup...");
     startApProvisioningMode();
   }
 
@@ -1060,17 +1078,23 @@ void setup() {
 void loop() {
   unsigned long now = millis();
 
-  // 1. Selalu Layani Local WebServer (Port 80)
+  // 1. Layani DNS Server jika sedang Mode Open Hotspot (Captive Portal)
+  if (currentSystemMode == SYSTEM_MODE_AP_PROVISIONING) {
+    dnsServer.processNextRequest();
+  }
+
+  // 2. Layani Permintaan Web Portal (Port 80)
   localServer.handleClient();
 
-  // 2. Eksekusi Permintaan Koneksi Wi-Fi dari Form Web jika ada
+  // 3. Eksekusi Permintaan Koneksi dari Portal Web (Matikan AP & Hubungkan ke Router)
   if (pendingWifiConnect) {
     pendingWifiConnect = false;
-    Serial.printf("\n🔄 [PROVISIONING] Memproses permintaan koneksi ke: %s\n", pendingSsid.c_str());
+    Serial.printf("\n🔄 [PROVISIONING] Menerima konfigurasi baru! Mematikan hotspot & menghubungkan ke: %s\n", pendingSsid.c_str());
+    delay(1000);
     connectToSavedWifi(20);
   }
 
-  // 3. Trik Keyboard Debugging Serial Monitor
+  // 4. Trik Keyboard Debugging Serial Monitor
   if (Serial.available() > 0) {
     char key = Serial.read();
     if (key == 't' || key == 'T') {
@@ -1097,7 +1121,7 @@ void loop() {
     }
   }
 
-  // 4. Polling Status Sirine dari Web tiap 2 detik (Hanya saat STA Online)
+  // 5. Polling Status Sirine dari Web tiap 2 detik (Hanya saat STA Online)
   if (now - lastSirenCheckTime >= SIREN_CHECK_INTERVAL) {
     lastSirenCheckTime = now;
     if (WiFi.status() == WL_CONNECTED) {
@@ -1105,7 +1129,7 @@ void loop() {
     }
   }
 
-  // 5. Eksekusi Alarm Sirine Darurat (Buzzer 25 & LED 2)
+  // 6. Eksekusi Alarm Sirine Darurat (Buzzer 25 & LED 2)
   if (webSirenActive || isSirenAlarming) {
     if (now - sirenPulseTimer >= 120) {
       sirenPulseTimer = now;
@@ -1115,7 +1139,7 @@ void loop() {
     }
   }
 
-  // 6. Tombol Panik Darurat Fisik (GPIO 27)
+  // 7. Tombol Panik Darurat Fisik (GPIO 27)
   if (digitalRead(PIN_PANIC_BTN) == LOW) {
     if (now - lastPanicBtnPress > 3000) {
       lastPanicBtnPress = now;
@@ -1123,13 +1147,12 @@ void loop() {
     }
   }
 
-  // 7. Tombol Mode (GPIO 14): Klik biasa ganti mode, Tahan 5 detik reset Wi-Fi
+  // 8. Tombol Mode (GPIO 14): Klik biasa ganti mode, Tahan 5 detik reset Wi-Fi
   if (digitalRead(PIN_MODE_BTN) == LOW) {
     unsigned long pressStart = millis();
     while (digitalRead(PIN_MODE_BTN) == LOW) {
       delay(50);
       if (millis() - pressStart > 5000) {
-        // Tahan 5 detik -> Reset NVS Wi-Fi
         Serial.println("⚠️ [TOMBOL MODE] Ditekan 5 detik: RESET NVS WI-FI!");
         resetCredentialsNVS();
         while (digitalRead(PIN_MODE_BTN) == LOW) delay(100);
@@ -1146,7 +1169,7 @@ void loop() {
     }
   }
 
-  // 8. Pembacaan RFID di Pin 5 (GERBANG MASUK)
+  // 9. Pembacaan RFID di Pin 5 (GERBANG MASUK)
   digitalWrite(PIN_RFID2_SS, HIGH);
   delayMicroseconds(20);
   if (detectCard(rfid1, PIN_RFID1_SS, PIN_RFID2_SS)) {
@@ -1158,7 +1181,7 @@ void loop() {
     delay(800);
   }
 
-  // 9. Pembacaan RFID di Pin 4 (KIOS PELAYANAN & POSYANDU)
+  // 10. Pembacaan RFID di Pin 4 (KIOS PELAYANAN & POSYANDU)
   digitalWrite(PIN_RFID1_SS, HIGH);
   delayMicroseconds(20);
   if (detectCard(rfid2, PIN_RFID2_SS, PIN_RFID1_SS)) {
@@ -1170,7 +1193,7 @@ void loop() {
     delay(800);
   }
 
-  // 10. Heartbeat Berkala ke Web (Tiap 8 Detik agar Web Selalu ONLINE HIJAU)
+  // 11. Heartbeat Berkala ke Web (Tiap 8 Detik agar Web Selalu ONLINE HIJAU)
   if (now - lastHeartbeatTime >= HEARTBEAT_INTERVAL) {
     lastHeartbeatTime = now;
     if (WiFi.status() == WL_CONNECTED) {
@@ -1181,7 +1204,7 @@ void loop() {
     }
   }
 
-  // 11. Indikator Serial Monitor Detak Jantung
+  // 12. Indikator Serial Monitor Detak Jantung
   if (now - lastSerialDot >= 2000) {
     lastSerialDot = now;
     Serial.print(".");

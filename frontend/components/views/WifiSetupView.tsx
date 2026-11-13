@@ -321,6 +321,20 @@ export default function WifiSetupView({ onSuccessReturn, onNavigateTab }: WifiSe
             </button>
           </div>
         </div>
+
+        {/* Info Alur Open Hotspot */}
+        <div className="mt-5 p-4 rounded-2xl bg-gradient-to-r from-emerald-500/10 via-teal-500/10 to-blue-500/10 border border-emerald-200/80 text-xs text-slate-700 leading-relaxed">
+          <div className="font-bold text-slate-900 flex items-center gap-1.5 mb-1 text-sm">
+            <Sparkles className="w-4 h-4 text-emerald-600" />
+            <span>Alur Koneksi Otomatis ESP32 (Open Hotspot):</span>
+          </div>
+          <ol className="list-decimal list-inside space-y-1 text-slate-600 ml-1">
+            <li>Saat menyala dan belum ada Wi-Fi, ESP32 memancarkan hotspot terbuka: <strong className="text-emerald-700 font-bold">SmartWarga-Setup</strong> (tanpa password).</li>
+            <li>Sambungkan Wi-Fi HP Anda ke <strong className="text-emerald-700 font-bold">SmartWarga-Setup</strong>. Pop-up halaman setup akan otomatis terbuka di HP (atau buka browser ke <strong className="text-blue-700 font-bold">http://192.168.4.1</strong>).</li>
+            <li>Pilih Wi-Fi rumah Anda yang terdeteksi antena ESP32, isi password, dan tekan <strong>Hubungkan (OK)</strong>.</li>
+            <li>Hotspot pancingan akan otomatis <strong>mati & hilang</strong>, lalu ESP32 langsung nyangkut ke Wi-Fi rumah Anda hingga status web menjadi <strong>ONLINE (Hijau)</strong>.</li>
+          </ol>
+        </div>
       </div>
 
       {/* Main Setup Card Form */}

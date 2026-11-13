@@ -56,6 +56,9 @@ Route::prefix('iot')->group(function () {
     Route::post('/ktp/scan', [IoTController::class, 'scanKtp']);
     Route::get('/ktp/latest-scan', [IoTController::class, 'getLatestKtpScan']);
     Route::post('/pelayanan/tap', [KioskServiceController::class, 'tapKiosk']);
+    // IoT Provisioning & Online Status Check
+    Route::get('/device/status', [IoTController::class, 'getDeviceStatus']);
+    Route::post('/device/token', [IoTController::class, 'generateDeviceToken']);
 });
 
 /*

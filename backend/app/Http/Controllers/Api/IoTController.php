@@ -499,9 +499,11 @@ class IoTController extends Controller
         $validated = $request->validate([
             'device_type' => 'nullable|string',
             'device_key' => 'nullable|string',
+            'device_token' => 'nullable|string',
         ]);
 
         $deviceType = $validated['device_type'] ?? 'all';
+        $deviceToken = $validated['device_token'] ?? null;
 
         if (in_array($deviceType, ['all', 'aio', 'smartwarga_all'])) {
             IotDevice::query()->update(['last_ping' => now()]);
@@ -512,6 +514,12 @@ class IoTController extends Controller
             }
         }
 
+        // Cache latest active token and heartbeat timestamp
+        if ($deviceToken) {
+            Cache::put('iot_latest_device_token', $deviceToken, now()->addDays(30));
+        }
+        Cache::put('iot_last_heartbeat_at', now()->toIso8601String(), now()->addMinutes(10));
+
         $siren = SirenStatus::firstOrCreate(['id' => 1], [
             'is_active' => false,
             'reason' => 'Kondisi Normal Aman',
@@ -520,9 +528,117 @@ class IoTController extends Controller
         return response()->json([
             'success' => true,
             'message' => 'Heartbeat acknowledged',
+            'device_token' => $deviceToken,
             'siren_active' => (bool) $siren->is_active,
             'siren_reason' => $siren->reason,
             'timestamp' => now()->toIso8601String(),
+        ]);
+    }
+
+    /**
+     * Check Overall IoT Device Connection Status (Online / Offline)
+     * GET /api/iot/device/status
+     */
+    public function getDeviceStatus()
+    {
+        $now = now();
+        $devices = IotDevice::all();
+        $lastHeartbeatCache = Cache::get('iot_last_heartbeat_at');
+
+        // Check if any device has pinged in last 45 seconds
+        $isAnyOnline = false;
+        $latestPing = null;
+        $minSecondsAgo = null;
+
+        $devicesList = $devices->map(function ($device) use ($now, &$isAnyOnline, &$latestPing, &$minSecondsAgo) {
+            $secondsAgo = $device->last_ping ? (int) abs($device->last_ping->diffInSeconds($now, false)) : null;
+            $isOnline = ($secondsAgo !== null && $secondsAgo <= 45);
+
+            if ($isOnline) {
+                $isAnyOnline = true;
+            }
+
+            if ($secondsAgo !== null && ($minSecondsAgo === null || $secondsAgo < $minSecondsAgo)) {
+                $minSecondsAgo = $secondsAgo;
+                $latestPing = $device->last_ping;
+            }
+
+            return [
+                'id' => $device->id,
+                'device_key' => $device->device_key,
+                'device_type' => $device->device_type,
+                'location' => $device->location,
+                'is_online' => $isOnline,
+                'seconds_ago' => $secondsAgo,
+                'last_ping' => $device->last_ping?->toIso8601String(),
+            ];
+        });
+
+        // If cache heartbeat is more recent than DB last_ping
+        if ($lastHeartbeatCache) {
+            $cacheCarbon = \Illuminate\Support\Carbon::parse($lastHeartbeatCache);
+            $cacheSeconds = (int) abs($cacheCarbon->diffInSeconds($now, false));
+            if ($cacheSeconds <= 45) {
+                $isAnyOnline = true;
+                if ($minSecondsAgo === null || $cacheSeconds < $minSecondsAgo) {
+                    $minSecondsAgo = $cacheSeconds;
+                    $latestPing = $cacheCarbon;
+                }
+            }
+        }
+
+        return response()->json([
+            'success' => true,
+            'status' => $isAnyOnline ? 'online' : 'offline',
+            'is_online' => $isAnyOnline,
+            'seconds_ago' => $minSecondsAgo,
+            'last_ping' => $latestPing ? $latestPing->toIso8601String() : null,
+            'online_count' => $devicesList->where('is_online', true)->count(),
+            'total_count' => $devicesList->count(),
+            'devices' => $devicesList,
+            'server_time' => $now->toIso8601String(),
+            'message' => $isAnyOnline 
+                ? 'Perangkat IoT SMART-WARGA terhubung dan berstatus ONLINE.' 
+                : 'Perangkat IoT tidak terkoneksi ke internet. Silakan hubungkan Wi-Fi terlebih dahulu.',
+        ]);
+    }
+
+    /**
+     * Generate Unique Device Authentication Token (JSON)
+     * POST /api/iot/device/token
+     */
+    public function generateDeviceToken(Request $request)
+    {
+        $user = $request->user();
+        $house = $user?->house;
+
+        $timestamp = now()->timestamp;
+        $uniqueId = strtoupper(\Illuminate\Support\Str::random(12));
+        $deviceKey = 'DEVICE_AIO_SWARGA';
+        
+        $token = 'SW-' . ($house ? $house->house_code : 'RW01') . '-' . $uniqueId;
+        $secretHash = hash_hmac('sha256', $token . $timestamp, config('app.key', 'smartwarga-secret'));
+
+        $tokenPayload = [
+            'device_token' => $token,
+            'device_key' => $deviceKey,
+            'house_code' => $house ? $house->house_code : 'BLOK-A1/01',
+            'house_id' => $house ? $house->id : 1,
+            'user_id' => $user ? $user->id : 1,
+            'secret_hash' => substr($secretHash, 0, 16),
+            'server_url' => url('/'),
+            'generated_at' => now()->toIso8601String(),
+        ];
+
+        // Store active token in Cache
+        Cache::put('iot_device_token_' . $token, $tokenPayload, now()->addDays(30));
+        Cache::put('iot_latest_generated_token', $tokenPayload, now()->addDays(30));
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Token konfigurasi perangkat IoT berhasil digenerate.',
+            'data' => $tokenPayload,
+            'json_string' => json_encode($tokenPayload, JSON_PRETTY_PRINT),
         ]);
     }
 

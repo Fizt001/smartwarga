@@ -12,9 +12,11 @@ import {
   Wallet,
   Building2,
   FileCheck2,
-  Users
+  Users,
+  Wifi
 } from 'lucide-react';
 import { useAuth } from '@/lib/auth-context';
+import { useIotDeviceStatus } from '@/hooks/useIotDeviceStatus';
 
 interface BottomNavProps {
   activeTab: string;
@@ -30,6 +32,7 @@ export default function BottomNav({
   onNavigateTab
 }: BottomNavProps) {
   const { user, isPengurus } = useAuth();
+  const { isOnline: iotOnline } = useIotDeviceStatus();
 
   const handleNav = (tabId: string, subTab?: string) => {
     if (onNavigateTab) {
@@ -77,12 +80,13 @@ export default function BottomNav({
       { id: 'iot', label: 'IoT Live', icon: Cpu },
     ];
   } else {
-    // Warga (KK Utama) - IoT Live disembunyikan, hanya tampil di role pengurus
+    // Warga (KK Utama) - Jika IoT Offline, tampilkan menu "Koneksi Wi-Fi IoT", jika Online sembunyikan
     navItems = [
       { id: 'dashboard', label: 'Beranda', icon: Home },
       { id: 'ipl', label: 'IPL Saya', icon: CreditCard },
       { id: 'layanan', label: 'Layanan', icon: FileText },
       { id: 'pengaduan', label: 'Aduan', icon: MessageSquareWarning },
+      ...(!iotOnline ? [{ id: 'wifi-setup', label: 'Wi-Fi IoT', icon: Wifi }] : []),
     ];
   }
 

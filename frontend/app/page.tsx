@@ -16,6 +16,7 @@ import LayananView from '@/components/views/LayananView';
 import PengaduanView from '@/components/views/PengaduanView';
 import IoTView from '@/components/views/IoTView';
 import PengurusView from '@/components/views/PengurusView';
+import WifiSetupView from '@/components/views/WifiSetupView';
 
 export default function HomePage() {
   const { user, loading, refreshUser, isPengurus } = useAuth();
@@ -169,6 +170,13 @@ export default function HomePage() {
         );
       case 'pengaduan':
         return <PengaduanView />;
+      case 'wifi-setup':
+        return (
+          <WifiSetupView
+            onNavigateTab={handleNavigate}
+            onSuccessReturn={() => handleNavigate('dashboard', undefined, true)}
+          />
+        );
       case 'iot':
         return isPengurus ? <IoTView /> : (
           <DashboardView

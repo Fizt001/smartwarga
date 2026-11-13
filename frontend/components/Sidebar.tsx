@@ -24,9 +24,11 @@ import {
   HeartPulse,
   HeartHandshake,
   ExternalLink,
-  Zap
+  Zap,
+  Wifi
 } from 'lucide-react';
 import { useAuth } from '@/lib/auth-context';
+import { useIotDeviceStatus } from '@/hooks/useIotDeviceStatus';
 
 interface SidebarProps {
   activeTab: string;
@@ -46,6 +48,7 @@ export default function Sidebar({
   onOpenTopup,
 }: SidebarProps) {
   const { user, logout, isPengurus, isApproved } = useAuth();
+  const { isOnline: iotOnline } = useIotDeviceStatus();
 
   const handleNav = (tabId: string, subTab?: string) => {
     if (onNavigateTab) {
@@ -66,12 +69,21 @@ export default function Sidebar({
     return activeTab === tabId;
   };
 
-  // 1. Navigation items for Warga (KK Utama) - IoT Live disembunyikan, hanya tampil di role pengurus
+  // 1. Navigation items for Warga (KK Utama) - Jika IoT Offline, tampilkan menu khusus Koneksi Wi-Fi IoT
   const residentNavItems = [
     { id: 'dashboard', label: 'Beranda Warga', icon: Home, desc: 'Ringkasan & Agenda Lingkungan' },
     { id: 'ipl', label: 'Iuran IPL Saya', icon: CreditCard, desc: 'Kalender 12 Bulan & QRIS Mandiri' },
     { id: 'layanan', label: 'Layanan Warga', icon: FileText, desc: 'Surat, UMKM, Aset & Koperasi' },
     { id: 'pengaduan', label: 'Pusat Pengaduan', icon: MessageSquareWarning, desc: 'Aspirasi & Lapor Fasilitas' },
+    ...(!iotOnline ? [
+      { 
+        id: 'wifi-setup', 
+        label: 'Koneksi Wi-Fi IoT', 
+        icon: Wifi, 
+        desc: 'Hubungkan ESP32 ke Router Wi-Fi',
+        badge: 'Offline' 
+      }
+    ] : []),
   ];
 
   // 2. Navigation items for Bendahara (Facilitator - Financial & Cash Authority)
@@ -423,6 +435,15 @@ export default function Sidebar({
                   <div className="flex-1 min-w-0">
                     <div className="text-xs flex items-center justify-between">
                       <span className="truncate">{item.label}</span>
+                      {item.badge && (
+                        <span className={`text-[9px] px-1.5 py-0.5 rounded font-black uppercase ml-1 shrink-0 ${
+                          isActive 
+                            ? 'bg-white/20 text-white' 
+                            : 'bg-rose-100 text-rose-700 border border-rose-200'
+                        }`}>
+                          {item.badge}
+                        </span>
+                      )}
                       {item.isLive && (
                         <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse ml-1 shrink-0"></span>
                       )}

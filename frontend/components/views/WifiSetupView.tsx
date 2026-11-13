@@ -283,7 +283,7 @@ export default function WifiSetupView({ onSuccessReturn, onNavigateTab }: WifiSe
       <div className="bg-white rounded-3xl p-6 sm:p-8 shadow-sm border border-slate-200/80 relative overflow-hidden">
         <div className="absolute top-0 right-0 w-64 h-64 bg-gradient-to-br from-emerald-100/40 to-teal-100/20 rounded-full blur-3xl -mr-20 -mt-20 pointer-events-none" />
 
-        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 pb-6 border-b border-slate-100">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
           <div className="flex items-center gap-3.5">
             <div className="w-12 h-12 rounded-2xl bg-gradient-to-tr from-emerald-600 to-teal-500 flex items-center justify-center text-white shadow-md shadow-emerald-600/20">
               <Radio className="w-6 h-6 animate-pulse" />
@@ -324,45 +324,6 @@ export default function WifiSetupView({ onSuccessReturn, onNavigateTab }: WifiSe
             >
               <RefreshCw className={`w-4 h-4 ${checkingStatus ? 'animate-spin' : ''}`} />
             </button>
-          </div>
-        </div>
-
-        {/* Step Guide Instructions */}
-        <div className="mt-6 grid grid-cols-1 md:grid-cols-3 gap-3">
-          <div className="bg-slate-50 border border-slate-200/70 rounded-2xl p-4 flex items-start gap-3">
-            <div className="w-6 h-6 rounded-full bg-slate-900 text-white text-xs font-bold flex items-center justify-center shrink-0">
-              1
-            </div>
-            <div className="text-xs">
-              <div className="font-bold text-slate-800">Sambungkan ke Hotspot</div>
-              <div className="text-slate-500 mt-0.5">
-                Konek Wi-Fi HP ke <span className="font-semibold text-emerald-700">SmartWarga-Setup</span> (Pass: <code className="bg-slate-200 px-1 py-0.5 rounded">12345678</code>)
-              </div>
-            </div>
-          </div>
-
-          <div className="bg-slate-50 border border-slate-200/70 rounded-2xl p-4 flex items-start gap-3">
-            <div className="w-6 h-6 rounded-full bg-slate-900 text-white text-xs font-bold flex items-center justify-center shrink-0">
-              2
-            </div>
-            <div className="text-xs">
-              <div className="font-bold text-slate-800">Pilih Wi-Fi & Password</div>
-              <div className="text-slate-500 mt-0.5">
-                Pilih SSID Wi-Fi rumah atau internet yang ingin digunakan ESP32.
-              </div>
-            </div>
-          </div>
-
-          <div className="bg-slate-50 border border-slate-200/70 rounded-2xl p-4 flex items-start gap-3">
-            <div className="w-6 h-6 rounded-full bg-slate-900 text-white text-xs font-bold flex items-center justify-center shrink-0">
-              3
-            </div>
-            <div className="text-xs">
-              <div className="font-bold text-slate-800">Kirim & Aktivasi</div>
-              <div className="text-slate-500 mt-0.5">
-                Token JSON terisi otomatis, klik hubungkan hingga status hijau ONLINE.
-              </div>
-            </div>
           </div>
         </div>
       </div>

@@ -399,6 +399,7 @@ void resetCredentialsNVS() {
 // 7. APLIKASI WEB CAPTIVE PORTAL & REST API ESP32 (PORT 80)
 // ==================================================================================================
 void setCorsHeaders() {
+  localServer.sendHeader("Connection", "close");
   localServer.sendHeader("Access-Control-Allow-Origin", "*");
   localServer.sendHeader("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
   localServer.sendHeader("Access-Control-Allow-Headers",
@@ -621,7 +622,10 @@ window.onload=function(){generateToken();scanWifi();};
 // GET / -> Aplikasi Web Captive Portal Mandiri ESP32
 void handleRootPortal() {
   setCorsHeaders();
-  localServer.send_P(200, "text/html", PORTAL_HTML);
+  localServer.sendHeader("Cache-Control", "no-cache, no-store, must-revalidate");
+  localServer.setContentLength(strlen_P(PORTAL_HTML));
+  localServer.send(200, "text/html", "");
+  localServer.sendContent_P(PORTAL_HTML);
 }
 
 void setupLocalWebServer() {
@@ -658,7 +662,10 @@ void setupLocalWebServer() {
     }
     // Jika sedang AP provisioning, sajikan langsung portal setup untuk permintaan URL apapun!
     if (currentSystemMode == SYSTEM_MODE_AP_PROVISIONING) {
-      localServer.send_P(200, "text/html", PORTAL_HTML);
+      localServer.sendHeader("Cache-Control", "no-cache, no-store, must-revalidate");
+      localServer.setContentLength(strlen_P(PORTAL_HTML));
+      localServer.send(200, "text/html", "");
+      localServer.sendContent_P(PORTAL_HTML);
     } else {
       localServer.send(404, "text/plain", "Not Found");
     }

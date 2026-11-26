@@ -256,6 +256,18 @@ export default function WifiSetupView({ onSuccessReturn, onNavigateTab }: WifiSe
       };
 
       // Simpan juga ke registrasi backend agar tercatat siapa yang mendaftarkan Wi-Fi
+      const operatorArea = user?.role === 'satpam' ? 'satpam_gerbang' : 'kios_pelayanan';
+      try {
+        await fetchApi('/iot/registration/claim', {
+          method: 'POST',
+          body: JSON.stringify({
+            duty_area: operatorArea,
+            notes: `Koneksi Wi-Fi "${payload.ssid}" dihubungkan oleh ${user?.name || 'Petugas'} (${user?.role || 'operator'})`,
+            device_ip: targetIp,
+          }),
+        });
+      } catch {}
+
       try {
         await fetchApi('/iot/registration/wifi-config', {
           method: 'POST',
@@ -447,16 +459,16 @@ export default function WifiSetupView({ onSuccessReturn, onNavigateTab }: WifiSe
         </div>
       </div>
 
-      {/* 2. Interactive Area Allocation & Claim Card ("Tarik-tarikan Area") */}
+      {/* 2. Unified Hardware Operational Scope (Dual-Area Simultan Otomatis) */}
       <div className="bg-white rounded-3xl p-6 sm:p-7 shadow-sm border border-slate-200 space-y-6">
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 border-b border-slate-100 pb-4">
           <div>
             <h2 className="text-lg font-black text-slate-900 flex items-center gap-2">
               <Building2 className="w-5 h-5 text-indigo-600" />
-              Alokasi Area Kendali Hardware ("Tarik-Tarikan Area")
+              Cakupan Layanan Hardware ESP32 (Dual-Area Otomatis)
             </h2>
             <p className="text-xs text-slate-500 mt-0.5">
-              ESP32 melayani 2 area fisik: Pos Satpam Gerbang dan Meja Pelayanan. Pilih atau tarik alokasi tugas ke pos jaga Anda.
+              Satu modul ESP32 AIO secara simultan mengendalikan Pos Satpam Gerbang dan Meja Kios Pelayanan. Mau dikoneksikan dari pos mana pun, kedua area langsung aktif dan siaga bersamaan.
             </p>
           </div>
 
@@ -467,7 +479,7 @@ export default function WifiSetupView({ onSuccessReturn, onNavigateTab }: WifiSe
                 activeTabSub === 'config' ? 'bg-white text-indigo-700 shadow-sm' : 'text-slate-600 hover:text-slate-900'
               }`}
             >
-              Setup & Alokasi
+              Setup Wi-Fi
             </button>
             <button
               onClick={() => setActiveTabSub('history')}
@@ -476,52 +488,47 @@ export default function WifiSetupView({ onSuccessReturn, onNavigateTab }: WifiSe
               }`}
             >
               <History className="w-3.5 h-3.5" />
-              Riwayat Penarikan ({claimHistory.length})
+              Riwayat Aktivasi ({claimHistory.length})
             </button>
           </div>
         </div>
 
-        {claimMessage && (
-          <div className="p-4 rounded-2xl bg-indigo-50 border border-indigo-200 text-indigo-900 text-xs font-bold flex items-center justify-between">
-            <span>{claimMessage}</span>
-            <button onClick={() => setClaimMessage(null)} className="text-indigo-500 hover:text-indigo-800 text-xs font-black">
-              Tutup
-            </button>
-          </div>
-        )}
-
-        {/* 2 Area Cards Side-by-Side */}
+        {/* 2 Area Cards Side-by-Side (Both Active Together) */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {/* AREA 1: Pos Satpam Gerbang */}
           <div className={`p-5 rounded-2xl border-2 transition-all relative ${
-            activeArea === 'satpam_gerbang'
-              ? 'border-indigo-600 bg-indigo-50/40 shadow-md ring-4 ring-indigo-500/10'
-              : 'border-slate-200 bg-white hover:border-slate-300'
+            (deviceOnline || gateOnline)
+              ? 'border-indigo-500 bg-indigo-50/40 shadow-sm'
+              : 'border-slate-200 bg-slate-50/50'
           }`}>
             <div className="flex items-start justify-between gap-3">
               <div className="flex items-center gap-3">
                 <div className={`w-12 h-12 rounded-2xl flex items-center justify-center shrink-0 ${
-                  activeArea === 'satpam_gerbang' ? 'bg-indigo-600 text-white' : 'bg-slate-100 text-slate-600'
+                  (deviceOnline || gateOnline) ? 'bg-indigo-600 text-white' : 'bg-slate-200 text-slate-500'
                 }`}>
                   <ShieldCheck className="w-6 h-6" />
                 </div>
                 <div>
                   <div className="flex items-center gap-2">
-                    <span className="text-[10px] font-black uppercase tracking-wider text-indigo-600 bg-indigo-100 px-2 py-0.5 rounded-md">
-                      Area 1 • Pos Gerbang
+                    <span className="text-[10px] font-black uppercase tracking-wider text-indigo-700 bg-indigo-100 px-2 py-0.5 rounded-md border border-indigo-200">
+                      Area 1 • Pos Gerbang Utama
                     </span>
-                    {activeArea === 'satpam_gerbang' && (
+                    {(deviceOnline || gateOnline) ? (
                       <span className="text-[10px] font-black text-emerald-700 bg-emerald-100 px-2 py-0.5 rounded-full border border-emerald-300 flex items-center gap-1">
                         <span className="w-1.5 h-1.5 rounded-full bg-emerald-600 animate-ping" />
-                        AKTIF DI POS INI
+                        SIAGA AKTIF OTOMATIS
+                      </span>
+                    ) : (
+                      <span className="text-[10px] font-bold text-slate-500 bg-slate-200 px-2 py-0.5 rounded-full">
+                        Menunggu Wi-Fi
                       </span>
                     )}
                   </div>
                   <h3 className="text-base font-extrabold text-slate-900 mt-1">
                     Pos Satpam Gerbang Utama
                   </h3>
-                  <p className="text-xs text-slate-500 mt-0.5">
-                    Petugas: <strong>Satpam Gerbang</strong> • Palang Pintu Servo (Pin 13), Reader 1 E-KTP Ronda (Pin 5), Sirine Pos.
+                  <p className="text-xs text-slate-500 mt-0.5 leading-relaxed">
+                    Petugas: <strong>Satpam Gerbang</strong> • Palang Pintu Servo (Pin 13), Reader 1 E-KTP Ronda (Pin 5), Sirine Buzzer Pos (Pin 14).
                   </p>
                 </div>
               </div>
@@ -529,56 +536,49 @@ export default function WifiSetupView({ onSuccessReturn, onNavigateTab }: WifiSe
 
             <div className="mt-4 pt-4 border-t border-slate-200/60 flex items-center justify-between">
               <div className="text-xs text-slate-600">
-                Status Gerbang: <strong>{gateOnline ? '🟢 Siaga' : '⚪ Standby'}</strong>
+                Status Pos Gerbang: <strong>{(deviceOnline || gateOnline) ? '🟢 Aktif Beroperasi' : '⚪ Standby (Offline)'}</strong>
               </div>
-
-              {activeArea !== 'satpam_gerbang' ? (
-                <button
-                  onClick={() => handleClaimArea('satpam_gerbang')}
-                  disabled={isClaiming}
-                  className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs rounded-xl shadow-md transition active:scale-95 flex items-center gap-1.5"
-                >
-                  <RefreshCw className={`w-3.5 h-3.5 ${isClaiming ? 'animate-spin' : ''}`} />
-                  <span>Tarik ke Pos Satpam</span>
-                </button>
-              ) : (
-                <span className="text-xs font-bold text-indigo-700 bg-indigo-100/70 px-3 py-1.5 rounded-xl">
-                  ✓ Sedang Anda Pegang
-                </span>
-              )}
+              <span className="text-xs font-bold text-indigo-700 bg-indigo-100/70 px-3 py-1.5 rounded-xl flex items-center gap-1 border border-indigo-200">
+                <CheckCircle2 className="w-3.5 h-3.5 text-indigo-600" />
+                Terintegrasi Otomatis
+              </span>
             </div>
           </div>
 
           {/* AREA 2: Meja Kios Pelayanan */}
           <div className={`p-5 rounded-2xl border-2 transition-all relative ${
-            activeArea === 'kios_pelayanan'
-              ? 'border-emerald-600 bg-emerald-50/40 shadow-md ring-4 ring-emerald-500/10'
-              : 'border-slate-200 bg-white hover:border-slate-300'
+            (deviceOnline || terminalOnline)
+              ? 'border-emerald-500 bg-emerald-50/40 shadow-sm'
+              : 'border-slate-200 bg-slate-50/50'
           }`}>
             <div className="flex items-start justify-between gap-3">
               <div className="flex items-center gap-3">
                 <div className={`w-12 h-12 rounded-2xl flex items-center justify-center shrink-0 ${
-                  activeArea === 'kios_pelayanan' ? 'bg-emerald-600 text-white' : 'bg-slate-100 text-slate-600'
+                  (deviceOnline || terminalOnline) ? 'bg-emerald-600 text-white' : 'bg-slate-200 text-slate-500'
                 }`}>
                   <Users className="w-6 h-6" />
                 </div>
                 <div>
                   <div className="flex items-center gap-2">
-                    <span className="text-[10px] font-black uppercase tracking-wider text-emerald-600 bg-emerald-100 px-2 py-0.5 rounded-md">
-                      Area 2 • Meja Kios
+                    <span className="text-[10px] font-black uppercase tracking-wider text-emerald-700 bg-emerald-100 px-2 py-0.5 rounded-md border border-emerald-200">
+                      Area 2 • Meja Kios Pelayanan
                     </span>
-                    {activeArea === 'kios_pelayanan' && (
+                    {(deviceOnline || terminalOnline) ? (
                       <span className="text-[10px] font-black text-emerald-700 bg-emerald-100 px-2 py-0.5 rounded-full border border-emerald-300 flex items-center gap-1">
                         <span className="w-1.5 h-1.5 rounded-full bg-emerald-600 animate-ping" />
-                        AKTIF DI MEJA INI
+                        SIAGA AKTIF OTOMATIS
+                      </span>
+                    ) : (
+                      <span className="text-[10px] font-bold text-slate-500 bg-slate-200 px-2 py-0.5 rounded-full">
+                        Menunggu Wi-Fi
                       </span>
                     )}
                   </div>
                   <h3 className="text-base font-extrabold text-slate-900 mt-1">
                     Meja Kios Pelayanan Terpadu
                   </h3>
-                  <p className="text-xs text-slate-500 mt-0.5">
-                    Petugas: <strong>Petugas Kios / Balai Warga</strong> • Reader 2 E-KTP Warga (Pin 4), LCD 2, Pendaftaran e-KTP, Antrean, Bank Sampah.
+                  <p className="text-xs text-slate-500 mt-0.5 leading-relaxed">
+                    Petugas: <strong>Petugas Kios / Balai Warga</strong> • Reader 2 E-KTP Warga (Pin 4), LCD Display 16x2 (I2C), Antrean &amp; Bank Sampah.
                   </p>
                 </div>
               </div>
@@ -586,42 +586,35 @@ export default function WifiSetupView({ onSuccessReturn, onNavigateTab }: WifiSe
 
             <div className="mt-4 pt-4 border-t border-slate-200/60 flex items-center justify-between">
               <div className="text-xs text-slate-600">
-                Status Kios: <strong>{terminalOnline ? '🟢 Siaga' : '⚪ Standby'}</strong>
+                Status Meja Kios: <strong>{(deviceOnline || terminalOnline) ? '🟢 Aktif Beroperasi' : '⚪ Standby (Offline)'}</strong>
               </div>
-
-              {activeArea !== 'kios_pelayanan' ? (
-                <button
-                  onClick={() => handleClaimArea('kios_pelayanan')}
-                  disabled={isClaiming}
-                  className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs rounded-xl shadow-md transition active:scale-95 flex items-center gap-1.5"
-                >
-                  <RefreshCw className={`w-3.5 h-3.5 ${isClaiming ? 'animate-spin' : ''}`} />
-                  <span>Tarik ke Meja Kios</span>
-                </button>
-              ) : (
-                <span className="text-xs font-bold text-emerald-700 bg-emerald-100/70 px-3 py-1.5 rounded-xl">
-                  ✓ Sedang Anda Pegang
-                </span>
-              )}
+              <span className="text-xs font-bold text-emerald-700 bg-emerald-100/70 px-3 py-1.5 rounded-xl flex items-center gap-1 border border-emerald-200">
+                <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
+                Terintegrasi Otomatis
+              </span>
             </div>
           </div>
         </div>
 
-        {/* Detail Pemegang Saat Ini */}
-        {currentClaim && (
-          <div className="p-4 bg-slate-50 rounded-2xl border border-slate-200 text-xs flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
-            <div className="flex items-center gap-2">
-              <Clock className="w-4 h-4 text-slate-500 shrink-0" />
-              <span className="text-slate-600">
-                Alokasi Terakhir: <strong>{currentClaim.duty_area === 'satpam_gerbang' ? 'Pos Satpam Gerbang' : 'Meja Kios Pelayanan'}</strong>
-                {' '}oleh <strong>{currentClaim.claimed_by_name}</strong> ({currentClaim.claimed_by_role})
+        {/* Banner Penjelasan Sistem Terpadu */}
+        <div className="p-4 bg-indigo-50/70 border border-indigo-200/80 rounded-2xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-xs text-indigo-950">
+          <div className="flex items-center gap-2.5">
+            <div className="w-7 h-7 rounded-lg bg-indigo-600 text-white flex items-center justify-center shrink-0 font-black text-sm">
+              ⚡
+            </div>
+            <div>
+              <strong className="text-indigo-900">Sistem Dual-Area Otomatis:</strong>
+              <span className="text-indigo-800 ml-1">
+                Petugas tidak perlu memilih atau mengklaim area secara manual. Mau dikoneksikan dari PC Pos Satpam maupun PC Meja Kios, ESP32 langsung mengaktifkan semua hardware di kedua pos secara bersamaan.
               </span>
             </div>
-            <div className="text-slate-500 font-mono text-[11px]">
-              Tercatat: {new Date(currentClaim.created_at).toLocaleString('id-ID')}
-            </div>
           </div>
-        )}
+          {currentClaim && (
+            <div className="text-indigo-700 text-[11px] shrink-0 font-mono hidden md:block">
+              Terkoneksi Terakhir: <strong>{currentClaim.claimed_by_name}</strong> ({currentClaim.claimed_by_role})
+            </div>
+          )}
+        </div>
       </div>
 
       {/* 3. Setup Wi-Fi Form vs Riwayat Penarikan */}
@@ -819,9 +812,9 @@ export default function WifiSetupView({ onSuccessReturn, onNavigateTab }: WifiSe
                   2
                 </span>
                 <div>
-                  <strong>Tentukan Area Anda:</strong>
+                  <strong>Otomatisasi Dual-Area:</strong>
                   <p className="text-slate-500 mt-0.5">
-                    Klik <strong>&quot;Tarik ke Pos Satpam&quot;</strong> jika Anda berjaga di gerbang, atau <strong>&quot;Tarik ke Meja Kios&quot;</strong> jika di meja pelayanan.
+                    Tidak perlu memilih area secara manual. Mau dikoneksikan dari pos gerbang atau kios, ESP32 otomatis mengaktifkan kedua pos bersamaan.
                   </p>
                 </div>
               </div>
@@ -874,16 +867,16 @@ export default function WifiSetupView({ onSuccessReturn, onNavigateTab }: WifiSe
           </div>
         </div>
       ) : (
-        /* Tabel Riwayat Penarikan ("Tarik-tarikan") */
+        /* Tabel Riwayat Aktivasi & Koneksi */
         <div className="bg-white rounded-3xl p-6 sm:p-7 shadow-sm border border-slate-200 space-y-4">
           <div className="flex items-center justify-between border-b border-slate-100 pb-3">
             <div>
               <h3 className="text-base font-extrabold text-slate-900 flex items-center gap-2">
                 <History className="w-4 h-4 text-indigo-600" />
-                Log Riwayat Penarikan &amp; Alokasi Area ESP32
+                Log Riwayat Aktivasi &amp; Koneksi Wi-Fi ESP32
               </h3>
               <p className="text-xs text-slate-500">
-                Mencatat kronologi siapa yang mendaftarkan dan area mana yang memegang kendali modul ESP32.
+                Mencatat kronologi petugas yang mengkoneksikan Wi-Fi dan meregistrasi modul hardware ESP32.
               </p>
             </div>
             <button
@@ -900,8 +893,8 @@ export default function WifiSetupView({ onSuccessReturn, onNavigateTab }: WifiSe
               <thead className="bg-slate-50 text-slate-500 font-bold uppercase tracking-wider text-[10px] border-b border-slate-200">
                 <tr>
                   <th className="py-3 px-3">Waktu</th>
-                  <th className="py-3 px-3">Area Tugas</th>
-                  <th className="py-3 px-3">Petugas Penarik</th>
+                  <th className="py-3 px-3">Asal Koneksi</th>
+                  <th className="py-3 px-3">Petugas Pengkoneksi</th>
                   <th className="py-3 px-3">Role</th>
                   <th className="py-3 px-3">Catatan / SSID</th>
                   <th className="py-3 px-3 text-right">Status</th>

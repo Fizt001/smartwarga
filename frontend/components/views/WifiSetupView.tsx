@@ -50,7 +50,7 @@ export default function WifiSetupView({ onSuccessReturn, onNavigateTab }: WifiSe
   };
 
   const openPortal = () => {
-    window.open('http://192.168.4.1', '_blank');
+    window.open('http://192.168.10.1', '_blank');
   };
 
   return (
@@ -216,23 +216,23 @@ export default function WifiSetupView({ onSuccessReturn, onNavigateTab }: WifiSe
               <div className="flex items-center gap-2">
                 <Globe className="w-4 h-4 text-blue-600" />
                 <h3 className="text-sm font-bold text-slate-900">
-                  Buka Portal Setup ESP32 (192.168.4.1)
+                  Otomatis Muncul di HP atau Buka Portal (192.168.10.1)
                 </h3>
               </div>
               <p className="text-xs text-slate-500">
-                Klik tombol di bawah untuk membuka halaman pengaturan mandiri di dalam modul ESP32:
+                Setelah HP terhubung ke <strong>SmartWarga-Setup</strong>, layar HP biasanya akan <strong>otomatis membuka pop-up Captive Portal</strong> untuk setup Wi-Fi. Jika tidak otomatis terbuka, klik tombol di bawah:
               </p>
 
               {/* Big Action Button */}
               <div className="pt-1">
                 <a
-                  href="http://192.168.4.1"
+                  href="http://192.168.10.1"
                   target="_blank"
                   rel="noreferrer"
                   className="w-full py-4 px-6 rounded-2xl bg-gradient-to-r from-emerald-600 via-teal-600 to-emerald-700 hover:from-emerald-500 hover:to-teal-600 text-white font-black text-sm sm:text-base shadow-lg shadow-emerald-700/25 transition flex items-center justify-center gap-2.5 text-center"
                 >
                   <Globe className="w-5 h-5 shrink-0" />
-                  <span>BUKA PORTAL SETUP 192.168.4.1</span>
+                  <span>BUKA PORTAL SETUP 192.168.10.1</span>
                   <ExternalLink className="w-4 h-4 shrink-0" />
                 </a>
               </div>
@@ -240,7 +240,7 @@ export default function WifiSetupView({ onSuccessReturn, onNavigateTab }: WifiSe
               {/* Fitur di dalam Portal Preview */}
               <div className="bg-slate-50 border border-slate-200/80 rounded-2xl p-4 space-y-2 mt-3">
                 <div className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">
-                  Di halaman portal 192.168.4.1 nanti, Anda dapat:
+                  Di halaman portal 192.168.10.1 nanti, Anda dapat:
                 </div>
                 <ul className="text-xs text-slate-600 space-y-1.5 list-disc list-inside">
                   <li><strong>Memindai Wi-Fi Sekitar:</strong> Menangkap sinyal Wi-Fi rumah secara nyata via antena ESP32.</li>
@@ -258,13 +258,16 @@ export default function WifiSetupView({ onSuccessReturn, onNavigateTab }: WifiSe
                 </div>
                 <ul className="space-y-1.5 list-disc list-inside text-amber-900 pl-1 leading-relaxed">
                   <li>
-                    <strong>Cek Bilah Alamat (URL) di HP:</strong> Browser HP sering otomatis menambahkan <em>https</em>. Jika URL menjadi <code>https://192.168.4.1</code>, <strong>hapus huruf 's'</strong> agar menjadi <code>http://192.168.4.1</code> lalu tekan Enter.
+                    <strong>Notifikasi Pop-up HP:</strong> Periksa bilah notifikasi HP Anda, ketuk notifikasi <em>"Masuk ke jaringan Wi-Fi / Sign in to network"</em> jika muncul.
+                  </li>
+                  <li>
+                    <strong>Cek Bilah Alamat (URL) di HP:</strong> Browser HP sering otomatis menambahkan <em>https</em>. Jika URL menjadi <code>https://192.168.10.1</code>, <strong>hapus huruf 's'</strong> agar menjadi <code>http://192.168.10.1</code> lalu tekan Enter.
                   </li>
                   <li>
                     <strong>Pilih "Tetap Terhubung":</strong> Jika di HP muncul notifikasi <em>"Wi-Fi ini tidak ada internet. Tetap terhubung?"</em>, ketuk dan pilih <strong>"Ya / Tetap Terhubung"</strong> agar HP tidak memblokir akses ke ESP32.
                   </li>
                   <li>
-                    <strong>Alternatif Tab Baru:</strong> Buka tab baru di browser HP lalu ketik langsung: <code>http://192.168.4.1</code>
+                    <strong>Alternatif Tab Baru:</strong> Buka tab baru di browser HP lalu ketik langsung: <code>http://192.168.10.1</code>
                   </li>
                 </ul>
               </div>

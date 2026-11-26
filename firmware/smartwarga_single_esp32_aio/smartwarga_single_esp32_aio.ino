@@ -44,12 +44,11 @@
 // ==================================================================================================
 // 1. KONFIGURASI DEFAULT SERVER & OPEN HOTSPOT AP
 // ==================================================================================================
-// Open Hotspot (Tanpa Password) agar HP warga bisa langsung tap & connect
-// instan
+// Open Hotspot (Tanpa Password) agar HP warga bisa langsung tap & connect instan
 const char *AP_SSID_NAME = "SmartWarga-Setup";
 const byte DNS_PORT = 53;
-const IPAddress AP_LOCAL_IP(192, 168, 4, 1);
-const IPAddress AP_GATEWAY(192, 168, 4, 1);
+const IPAddress AP_LOCAL_IP(192, 168, 10, 1);
+const IPAddress AP_GATEWAY(192, 168, 10, 1);
 const IPAddress AP_SUBNET(255, 255, 255, 0);
 
 // Domain Server Production SMART-WARGA
@@ -266,7 +265,7 @@ void displayLcd(String line1, String line2) {
 
 void updateIdleLcdGate() {
   if (currentSystemMode == SYSTEM_MODE_AP_PROVISIONING) {
-    displayLcdGate("SmartWarga-Setup", "192.168.4.1");
+    displayLcdGate("SmartWarga-Setup", "192.168.10.1");
     return;
   }
 
@@ -282,7 +281,7 @@ void updateIdleLcdGate() {
 
 void updateIdleLcdKiosk() {
   if (currentSystemMode == SYSTEM_MODE_AP_PROVISIONING) {
-    displayLcdKiosk("SmartWarga-Setup", "192.168.4.1");
+    displayLcdKiosk("SmartWarga-Setup", "192.168.10.1");
     return;
   }
 
@@ -619,29 +618,20 @@ window.onload=function(){generateToken();scanWifi();};
 </body>
 </html>)rawliteral";
 
-// GET / -> Aplikasi Web Captive Portal Mandiri ESP32 (Chunked Transfer - Aman untuk Chrome Android)
+// GET / -> Aplikasi Web Captive Portal Mandiri ESP32
 void handleRootPortal() {
   Serial.printf("📥 [HTTP GET /] Permintaan portal dari IP: %s\n",
                 localServer.client().remoteIP().toString().c_str());
   setCorsHeaders();
-  localServer.chunkResponseBegin("text/html");
-
-  const char *ptr = PORTAL_HTML;
-  size_t total = strlen_P(PORTAL_HTML);
-  size_t offset = 0;
-  char buf[1024];
-
-  while (offset < total) {
-    size_t chunk = (total - offset > sizeof(buf) - 1) ? (sizeof(buf) - 1)
-                                                      : (total - offset);
-    memcpy_P(buf, ptr + offset, chunk);
-    buf[chunk] = '\0';
-    localServer.chunkWrite(buf, chunk);
-    offset += chunk;
-  }
-
-  localServer.chunkResponseEnd();
+  localServer.send_P(200, "text/html", PORTAL_HTML);
   Serial.println("✅ [HTTP GET /] Pengiriman portal ke browser selesai!");
+}
+
+// Redirect otomatis Captive Portal untuk Android, Apple iOS & Windows
+void handleCaptiveRedirect() {
+  setCorsHeaders();
+  localServer.sendHeader("Location", "http://192.168.10.1/", true);
+  localServer.send(302, "text/plain", "");
 }
 
 void setupLocalWebServer() {
@@ -651,27 +641,13 @@ void setupLocalWebServer() {
   localServer.on("/index.html", HTTP_GET, handleRootPortal);
   localServer.on("/setup", HTTP_GET, handleRootPortal);
 
-  // Auto-Validasi Android, Windows & Apple agar OS HP TIDAK MEMBLOKIR Google Chrome!
-  localServer.on("/generate_204", HTTP_GET, []() {
-    setCorsHeaders();
-    localServer.send(204);
-  });
-  localServer.on("/gen_204", HTTP_GET, []() {
-    setCorsHeaders();
-    localServer.send(204);
-  });
-  localServer.on("/ncsi.txt", HTTP_GET, []() {
-    setCorsHeaders();
-    localServer.send(200, "text/plain", "Microsoft NCSI");
-  });
-  localServer.on("/connecttest.txt", HTTP_GET, []() {
-    setCorsHeaders();
-    localServer.send(200, "text/plain", "Microsoft Connect Test");
-  });
-  localServer.on("/success.txt", HTTP_GET, []() {
-    setCorsHeaders();
-    localServer.send(200, "text/plain", "success\n");
-  });
+  // Captive Portal Endpoints (Android, Apple iOS & Windows)
+  // Menjawab 302 Redirect ke http://192.168.10.1/ agar OS HP langsung "lempar" membuka pop-up Captive Portal!
+  localServer.on("/generate_204", HTTP_GET, handleCaptiveRedirect);
+  localServer.on("/gen_204", HTTP_GET, handleCaptiveRedirect);
+  localServer.on("/ncsi.txt", HTTP_GET, handleCaptiveRedirect);
+  localServer.on("/connecttest.txt", HTTP_GET, handleCaptiveRedirect);
+  localServer.on("/success.txt", HTTP_GET, handleCaptiveRedirect);
   localServer.on("/hotspot-detect.html", HTTP_GET, handleRootPortal);
   localServer.on("/canonical.html", HTTP_GET, handleRootPortal);
 
@@ -691,13 +667,13 @@ void setupLocalWebServer() {
       localServer.send(204);
       return;
     }
-    String uri = localServer.uri();
-    if (uri.indexOf("204") != -1) {
-      localServer.send(204);
-      return;
-    }
-    // Jika sedang AP provisioning, sajikan langsung portal setup untuk permintaan URL apapun!
+    // Jika sedang AP provisioning, arahkan semua domain / URL asing ke http://192.168.10.1/
     if (currentSystemMode == SYSTEM_MODE_AP_PROVISIONING) {
+      String host = localServer.hostHeader();
+      if (host != "192.168.10.1" && host != "192.168.10.1:80") {
+        handleCaptiveRedirect();
+        return;
+      }
       handleRootPortal();
     } else {
       localServer.send(404, "text/plain", "Not Found");
@@ -706,7 +682,7 @@ void setupLocalWebServer() {
 
   localServer.begin();
   Serial.println(
-      "🌐 Local WebServer REST API & Captive Portal (Port 80) Aktif!");
+      "🌐 Local WebServer REST API & Captive Portal (Port 80) Aktif di 192.168.10.1!");
 }
 
 // ==================================================================================================
@@ -741,12 +717,12 @@ void startApProvisioningMode() {
   Serial.println("1. Hubungkan Wi-Fi Handphone Anda ke: " +
                  String(AP_SSID_NAME));
   Serial.println("2. Handphone akan otomatis membuka pop-up Sign in Wi-Fi");
-  Serial.println("   atau buka browser ke: http://192.168.4.1");
+  Serial.println("   atau buka browser ke: http://192.168.10.1");
   Serial.println("3. Pilih Wi-Fi rumah, isi password, klik HUBUNGKAN");
   Serial.println(
       "=================================================================\n");
 
-  displayLcd("SmartWarga-Setup", "192.168.4.1");
+  displayLcd("SmartWarga-Setup", "192.168.10.1");
   digitalWrite(PIN_LED_STATUS, LOW);
 }
 
@@ -1307,7 +1283,7 @@ void loop() {
                        "Hotspot Terbuka (SmartWarga-Setup)...");
         wifiDisconnectStartTime = 0;
         startApProvisioningMode();
-        displayLcd("SmartWarga-Setup", "192.168.4.1");
+        displayLcd("SmartWarga-Setup", "192.168.10.1");
         beepReject();
       }
     } else {

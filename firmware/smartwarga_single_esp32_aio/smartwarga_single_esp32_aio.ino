@@ -44,7 +44,8 @@
 // ==================================================================================================
 // 1. KONFIGURASI DEFAULT SERVER & OPEN HOTSPOT AP
 // ==================================================================================================
-// Open Hotspot (Tanpa Password) agar HP warga bisa langsung tap & connect instan
+// Open Hotspot (Tanpa Password) agar HP warga bisa langsung tap & connect
+// instan
 const char *AP_SSID_NAME = "SmartWarga-Setup";
 const byte DNS_PORT = 53;
 const IPAddress AP_LOCAL_IP(192, 168, 10, 1);
@@ -398,7 +399,6 @@ void resetCredentialsNVS() {
 // 7. APLIKASI WEB CAPTIVE PORTAL & REST API ESP32 (PORT 80)
 // ==================================================================================================
 void setCorsHeaders() {
-  localServer.sendHeader("Connection", "close");
   localServer.sendHeader("Access-Control-Allow-Origin", "*");
   localServer.sendHeader("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
   localServer.sendHeader("Access-Control-Allow-Headers",
@@ -558,11 +558,11 @@ select:focus,input:focus{border-color:#10b981;background:#fff;box-shadow:0 0 0 3
 <div class="form-group">
 <label>Pilih Wi-Fi Terdeteksi</label>
 <button type="button" class="btn-scan" onclick="scanWifi()">🔄 Pindai</button>
-<select id="wifiList" onchange="onSelectWifi()"><option value="">-- Memindai Wi-Fi sekitar... --</option></select>
+<select id="wifiList" onchange="onSelectWifi()"><option value="">-- Klik [🔄 Pindai] atau ketik manual --</option></select>
 </div>
 <div class="form-group">
 <label>Nama Wi-Fi (SSID)</label>
-<input type="text" id="ssid" placeholder="Ketik SSID manual...">
+<input type="text" id="ssid" placeholder="Ketik nama Wi-Fi rumah...">
 </div>
 <div class="form-group">
 <label>Password Wi-Fi</label>
@@ -613,36 +613,41 @@ box.innerHTML='✅ <strong>Konfigurasi Berhasil Diterima!</strong><br>Hotspot Sm
 fetch('/api/wifi/connect',{method:'POST',headers:{'Content-Type':'application/json'},
 body:JSON.stringify({ssid:s,password:p,device_token:t})}).catch(e=>{});
 }
-window.onload=function(){generateToken();scanWifi();};
+window.onload=function(){generateToken();};
 </script>
 </body>
 </html>)rawliteral";
 
 // GET / -> Aplikasi Web Captive Portal Mandiri ESP32
 void handleRootPortal() {
-  Serial.printf("📥 [HTTP GET /] Permintaan portal dari IP: %s\n",
+  Serial.printf("📥 [HTTP GET %s] Permintaan portal dari IP: %s\n",
+                localServer.uri().c_str(),
                 localServer.client().remoteIP().toString().c_str());
   setCorsHeaders();
   localServer.send_P(200, "text/html", PORTAL_HTML);
-  Serial.println("✅ [HTTP GET /] Pengiriman portal ke browser selesai!");
+  Serial.println("✅ [HTTP GET] Pengiriman portal ke browser selesai!");
 }
 
 // Redirect otomatis Captive Portal untuk Android, Apple iOS & Windows
 void handleCaptiveRedirect() {
   setCorsHeaders();
-  localServer.sendHeader("Location", "http://192.168.10.1/", true);
+  localServer.sendHeader("Location", "http://192.168.10.1/login", true);
   localServer.send(302, "text/plain", "");
 }
 
 void setupLocalWebServer() {
   // Halaman Root Portal Mandiri & Aliasnya
   localServer.on("/", HTTP_GET, handleRootPortal);
+  localServer.on("/login", HTTP_GET, handleRootPortal);
+  localServer.on("/login.html", HTTP_GET, handleRootPortal);
   localServer.on("/portal", HTTP_GET, handleRootPortal);
   localServer.on("/index.html", HTTP_GET, handleRootPortal);
   localServer.on("/setup", HTTP_GET, handleRootPortal);
+  localServer.on("/wifi", HTTP_GET, handleRootPortal);
 
   // Captive Portal Endpoints (Android, Apple iOS & Windows)
-  // Menjawab 302 Redirect ke http://192.168.10.1/ agar OS HP langsung "lempar" membuka pop-up Captive Portal!
+  // Menjawab 302 Redirect ke http://192.168.10.1/login agar OS HP langsung "lempar"
+  // membuka pop-up Captive Portal!
   localServer.on("/generate_204", HTTP_GET, handleCaptiveRedirect);
   localServer.on("/gen_204", HTTP_GET, handleCaptiveRedirect);
   localServer.on("/ncsi.txt", HTTP_GET, handleCaptiveRedirect);
@@ -667,22 +672,23 @@ void setupLocalWebServer() {
       localServer.send(204);
       return;
     }
-    // Jika sedang AP provisioning, arahkan semua domain / URL asing ke http://192.168.10.1/
+    // Jika sedang AP provisioning, arahkan semua domain / URL asing ke
+    // http://192.168.10.1/login
     if (currentSystemMode == SYSTEM_MODE_AP_PROVISIONING) {
-      String host = localServer.hostHeader();
-      if (host != "192.168.10.1" && host != "192.168.10.1:80") {
-        handleCaptiveRedirect();
+      String uri = localServer.uri();
+      if (uri == "/login" || uri == "/login.html" || uri == "/" || uri == "/setup" || uri == "/wifi" || uri == "/portal") {
+        handleRootPortal();
         return;
       }
-      handleRootPortal();
+      handleCaptiveRedirect();
     } else {
       localServer.send(404, "text/plain", "Not Found");
     }
   });
 
   localServer.begin();
-  Serial.println(
-      "🌐 Local WebServer REST API & Captive Portal (Port 80) Aktif di 192.168.10.1!");
+  Serial.println("🌐 Local WebServer REST API & Captive Portal (Port 80) Aktif "
+                 "di 192.168.10.1!");
 }
 
 // ==================================================================================================

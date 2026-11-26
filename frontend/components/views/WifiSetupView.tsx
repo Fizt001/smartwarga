@@ -50,7 +50,7 @@ export default function WifiSetupView({ onSuccessReturn, onNavigateTab }: WifiSe
   };
 
   const openPortal = () => {
-    window.open('http://192.168.10.1', '_blank');
+    window.open('http://192.168.10.1/login', '_blank');
   };
 
   return (
@@ -226,13 +226,13 @@ export default function WifiSetupView({ onSuccessReturn, onNavigateTab }: WifiSe
               {/* Big Action Button */}
               <div className="pt-1">
                 <a
-                  href="http://192.168.10.1"
+                  href="http://192.168.10.1/login"
                   target="_blank"
                   rel="noreferrer"
                   className="w-full py-4 px-6 rounded-2xl bg-gradient-to-r from-emerald-600 via-teal-600 to-emerald-700 hover:from-emerald-500 hover:to-teal-600 text-white font-black text-sm sm:text-base shadow-lg shadow-emerald-700/25 transition flex items-center justify-center gap-2.5 text-center"
                 >
                   <Globe className="w-5 h-5 shrink-0" />
-                  <span>BUKA PORTAL SETUP 192.168.10.1</span>
+                  <span>BUKA PORTAL SETUP (192.168.10.1/login)</span>
                   <ExternalLink className="w-4 h-4 shrink-0" />
                 </a>
               </div>

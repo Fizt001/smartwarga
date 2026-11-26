@@ -446,27 +446,33 @@ void handleApiWifiScan() {
 void handleApiWifiConnect() {
   setCorsHeaders();
 
-  if (!localServer.hasArg("plain")) {
-    localServer.send(400, "application/json",
-                     "{\"success\":false,\"message\":\"Payload kosong\"}");
-    return;
+  String reqSsid = "";
+  String reqPassword = "";
+  String reqToken = "";
+
+  // Dukung format Form URL Encoded & JSON Payload
+  if (localServer.hasArg("ssid")) {
+    reqSsid = localServer.arg("ssid");
+    if (localServer.hasArg("password"))
+      reqPassword = localServer.arg("password");
+    if (localServer.hasArg("device_token"))
+      reqToken = localServer.arg("device_token");
+  } else if (localServer.hasArg("plain")) {
+    String body = localServer.arg("plain");
+    DynamicJsonDocument doc(1024);
+    DeserializationError err = deserializeJson(doc, body);
+    if (!err) {
+      if (doc.containsKey("ssid"))
+        reqSsid = doc["ssid"].as<String>();
+      if (doc.containsKey("password"))
+        reqPassword = doc["password"].as<String>();
+      if (doc.containsKey("device_token"))
+        reqToken = doc["device_token"].as<String>();
+    }
   }
 
-  String body = localServer.arg("plain");
-  Serial.printf("📥 [SETUP] Konfigurasi Diterima: %s\n", body.c_str());
-
-  DynamicJsonDocument doc(1024);
-  DeserializationError err = deserializeJson(doc, body);
-  if (err) {
-    localServer.send(
-        400, "application/json",
-        "{\"success\":false,\"message\":\"Format JSON tidak valid\"}");
-    return;
-  }
-
-  String reqSsid = doc["ssid"].as<String>();
-  String reqPassword = doc["password"].as<String>();
-  String reqToken = doc["device_token"].as<String>();
+  Serial.printf("📥 [SETUP] Konfigurasi Diterima: SSID='%s', Token='%s'\n",
+                reqSsid.c_str(), reqToken.c_str());
 
   if (reqSsid.length() == 0) {
     localServer.send(
@@ -478,12 +484,11 @@ void handleApiWifiConnect() {
   // Simpan ke Flash NVS
   saveCredentialsToNVS(reqSsid, reqPassword, reqToken);
 
-  // Balas respons sukses ke browser HP terlebih dahulu sebelum AP dimatikan
+  // Balas respons sukses ke browser terlebih dahulu sebelum AP dimatikan
   DynamicJsonDocument resDoc(256);
   resDoc["success"] = true;
-  resDoc["message"] = "Konfigurasi tersimpan. Hotspot setup dimatikan & ESP32 "
-                      "sedang menghubungkan ke " +
-                      reqSsid;
+  resDoc["message"] =
+      "Konfigurasi tersimpan. ESP32 sedang menghubungkan ke " + reqSsid;
   resDoc["ssid"] = reqSsid;
   String resStr;
   serializeJson(resDoc, resStr);

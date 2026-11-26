@@ -242,7 +242,7 @@ export default function AuthView() {
           SMART<span className="text-emerald-600">-WARGA</span>
         </h2>
         <p className="text-xs text-slate-500 mt-1">
-          Sistem Terpadu Manajemen Lingkungan Warga RW 05 (RT 01, 02, 03)
+          Sistem Terpadu Manajemen Lingkungan Warga RW 05
         </p>
       </div>
 

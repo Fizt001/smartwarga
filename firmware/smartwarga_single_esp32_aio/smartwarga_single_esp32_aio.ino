@@ -81,9 +81,16 @@ String apiBaseUrl = DEFAULT_API_BASE_URL;
 #define PIN_BUZZER 25     // Buzzer Aktif (+ ke GPIO 25, - ke GND)
 #define PIN_LED_STATUS 2  // On-board LED Biru ESP32
 
-// I2C BUS (Layar LCD 16x2)
+// I2C BUS (Dual Layar LCD 16x2)
 #define PIN_I2C_SDA 21
 #define PIN_I2C_SCL 22
+
+// ALAMAT I2C DUAL LCD 16x2:
+// LCD 1 (Khusus RFID 1 / Gerbang Masuk): 0x27 (Default tanpa jumper solder)
+#define LCD_GATE_ADDR  0x27
+// LCD 2 (Khusus RFID 2 / Kios Pelayanan & Antrean): 0x26 (Solder pad A0 di modul backpack I2C)
+// Catatan: Jika modul Anda bertipe PCF8574AT, gunakan 0x3F (default) & 0x3E (jumper A0)
+#define LCD_KIOSK_ADDR 0x26
 
 // TIMBANGAN DIGITAL HX711 (Bank Sampah - Opsional)
 #define PIN_HX711_DOUT 16
@@ -102,7 +109,8 @@ WebServer localServer(80);
 MFRC522 *rfid1 = nullptr; // Reader 1 di Pin 5 (Gerbang)
 MFRC522 *rfid2 = nullptr; // Reader 2 di Pin 4 (Kios)
 Servo gateServo;
-LiquidCrystal_I2C lcd(0x27, 16, 2);
+LiquidCrystal_I2C lcdGate(LCD_GATE_ADDR, 16, 2);   // LCD 1 khusus RFID 1 (Gerbang Tol)
+LiquidCrystal_I2C lcdKiosk(LCD_KIOSK_ADDR, 16, 2); // LCD 2 khusus RFID 2 (Kios Pelayanan & Antrean)
 
 enum SystemMode {
   SYSTEM_MODE_AP_PROVISIONING, // Mode Open Hotspot Pancingan untuk Setup Wi-Fi
@@ -150,6 +158,10 @@ void startApProvisioningMode();
 bool connectToSavedWifi(int timeoutSeconds = 20);
 void sendHeartbeatToWeb();
 void updateIdleLcd();
+void updateIdleLcdGate();
+void updateIdleLcdKiosk();
+void displayLcdGate(String line1, String line2);
+void displayLcdKiosk(String line1, String line2);
 void displayLcd(String line1, String line2);
 void beepSuccess();
 void beepShort();
@@ -221,31 +233,58 @@ void soundAlarmSirene(int cycles) {
 }
 
 // ==================================================================================================
-// 5. TAMPILAN DISPLAY LCD 16x2
+// 5. TAMPILAN DISPLAY DUAL LCD 16x2 (1 RFID = 1 LCD)
 // ==================================================================================================
-void displayLcd(String line1, String line2) {
-  Serial.printf("[LCD DISPLAY] %-16s | %-16s\n", line1.c_str(), line2.c_str());
-  lcd.clear();
-  lcd.setCursor(0, 0);
-  lcd.print(line1.substring(0, 16));
-  lcd.setCursor(0, 1);
-  lcd.print(line2.substring(0, 16));
+void displayLcdGate(String line1, String line2) {
+  Serial.printf("[LCD 1 - GERBANG] %-16s | %-16s\n", line1.c_str(), line2.c_str());
+  lcdGate.clear();
+  lcdGate.setCursor(0, 0);
+  lcdGate.print(line1.substring(0, 16));
+  lcdGate.setCursor(0, 1);
+  lcdGate.print(line2.substring(0, 16));
 }
 
-void updateIdleLcd() {
+void displayLcdKiosk(String line1, String line2) {
+  Serial.printf("[LCD 2 - KIOSK  ] %-16s | %-16s\n", line1.c_str(), line2.c_str());
+  lcdKiosk.clear();
+  lcdKiosk.setCursor(0, 0);
+  lcdKiosk.print(line1.substring(0, 16));
+  lcdKiosk.setCursor(0, 1);
+  lcdKiosk.print(line2.substring(0, 16));
+}
+
+// Menampilkan pesan ke kedua layar LCD secara bersamaan
+void displayLcd(String line1, String line2) {
+  displayLcdGate(line1, line2);
+  displayLcdKiosk(line1, line2);
+}
+
+void updateIdleLcdGate() {
   if (currentSystemMode == SYSTEM_MODE_AP_PROVISIONING) {
-    displayLcd("HOTSPOT TERBUKA", "SmartWarga-Setup");
+    displayLcdGate("GERBANG (SETUP)", "SmartWarga-Setup");
     return;
   }
 
   if (webSirenActive) {
-    displayLcd("!! SIRENE AKTIF !!", webSirenReason.length() > 0
-                                         ? webSirenReason
-                                         : "BAHAYA / DARURAT");
+    displayLcdGate("!! SIRENE AKTIF !!", webSirenReason.length() > 0 ? webSirenReason : "BAHAYA / DARURAT");
     return;
   }
 
-  String modeName = "TEMPELKAN KARTU";
+  displayLcdGate("GERBANG WARGA", "TEMPELKAN E-KTP");
+}
+
+void updateIdleLcdKiosk() {
+  if (currentSystemMode == SYSTEM_MODE_AP_PROVISIONING) {
+    displayLcdKiosk("SETUP WI-FI HP", "192.168.4.1");
+    return;
+  }
+
+  if (webSirenActive) {
+    displayLcdKiosk("!! SIRENE AKTIF !!", webSirenReason.length() > 0 ? webSirenReason : "BAHAYA / DARURAT");
+    return;
+  }
+
+  String modeName = "ANTREAN & LAYANAN";
   if (currentKioskMode == MODE_BANK_PLASTIK)
     modeName = "MD:BS-PLASTIK   ";
   else if (currentKioskMode == MODE_BANK_KALENG)
@@ -253,7 +292,12 @@ void updateIdleLcd() {
   else if (currentKioskMode == MODE_GERBANG_MANUAL)
     modeName = "MD:GERBANG-ONLY ";
 
-  displayLcd("SMART-WARGA AIO", modeName);
+  displayLcdKiosk("KIOS PELAYANAN", modeName);
+}
+
+void updateIdleLcd() {
+  updateIdleLcdGate();
+  updateIdleLcdKiosk();
 }
 
 void initLcdHardware() {
@@ -262,15 +306,25 @@ void initLcdHardware() {
   Wire.begin(PIN_I2C_SDA, PIN_I2C_SCL);
   Wire.setClock(100000);
 
-  Serial.println("➡️ Menginisialisasi LCD 16x2 di alamat 0x27...");
-  lcd.init();
-  lcd.backlight();
-  lcd.clear();
-  lcd.setCursor(0, 0);
-  lcd.print("SMART-WARGA AIO");
-  lcd.setCursor(0, 1);
-  lcd.print("MEMUAT SISTEM...");
-  Serial.println("✅ Layar LCD 16x2 Berhasil Dinyalakan!");
+  Serial.printf("➡️ Menginisialisasi LCD 1 (Gerbang Tol) di alamat 0x%02X...\n", LCD_GATE_ADDR);
+  lcdGate.init();
+  lcdGate.backlight();
+  lcdGate.clear();
+  lcdGate.setCursor(0, 0);
+  lcdGate.print("LCD 1: GERBANG");
+  lcdGate.setCursor(0, 1);
+  lcdGate.print("MEMUAT SISTEM...");
+
+  Serial.printf("➡️ Menginisialisasi LCD 2 (Kios Pelayanan) di alamat 0x%02X...\n", LCD_KIOSK_ADDR);
+  lcdKiosk.init();
+  lcdKiosk.backlight();
+  lcdKiosk.clear();
+  lcdKiosk.setCursor(0, 0);
+  lcdKiosk.print("LCD 2: KIOSK");
+  lcdKiosk.setCursor(0, 1);
+  lcdKiosk.print("MEMUAT SISTEM...");
+
+  Serial.println("✅ Dual Layar LCD 16x2 I2C Berhasil Dinyalakan!");
 }
 
 // ==================================================================================================
@@ -812,7 +866,7 @@ void openGateBarrier() {
 }
 
 // ==================================================================================================
-// 11. LOGIKA TAP KARTU READER 1 & READER 2
+// 11. LOGIKA TAP KARTU READER 1 & READER 2 (1 RFID = 1 LCD TERPISAH)
 // ==================================================================================================
 void processGateTap(String rfidUid) {
   Serial.println("\n=======================================================");
@@ -821,14 +875,14 @@ void processGateTap(String rfidUid) {
   Serial.println("=======================================================");
 
   beepShort();
-  displayLcd("GERBANG TOL", "UID: " + rfidUid);
+  displayLcdGate("GERBANG TOL", "UID: " + rfidUid);
 
   if (WiFi.status() != WL_CONNECTED) {
     Serial.println("⚠️ [ERROR] WiFi terputus, tidak dapat membuka palang.");
-    displayLcd("WIFI OFFLINE", "HUBUNGI PETUGAS");
+    displayLcdGate("WIFI OFFLINE", "HUBUNGI PETUGAS");
     beepReject();
     delay(1500);
-    updateIdleLcd();
+    updateIdleLcdGate();
     return;
   }
 
@@ -860,18 +914,18 @@ void processGateTap(String rfidUid) {
     String line1 = resDoc["lcd_line1"].as<String>();
     String line2 = resDoc["lcd_line2"].as<String>();
 
-    displayLcd(line1.length() > 0 ? line1 : name,
-               line2.length() > 0 ? line2 : "GERBANG TERBUKA");
+    displayLcdGate(line1.length() > 0 ? line1 : name,
+                   line2.length() > 0 ? line2 : "GERBANG TERBUKA");
     beepSuccess();
     openGateBarrier();
   } else {
-    displayLcd("KARTU ASING!", "TIDAK TERDAFTAR");
+    displayLcdGate("KARTU ASING!", "TIDAK TERDAFTAR");
     Serial.println("❌ [DITOLAK] Kartu asing / belum terdaftar!");
     blinkAlienCardAlert(6);
     delay(1000);
   }
 
-  updateIdleLcd();
+  updateIdleLcdGate();
 }
 
 void processKioskTap(String rfidUid) {
@@ -881,14 +935,14 @@ void processKioskTap(String rfidUid) {
   Serial.println("=======================================================");
 
   beepShort();
-  displayLcd("KIOS PELAYANAN", "UID: " + rfidUid);
+  displayLcdKiosk("KIOS PELAYANAN", "UID: " + rfidUid);
 
   if (WiFi.status() != WL_CONNECTED) {
     Serial.println("⚠️ [ERROR] WiFi terputus, tidak dapat mengirim ke server.");
-    displayLcd("WIFI OFFLINE", "HUBUNGKAN WIFI");
+    displayLcdKiosk("WIFI OFFLINE", "HUBUNGKAN WIFI");
     beepReject();
     delay(1500);
-    updateIdleLcd();
+    updateIdleLcdKiosk();
     return;
   }
 
@@ -898,7 +952,7 @@ void processKioskTap(String rfidUid) {
         (currentKioskMode == MODE_BANK_PLASTIK) ? "plastik" : "kaleng";
     float berat = getWeightGram();
 
-    displayLcd("MENIMBANG SAMPAH", String(berat, 0) + "g " + kategori);
+    displayLcdKiosk("MENIMBANG SAMPAH", String(berat, 0) + "g " + kategori);
 
     HTTPClient http;
     String url = apiBaseUrl + "/api/iot/bank-sampah/setor";
@@ -919,10 +973,10 @@ void processKioskTap(String rfidUid) {
 
     if (code == 200) {
       beepSuccess();
-      displayLcd("SETOR BERHASIL!", "+" + String(berat, 0) + "g SALDO CAIR");
+      displayLcdKiosk("SETOR BERHASIL!", "+" + String(berat, 0) + "g SALDO CAIR");
       delay(3000);
     } else {
-      displayLcd("KARTU ASING!", "BELUM TERDAFTAR");
+      displayLcdKiosk("KARTU ASING!", "BELUM TERDAFTAR");
       blinkAlienCardAlert(6);
       delay(1500);
     }
@@ -954,10 +1008,10 @@ void processKioskTap(String rfidUid) {
       String line2 = resDoc["lcd_line2"].as<String>();
       String citizenName = resDoc["citizen_name"].as<String>();
 
-      displayLcd(line1.length() > 0 ? line1 : ("ANTREAN #" + String(qNum)),
-                 line2.length() > 0 ? line2
-                                    : (status == "active" ? "SILAKAN LAYANAN"
-                                                          : "HARAP MENUNGGU"));
+      displayLcdKiosk(line1.length() > 0 ? line1 : ("ANTREAN #" + String(qNum)),
+                      line2.length() > 0 ? line2
+                                         : (status == "active" ? "SILAKAN LAYANAN"
+                                                               : "HARAP MENUNGGU"));
 
       if (status == "active") {
         beepSuccess();
@@ -968,13 +1022,13 @@ void processKioskTap(String rfidUid) {
         delay(1500);
       }
     } else {
-      displayLcd("ERROR LAYANAN", "GAGAL MEMPROSES");
+      displayLcdKiosk("ERROR LAYANAN", "GAGAL MEMPROSES");
       beepReject();
       delay(1500);
     }
   }
 
-  updateIdleLcd();
+  updateIdleLcdKiosk();
 }
 
 // ==================================================================================================
@@ -1230,7 +1284,7 @@ void loop() {
         next = 0;
       currentKioskMode = (KioskMode)next;
       beepShort();
-      updateIdleLcd();
+      updateIdleLcdKiosk();
       Serial.printf("[MODE] Mode Berganti ke: %d\n", (int)currentKioskMode);
     } else if (key == 'w' || key == 'W') {
       sendHeartbeatToWeb();
@@ -1282,7 +1336,7 @@ void loop() {
         next = 0;
       currentKioskMode = (KioskMode)next;
       beepShort();
-      updateIdleLcd();
+      updateIdleLcdKiosk();
       Serial.printf("[MODE] Mode Berganti ke: %d\n", (int)currentKioskMode);
     }
   }

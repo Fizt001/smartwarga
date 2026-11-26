@@ -40,6 +40,8 @@
 #include <WiFi.h>
 #include <WiFiAP.h>
 #include <Wire.h>
+#include "soc/soc.h"
+#include "soc/rtc_cntl_reg.h"
 
 // ==================================================================================================
 // 1. KONFIGURASI DEFAULT SERVER & OPEN HOTSPOT AP
@@ -424,22 +426,31 @@ void handleApiWifiScan() {
   Serial.println("🔍 [ANTENA ESP32] Memindai jaringan Wi-Fi sekitar...");
   displayLcd("MEMINDAI WIFI...", "MOHON TUNGGU..");
 
-  int n = WiFi.scanNetworks();
+  // Pastikan mode Wi-Fi mendukung scanning (butuh interface STA aktif)
+  if (WiFi.getMode() == WIFI_AP) {
+    WiFi.mode(WIFI_AP_STA);
+    delay(50);
+  }
+
+  int n = WiFi.scanNetworks(false, false);
   Serial.printf("✅ Ditemukan %d jaringan Wi-Fi nyata di sekitar ESP32.\n", n);
 
   DynamicJsonDocument doc(2048);
   JsonArray array = doc.to<JsonArray>();
 
-  for (int i = 0; i < n; ++i) {
-    String foundSsid = WiFi.SSID(i);
-    if (foundSsid.length() == 0)
-      continue;
+  if (n > 0) {
+    for (int i = 0; i < n; ++i) {
+      String foundSsid = WiFi.SSID(i);
+      if (foundSsid.length() == 0)
+        continue;
 
-    JsonObject netObj = array.createNestedObject();
-    netObj["ssid"] = foundSsid;
-    netObj["rssi"] = WiFi.RSSI(i);
-    netObj["secure"] = (WiFi.encryptionType(i) != WIFI_AUTH_OPEN);
+      JsonObject netObj = array.createNestedObject();
+      netObj["ssid"] = foundSsid;
+      netObj["rssi"] = WiFi.RSSI(i);
+      netObj["secure"] = (WiFi.encryptionType(i) != WIFI_AUTH_OPEN);
+    }
   }
+  WiFi.scanDelete(); // Bebaskan memori hasil scan
 
   String response;
   serializeJson(doc, response);
@@ -718,9 +729,9 @@ void startApProvisioningMode() {
   WiFi.disconnect(true, true); // true, true = radio off & hapus memori STA radio lama
   delay(100);
 
-  // Nyalakan PURE OPEN HOTSPOT (WIFI_AP) dengan TX power 17dBm (bebas brownout saat HP konek)
-  WiFi.mode(WIFI_AP);
-  WiFi.setTxPower(WIFI_POWER_17dBm);
+  // Nyalakan mode WIFI_AP_STA dengan TX power 13dBm agar stabil & bebas brownout saat HP konek
+  WiFi.mode(WIFI_AP_STA);
+  WiFi.setTxPower(WIFI_POWER_13dBm);
   WiFi.softAPConfig(AP_LOCAL_IP, AP_GATEWAY, AP_SUBNET);
   WiFi.softAP(AP_SSID_NAME, NULL, 1, 0, 4); // Channel 1, open, max 4 klien
 
@@ -797,14 +808,19 @@ bool connectToSavedWifi(int timeoutSeconds) {
     updateIdleLcd();
     return true;
   } else {
-    Serial.println("\n❌ [WiFi] Gagal terhubung ke SSID lama. Menghentikan percobaan ke SSID lama agar AP tenang.");
+    Serial.println("\n❌ [WiFi] Gagal terhubung ke SSID lama. Menghapus kredensial lama dari NVS agar tidak berusaha konek lagi.");
     digitalWrite(PIN_LED_STATUS, LOW);
     displayLcd("GAGAL KONEK WIFI", "KEMBALI KE SETUP");
     beepReject();
     delay(1200);
 
-    // Kosongkan savedSsid di memori RAM agar ESP tidak terus-menerus mencoba menyambung ke SSID Samsung lama!
+    // Hapus total kredensial lama dari NVS agar ESP tidak terus berusaha menyambung ke SSID lama (Samsung dsb)
+    preferences.begin(PREF_NAMESPACE, false);
+    preferences.remove("ssid");
+    preferences.remove("password");
+    preferences.end();
     savedSsid = "";
+    savedPassword = "";
 
     startApProvisioningMode();
     return false;
@@ -1219,6 +1235,7 @@ void sendHeartbeatToWeb() {
 // 14. SETUP UTAMA
 // ==================================================================================================
 void setup() {
+  WRITE_PERI_REG(RTC_CNTL_BROWN_OUT_REG, 0); // Nonaktifkan hardware brownout detector untuk mencegah reboot saat beban periferal & Wi-Fi
   Serial.begin(115200);
   delay(1000);
 
@@ -1413,28 +1430,31 @@ void loop() {
     }
   }
 
-  // 9. Pembacaan RFID di Pin 5 (GERBANG MASUK)
-  digitalWrite(PIN_RFID2_SS, HIGH);
-  delayMicroseconds(20);
-  if (detectCard(rfid1, PIN_RFID1_SS, PIN_RFID2_SS)) {
-    String uid = dumpUidToString(rfid1);
-    processGateTap(uid);
-    rfid1->PICC_HaltA();
-    rfid1->PCD_StopCrypto1();
-    digitalWrite(PIN_RFID1_SS, HIGH);
-    delay(800);
-  }
-
-  // 10. Pembacaan RFID di Pin 4 (KIOS PELAYANAN & POSYANDU)
-  digitalWrite(PIN_RFID1_SS, HIGH);
-  delayMicroseconds(20);
-  if (detectCard(rfid2, PIN_RFID2_SS, PIN_RFID1_SS)) {
-    String uid = dumpUidToString(rfid2);
-    processKioskTap(uid);
-    rfid2->PICC_HaltA();
-    rfid2->PCD_StopCrypto1();
+  // 9 & 10. Pembacaan RFID (Hanya aktif saat STA Online agar saat AP Provisioning daya & sinyal Wi-Fi 100% stabil)
+  if (currentSystemMode == SYSTEM_MODE_STA_ONLINE) {
+    // 9. Pembacaan RFID di Pin 5 (GERBANG MASUK)
     digitalWrite(PIN_RFID2_SS, HIGH);
-    delay(800);
+    delayMicroseconds(20);
+    if (detectCard(rfid1, PIN_RFID1_SS, PIN_RFID2_SS)) {
+      String uid = dumpUidToString(rfid1);
+      processGateTap(uid);
+      rfid1->PICC_HaltA();
+      rfid1->PCD_StopCrypto1();
+      digitalWrite(PIN_RFID1_SS, HIGH);
+      delay(800);
+    }
+
+    // 10. Pembacaan RFID di Pin 4 (KIOS PELAYANAN & POSYANDU)
+    digitalWrite(PIN_RFID1_SS, HIGH);
+    delayMicroseconds(20);
+    if (detectCard(rfid2, PIN_RFID2_SS, PIN_RFID1_SS)) {
+      String uid = dumpUidToString(rfid2);
+      processKioskTap(uid);
+      rfid2->PICC_HaltA();
+      rfid2->PCD_StopCrypto1();
+      digitalWrite(PIN_RFID2_SS, HIGH);
+      delay(800);
+    }
   }
 
   // 11. Heartbeat Berkala ke Web (Tiap 8 Detik agar Web Selalu ONLINE HIJAU)

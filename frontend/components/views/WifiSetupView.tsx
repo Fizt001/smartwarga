@@ -185,43 +185,45 @@ export default function WifiSetupView({ onSuccessReturn, onNavigateTab }: WifiSe
       }
 
       // 2. Fallback Form POST ke hidden iframe (membypass proteksi Mixed-Content HTTPS browser)
-      try {
-        const iframeName = 'esp_submit_frame';
-        let iframe = document.getElementById(iframeName) as HTMLIFrameElement;
-        if (!iframe) {
-          iframe = document.createElement('iframe');
-          iframe.id = iframeName;
-          iframe.name = iframeName;
-          iframe.style.display = 'none';
-          document.body.appendChild(iframe);
-        }
-
-        const form = document.createElement('form');
-        form.method = 'POST';
-        form.action = 'http://192.168.10.1/api/wifi/connect';
-        form.target = iframeName;
-
-        const inputSsid = document.createElement('input');
-        inputSsid.name = 'ssid';
-        inputSsid.value = payload.ssid;
-        form.appendChild(inputSsid);
-
-        const inputPw = document.createElement('input');
-        inputPw.name = 'password';
-        inputPw.value = payload.password;
-        form.appendChild(inputPw);
-
-        const inputToken = document.createElement('input');
-        inputToken.name = 'device_token';
-        inputToken.value = payload.device_token;
-        form.appendChild(inputToken);
-
-        document.body.appendChild(form);
-        form.submit();
-        setTimeout(() => form.remove(), 1000);
-      } catch (err) {
-        console.warn('Iframe form submit fallback notice:', err);
+      const iframeName = 'esp_submit_frame';
+      let iframe = document.getElementById(iframeName) as HTMLIFrameElement;
+      if (!iframe) {
+        iframe = document.createElement('iframe');
+        iframe.id = iframeName;
+        iframe.name = iframeName;
+        iframe.style.display = 'none';
+        document.body.appendChild(iframe);
       }
+
+      ['http://192.168.10.1/api/wifi/connect', 'http://192.168.4.1/api/wifi/connect'].forEach((targetUrl) => {
+        try {
+          const form = document.createElement('form');
+          form.method = 'POST';
+          form.action = targetUrl;
+          form.target = iframeName;
+
+          const inputSsid = document.createElement('input');
+          inputSsid.name = 'ssid';
+          inputSsid.value = payload.ssid;
+          form.appendChild(inputSsid);
+
+          const inputPw = document.createElement('input');
+          inputPw.name = 'password';
+          inputPw.value = payload.password;
+          form.appendChild(inputPw);
+
+          const inputToken = document.createElement('input');
+          inputToken.name = 'device_token';
+          inputToken.value = payload.device_token;
+          form.appendChild(inputToken);
+
+          document.body.appendChild(form);
+          form.submit();
+          setTimeout(() => form.remove(), 1200);
+        } catch (err) {
+          console.warn('Iframe form submit notice:', err);
+        }
+      });
 
       setConnectStep(`ESP32 sedang menghubungkan ke Wi-Fi "${ssid}" & mendaftarkan status ONLINE...`);
 
@@ -446,68 +448,24 @@ export default function WifiSetupView({ onSuccessReturn, onNavigateTab }: WifiSe
 
             {/* Field 1: SSID Wi-Fi */}
             <div className="space-y-2">
-              <div className="flex items-center justify-between gap-2">
-                <label className="text-xs sm:text-sm font-bold text-slate-800 flex items-center gap-1.5">
-                  <Wifi className="w-4 h-4 text-emerald-600" />
-                  <span>1. Nama Jaringan Wi-Fi (SSID) Rumah</span>
-                </label>
-                <button
-                  type="button"
-                  onClick={scanWifiFromEsp}
-                  disabled={isScanning}
-                  className="px-3 py-1.5 rounded-xl text-xs font-bold bg-slate-100 text-slate-700 hover:bg-emerald-50 hover:text-emerald-700 border border-slate-200 transition flex items-center gap-1.5 disabled:opacity-50"
-                >
-                  <RefreshCw className={`w-3.5 h-3.5 ${isScanning ? 'animate-spin' : ''}`} />
-                  <span>{isScanning ? 'Memindai...' : 'Pindai Wi-Fi Sekitar'}</span>
-                </button>
-              </div>
+              <label className="text-xs sm:text-sm font-bold text-slate-800 flex items-center gap-1.5">
+                <Wifi className="w-4 h-4 text-emerald-600" />
+                <span>1. Nama Jaringan Wi-Fi (SSID) Rumah Anda</span>
+              </label>
 
               {/* Input text SSID */}
               <input
                 type="text"
                 value={ssid}
                 onChange={(e) => setSsid(e.target.value)}
-                placeholder="Ketik nama Wi-Fi rumah (misal: IndiHome, Wi-Fi Rumah, Hotspot HP)..."
+                placeholder="Ketik nama Wi-Fi rumah (misal: IndiHome_123, Wi-Fi Rumah, Hotspot HP)..."
                 required
                 className="w-full px-4 py-3 rounded-2xl bg-slate-50 border border-slate-200 focus:bg-white focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/10 outline-none text-sm text-slate-900 transition"
               />
 
-              {/* Hasil Pindai Wi-Fi jika ada */}
-              {scannedNetworks.length > 0 && (
-                <div className="space-y-1.5 pt-1">
-                  <div className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">
-                    Pilih dari Wi-Fi yang Terdeteksi Antena ESP32:
-                  </div>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                    {scannedNetworks.map((net, idx) => (
-                      <button
-                        key={idx}
-                        type="button"
-                        onClick={() => setSsid(net.ssid)}
-                        className={`p-2.5 rounded-xl border text-left text-xs transition flex items-center justify-between gap-2 ${
-                          ssid === net.ssid
-                            ? 'bg-emerald-50 border-emerald-400 text-emerald-900 font-bold ring-2 ring-emerald-500/20'
-                            : 'bg-slate-50 hover:bg-slate-100 border-slate-200 text-slate-700'
-                        }`}
-                      >
-                        <div className="flex items-center gap-2 truncate">
-                          <Wifi className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
-                          <span className="truncate">{net.ssid}</span>
-                        </div>
-                        <span className="text-[10px] text-slate-400 shrink-0">
-                          {net.secure ? '🔒' : 'Terbuka'}
-                        </span>
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              {scanMessage && (
-                <p className="text-[11px] text-slate-500 leading-relaxed">
-                  {scanMessage}
-                </p>
-              )}
+              <p className="text-[11px] text-slate-500 leading-relaxed">
+                💡 <strong>Tips:</strong> Langsung ketik nama Wi-Fi rumah Anda pada kolom di atas (tidak perlu dipindai). Pastikan huruf besar/kecil dan spasi persis sama seperti nama Wi-Fi rumah Anda.
+              </p>
             </div>
 
             {/* Field 2: Password Wi-Fi */}

@@ -32,6 +32,7 @@ import {
 } from 'lucide-react';
 import { fetchApi } from '@/lib/api';
 import { useAuth } from '@/lib/auth-context';
+import ConfirmModal from '@/components/ConfirmModal';
 
 interface ScannedNetwork {
   ssid: string;
@@ -91,6 +92,11 @@ export default function WifiSetupView({ onSuccessReturn, onNavigateTab }: WifiSe
 
   // Tab State: 'setup' vs 'history'
   const [activeTabSub, setActiveTabSub] = useState<'config' | 'history'>('config');
+
+  // Custom Modal State (Gantikan dialog browser bawaan)
+  const [showResetModal, setShowResetModal] = useState(false);
+  const [isResetting, setIsResetting] = useState(false);
+  const [resetSuccessMessage, setResetSuccessMessage] = useState<string | null>(null);
 
   useEffect(() => {
     generateRandomToken();
@@ -366,10 +372,12 @@ export default function WifiSetupView({ onSuccessReturn, onNavigateTab }: WifiSe
     }
   };
 
-  const handleResetOldWifi = async () => {
-    if (!confirm('Apakah Anda yakin ingin me-reset Wi-Fi di ESP32 dan membuka kembali Open Hotspot "SmartWarga-Setup"?')) {
-      return;
-    }
+  const handleOpenResetModal = () => {
+    setShowResetModal(true);
+  };
+
+  const handleExecuteResetWifi = async () => {
+    setIsResetting(true);
     try {
       await fetch(`http://${targetIp}/api/wifi/reset`, { method: 'POST' });
     } catch {
@@ -381,8 +389,12 @@ export default function WifiSetupView({ onSuccessReturn, onNavigateTab }: WifiSe
         form.submit();
         setTimeout(() => form.remove(), 1000);
       } catch {}
+    } finally {
+      setIsResetting(false);
+      setShowResetModal(false);
+      setResetSuccessMessage('✅ Perintah reset berhasil dikirim. ESP32 sedang memancarkan kembali hotspot "SmartWarga-Setup".');
+      setTimeout(() => setResetSuccessMessage(null), 8000);
     }
-    alert('Perintah reset Wi-Fi telah dikirim. ESP32 akan membuka kembali hotspot "SmartWarga-Setup".');
   };
 
   const isSatpamRole = user?.role === 'satpam';
@@ -752,6 +764,13 @@ export default function WifiSetupView({ onSuccessReturn, onNavigateTab }: WifiSe
                 </div>
               )}
 
+              {resetSuccessMessage && (
+                <div className="p-3.5 rounded-xl bg-emerald-50 border border-emerald-300 text-emerald-900 text-xs font-bold flex items-center gap-2">
+                  <CheckCircle2 className="w-4 h-4 shrink-0 text-emerald-600" />
+                  <span>{resetSuccessMessage}</span>
+                </div>
+              )}
+
               {/* Action Buttons */}
               <div className="pt-2 flex flex-col sm:flex-row items-center gap-3">
                 <button
@@ -765,7 +784,7 @@ export default function WifiSetupView({ onSuccessReturn, onNavigateTab }: WifiSe
 
                 <button
                   type="button"
-                  onClick={handleResetOldWifi}
+                  onClick={handleOpenResetModal}
                   className="w-full sm:w-auto px-4 py-3 bg-slate-100 hover:bg-rose-50 hover:text-rose-700 text-slate-700 font-bold text-xs rounded-xl transition border border-slate-200 flex items-center justify-center gap-1.5"
                 >
                   <Trash2 className="w-3.5 h-3.5" />
@@ -938,6 +957,19 @@ export default function WifiSetupView({ onSuccessReturn, onNavigateTab }: WifiSe
           </div>
         </div>
       )}
+
+      {/* Modal Dialog Kustom (Menggantikan dialog browser bawaan) */}
+      <ConfirmModal
+        isOpen={showResetModal}
+        onClose={() => setShowResetModal(false)}
+        onConfirm={handleExecuteResetWifi}
+        title="Reset Kredensial Wi-Fi ESP32"
+        message="Apakah Anda yakin ingin menghapus kredensial Wi-Fi lama di memori ESP32? Perangkat akan me-restart dan memancarkan kembali Open Hotspot 'SmartWarga-Setup' agar bisa dikonfigurasi ulang."
+        confirmText="Ya, Reset Sekarang"
+        cancelText="Batal"
+        variant="warning"
+        loading={isResetting}
+      />
     </div>
   );
 }

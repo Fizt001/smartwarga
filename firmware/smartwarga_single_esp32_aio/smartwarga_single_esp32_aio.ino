@@ -403,6 +403,7 @@ void setCorsHeaders() {
   localServer.sendHeader("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
   localServer.sendHeader("Access-Control-Allow-Headers",
                          "Content-Type, Authorization, X-Requested-With");
+  localServer.sendHeader("Access-Control-Allow-Private-Network", "true");
 }
 
 void handleCorsPreflight() {

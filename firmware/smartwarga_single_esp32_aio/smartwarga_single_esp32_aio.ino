@@ -696,24 +696,21 @@ void setupLocalWebServer() {
 // ==================================================================================================
 void startApProvisioningMode() {
   currentSystemMode = SYSTEM_MODE_AP_PROVISIONING;
-  WiFi.disconnect();
+  
+  // Hentikan koneksi Station agar tidak ada proses reconnect latar belakang yang mengganggu sinyal AP
+  WiFi.disconnect(true, false);
   delay(50);
 
-  // Nyalakan OPEN HOTSPOT (Tanpa Password) agar HP langsung connect tanpa
-  // ditanya password
-  WiFi.mode(WIFI_AP_STA);
+  // Nyalakan PURE OPEN HOTSPOT (WIFI_AP) agar stabil 100% dan tidak putus-putus
+  WiFi.mode(WIFI_AP);
   WiFi.softAPConfig(AP_LOCAL_IP, AP_GATEWAY, AP_SUBNET);
   WiFi.softAP(AP_SSID_NAME); // OPEN HOTSPOT TANPA PASSWORD!
 
-  delay(100);
+  delay(50);
 
   // Nyalakan DNS Server untuk Captive Portal Otomatis
   dnsServer.stop();
   dnsServer.start(DNS_PORT, "*", AP_LOCAL_IP);
-
-  // Pastikan WebServer Port 80 aktif dan terikat ke SoftAP interface
-  localServer.close();
-  localServer.begin();
 
   Serial.println(
       "\n=================================================================");
@@ -723,7 +720,7 @@ void startApProvisioningMode() {
   Serial.println("1. Hubungkan Wi-Fi Handphone Anda ke: " +
                  String(AP_SSID_NAME));
   Serial.println("2. Handphone akan otomatis membuka pop-up Sign in Wi-Fi");
-  Serial.println("   atau buka browser ke: http://192.168.10.1");
+  Serial.println("   atau buka browser ke: http://192.168.10.1/login");
   Serial.println("3. Pilih Wi-Fi rumah, isi password, klik HUBUNGKAN");
   Serial.println(
       "=================================================================\n");
@@ -743,7 +740,8 @@ bool connectToSavedWifi(int timeoutSeconds) {
                 savedSsid.c_str());
   displayLcd("KONEKSI KE:", savedSsid);
 
-  // Mulai koneksi ke router
+  // Nyalakan mode STA untuk menghubungkan ke router
+  WiFi.mode(WIFI_STA);
   WiFi.begin(savedSsid.c_str(), savedPassword.c_str());
 
   int attempts = 0;
@@ -752,7 +750,6 @@ bool connectToSavedWifi(int timeoutSeconds) {
     delay(500);
     Serial.print(".");
     digitalWrite(PIN_LED_STATUS, !digitalRead(PIN_LED_STATUS));
-    localServer.handleClient();
     attempts++;
   }
 
@@ -783,11 +780,14 @@ bool connectToSavedWifi(int timeoutSeconds) {
     return true;
   } else {
     Serial.println("\n❌ [WiFi] Gagal terhubung ke router. Menyalakan kembali "
-                   "Open Hotspot Setup.");
+                   "Open Hotspot Setup yang stabil.");
     digitalWrite(PIN_LED_STATUS, LOW);
     displayLcd("GAGAL KONEK WIFI", "KEMBALI KE SETUP");
     beepReject();
-    delay(1500);
+    delay(1200);
+
+    // Hentikan percobaan koneksi STA agar tidak mengganggu SoftAP
+    WiFi.disconnect(true, false);
     startApProvisioningMode();
     return false;
   }
@@ -1257,7 +1257,7 @@ void setup() {
 
   // Jika ada SSID tersimpan, coba hubungkan ke router rumah
   if (savedSsid.length() > 0) {
-    if (!connectToSavedWifi(15)) {
+    if (!connectToSavedWifi(8)) {
       startApProvisioningMode();
     }
   } else {

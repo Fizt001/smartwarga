@@ -7,8 +7,6 @@ import {
   RefreshCw, 
   CheckCircle2, 
   AlertCircle, 
-  Copy, 
-  Check, 
   ArrowRight, 
   Radio, 
   ExternalLink,
@@ -28,7 +26,6 @@ interface WifiSetupViewProps {
 export default function WifiSetupView({ onSuccessReturn, onNavigateTab }: WifiSetupViewProps) {
   const [deviceOnline, setDeviceOnline] = useState<boolean | null>(null);
   const [checkingStatus, setCheckingStatus] = useState(false);
-  const [copiedSsid, setCopiedSsid] = useState(false);
   const [showReconfig, setShowReconfig] = useState(false);
 
   useEffect(() => {
@@ -50,12 +47,6 @@ export default function WifiSetupView({ onSuccessReturn, onNavigateTab }: WifiSe
     } finally {
       setCheckingStatus(false);
     }
-  };
-
-  const handleCopySsid = () => {
-    navigator.clipboard.writeText('SmartWarga-Setup');
-    setCopiedSsid(true);
-    setTimeout(() => setCopiedSsid(false), 2000);
   };
 
   const openPortal = () => {
@@ -189,18 +180,10 @@ export default function WifiSetupView({ onSuccessReturn, onNavigateTab }: WifiSe
                   </div>
                 </div>
 
-                <div className="flex items-center gap-2 w-full sm:w-auto">
-                  <span className="text-[11px] font-semibold text-slate-500 bg-white border border-slate-200 px-2.5 py-1 rounded-xl">
-                    Tanpa Password (Open)
+                <div className="flex items-center gap-2">
+                  <span className="text-xs font-bold text-emerald-800 bg-emerald-100 border border-emerald-300 px-3.5 py-1.5 rounded-xl">
+                    Tanpa Password
                   </span>
-                  <button
-                    type="button"
-                    onClick={handleCopySsid}
-                    className="text-xs font-bold text-slate-700 bg-white hover:bg-slate-100 border border-slate-200 px-3 py-1.5 rounded-xl transition flex items-center gap-1.5"
-                  >
-                    {copiedSsid ? <Check className="w-3.5 h-3.5 text-emerald-600" /> : <Copy className="w-3.5 h-3.5" />}
-                    {copiedSsid ? 'Tersalin' : 'Salin'}
-                  </button>
                 </div>
               </div>
             </div>

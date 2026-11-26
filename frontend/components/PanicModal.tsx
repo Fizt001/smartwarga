@@ -113,14 +113,14 @@ export default function PanicModal({
         </div>
 
         <div className="mt-4">
-          <label className="block text-xs font-semibold text-slate-700 mb-1">
+          <label className="block text-xs font-bold text-slate-900 mb-1.5">
             Lokasi Titik Kejadian:
           </label>
           <input
             type="text"
             value={location}
             onChange={(e) => setLocation(e.target.value)}
-            className="w-full text-sm px-3.5 py-2.5 rounded-xl border border-slate-300 focus:ring-2 focus:ring-red-500 focus:outline-none"
+            className="w-full text-sm font-bold text-slate-900 bg-white px-3.5 py-2.5 rounded-xl border-2 border-slate-300 placeholder:text-slate-400 focus:bg-white focus:border-red-600 focus:ring-2 focus:ring-red-100 focus:outline-none shadow-sm"
             placeholder="Contoh: Rumah Blok A No. 12"
           />
         </div>

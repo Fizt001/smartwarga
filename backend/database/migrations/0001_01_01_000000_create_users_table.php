@@ -36,7 +36,7 @@ return new class extends Migration
             $table->string('name');
             $table->string('email')->unique();
             $table->string('password');
-            $table->enum('role', ['super_admin', 'rw', 'rt', 'warga', 'bendahara', 'sekretaris'])->default('warga');
+            $table->enum('role', ['super_admin', 'rw', 'rt', 'warga', 'bendahara', 'sekretaris', 'satpam'])->default('warga');
             $table->string('rt_number', 10)->nullable();
             $table->foreignId('house_id')->nullable()->constrained('houses')->nullOnDelete();
             $table->string('rfid_uid')->nullable()->index();

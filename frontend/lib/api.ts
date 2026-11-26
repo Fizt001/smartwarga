@@ -58,7 +58,7 @@ export interface UserProfile {
   id: number;
   name: string;
   email: string;
-  role: 'super_admin' | 'rw' | 'rt' | 'warga' | 'bendahara' | 'sekretaris';
+  role: 'super_admin' | 'rw' | 'rt' | 'warga' | 'bendahara' | 'sekretaris' | 'satpam';
   rt_number?: string;
   house_id?: number;
   rfid_uid?: string;

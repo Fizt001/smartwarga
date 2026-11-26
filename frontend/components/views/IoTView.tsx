@@ -17,10 +17,19 @@ import {
   Clock,
   DoorOpen,
   IdCard,
-  ExternalLink
+  ExternalLink,
+  Building2,
+  Wifi,
+  ShieldCheck,
+  Users
 } from 'lucide-react';
 
-export default function IoTView() {
+interface IoTViewProps {
+  onNavigateTab?: (tab: string) => void;
+}
+
+export default function IoTView({ onNavigateTab }: IoTViewProps = {}) {
+  const [activeClaim, setActiveClaim] = useState<any>(null);
   const [sirenActive, setSirenActive] = useState(false);
   const [sirenReason, setSirenReason] = useState('');
   const [devices, setDevices] = useState<any[]>([]);
@@ -34,11 +43,12 @@ export default function IoTView() {
 
   const loadIoTData = async () => {
     try {
-      const [devRes, rondaRes, emerRes, wasteRes] = await Promise.all([
+      const [devRes, rondaRes, emerRes, wasteRes, claimRes] = await Promise.all([
         fetchApi('/iot/devices'),
         fetchApi('/iot/ronda/logs'),
         fetchApi('/iot/emergency-logs'),
         fetchApi('/iot/waste-bank/logs'),
+        fetchApi('/iot/registration/claim'),
       ]);
 
       if (devRes.success) {
@@ -49,6 +59,7 @@ export default function IoTView() {
       if (rondaRes.success) setRondaLogs(rondaRes.data?.data || []);
       if (emerRes.success) setEmergencyLogs(emerRes.data?.data || []);
       if (wasteRes.success) setWasteLogs(wasteRes.data?.data || []);
+      if (claimRes && claimRes.success) setActiveClaim(claimRes);
     } catch {
       // ignore
     } finally {
@@ -175,6 +186,48 @@ export default function IoTView() {
 
   return (
     <div className="space-y-4">
+      {/* 0. Alokasi Area & Registrasi Petugas (Satpam vs Kios) */}
+      {activeClaim && (
+        <div className="bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 text-white p-4 sm:p-5 rounded-3xl shadow-lg border border-indigo-900/40 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+          <div className="flex items-center gap-3.5">
+            <div className="w-12 h-12 rounded-2xl bg-indigo-600/30 text-indigo-400 flex items-center justify-center shrink-0 border border-indigo-500/30">
+              {activeClaim.duty_area === 'satpam_gerbang' ? (
+                <ShieldCheck className="w-6 h-6 text-indigo-400" />
+              ) : (
+                <Users className="w-6 h-6 text-emerald-400" />
+              )}
+            </div>
+            <div>
+              <div className="flex items-center gap-2">
+                <span className="text-[10px] font-black uppercase tracking-wider bg-indigo-500/30 text-indigo-200 px-2 py-0.5 rounded-md border border-indigo-400/30">
+                  {activeClaim.duty_area === 'satpam_gerbang' ? 'Area 1: Pos Satpam Gerbang' : 'Area 2: Meja Kios Pelayanan'}
+                </span>
+                <span className="text-xs text-slate-400 font-mono">
+                  IP: {activeClaim.device_status?.device_ip || '192.168.10.1'}
+                </span>
+              </div>
+              <h4 className="text-sm sm:text-base font-extrabold text-white mt-1">
+                Alokasi Aktif: {activeClaim.area_name}
+              </h4>
+              <p className="text-xs text-slate-300 mt-0.5">
+                Didaftarkan oleh: <strong>{activeClaim.claimed_by?.name}</strong> ({activeClaim.claimed_by?.role})
+                {activeClaim.device_status?.wifi_ssid && ` • Wi-Fi: "${activeClaim.device_status.wifi_ssid}"`}
+              </p>
+            </div>
+          </div>
+
+          {onNavigateTab && (
+            <button
+              onClick={() => onNavigateTab('wifi-setup')}
+              className="px-4 py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl text-xs font-bold shadow-md shadow-indigo-600/30 transition flex items-center gap-2 shrink-0 self-end sm:self-center"
+            >
+              <Wifi className="w-3.5 h-3.5" />
+              <span>Setup & Alihkan Area (PC)</span>
+            </button>
+          )}
+        </div>
+      )}
+
       {/* 1. Sirene Wilayah Master Control Card */}
       <div className={`p-5 rounded-3xl border-2 transition-all shadow-xl ${
         sirenActive 

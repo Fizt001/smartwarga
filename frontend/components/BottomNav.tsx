@@ -56,7 +56,13 @@ export default function BottomNav({
   // Role-based mobile nav items
   let navItems: any[] = [];
 
-  if (user?.role === 'bendahara') {
+  if (user?.role === 'satpam') {
+    navItems = [
+      { id: 'iot', label: 'Pos Gerbang', icon: Cpu },
+      { id: 'wifi-setup', label: 'Setup PC', icon: Wifi },
+      { id: 'pengaduan', label: 'Aduan', icon: MessageSquareWarning },
+    ];
+  } else if (user?.role === 'bendahara') {
     navItems = [
       { id: 'pengurus', subTab: 'ipl', label: 'Kas & Iuran', icon: CreditCard },
       { id: 'pengurus', subTab: 'kegiatan', label: 'Pencairan', icon: Calendar },
@@ -80,13 +86,12 @@ export default function BottomNav({
       { id: 'iot', label: 'IoT Live', icon: Cpu },
     ];
   } else {
-    // Warga (KK Utama) - Jika IoT Offline, tampilkan menu "Koneksi Wi-Fi IoT", jika Online sembunyikan
+    // Warga (KK Utama)
     navItems = [
       { id: 'dashboard', label: 'Beranda', icon: Home },
       { id: 'ipl', label: 'IPL Saya', icon: CreditCard },
       { id: 'layanan', label: 'Layanan', icon: FileText },
       { id: 'pengaduan', label: 'Aduan', icon: MessageSquareWarning },
-      ...(!iotOnline ? [{ id: 'wifi-setup', label: 'Wi-Fi IoT', icon: Wifi }] : []),
     ];
   }
 

@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api;
 use App\Events\PanicButtonTriggered;
 use App\Events\SireneStatusChanged;
 use App\Http\Controllers\Controller;
+use App\Models\IotClaim;
 use App\Models\IotDevice;
 use App\Models\IotEmergencyLog;
 use App\Models\PosyanduRecord;
@@ -639,6 +640,130 @@ class IoTController extends Controller
             'message' => 'Token konfigurasi perangkat IoT berhasil digenerate.',
             'data' => $tokenPayload,
             'json_string' => json_encode($tokenPayload, JSON_PRETTY_PRINT),
+        ]);
+    }
+
+    /**
+     * Get Current IoT Registration Claim & History ("Tarik-tarikan Area Satpam vs Kios")
+     * GET /api/iot/registration/claim
+     */
+    public function getRegistrationClaim(Request $request)
+    {
+        $activeClaim = IotClaim::where('is_active', true)->latest()->first();
+
+        // Jika belum ada, buat klaim default ke Satpam Gerbang
+        if (!$activeClaim) {
+            $activeClaim = IotClaim::create([
+                'duty_area' => 'satpam_gerbang',
+                'claimed_by' => $request->user()?->id,
+                'claimed_by_name' => $request->user()?->name ?? 'Petugas Satpam Gerbang',
+                'claimed_by_role' => $request->user()?->role ?? 'satpam',
+                'device_ip' => '192.168.10.1',
+                'notes' => 'Alokasi default ke Pos Satpam Gerbang Utama',
+                'is_active' => true,
+            ]);
+        }
+
+        $history = IotClaim::with('user')->latest()->limit(15)->get();
+
+        // Cek status koneksi hardware fisik
+        $now = now();
+        $gateDevice = IotDevice::where('device_type', 'gate')->first();
+        $terminalDevice = IotDevice::where('device_type', 'waste_terminal')->first();
+        $isGateOnline = $gateDevice && $gateDevice->last_ping && abs($gateDevice->last_ping->diffInSeconds($now, false)) <= 45;
+        $isTerminalOnline = $terminalDevice && $terminalDevice->last_ping && abs($terminalDevice->last_ping->diffInSeconds($now, false)) <= 45;
+
+        return response()->json([
+            'success' => true,
+            'active_claim' => $activeClaim,
+            'duty_area' => $activeClaim->duty_area,
+            'area_name' => $activeClaim->duty_area === 'satpam_gerbang' 
+                ? 'Pos Satpam Gerbang Utama (Palang & Tol Warga)' 
+                : 'Meja Kios Pelayanan Terpadu (Balai Warga)',
+            'claimed_by' => [
+                'name' => $activeClaim->claimed_by_name,
+                'role' => $activeClaim->claimed_by_role,
+                'claimed_at' => $activeClaim->created_at?->toIso8601String(),
+            ],
+            'device_status' => [
+                'is_online' => $isGateOnline || $isTerminalOnline,
+                'gate_online' => (bool) $isGateOnline,
+                'terminal_online' => (bool) $isTerminalOnline,
+                'device_ip' => $activeClaim->device_ip ?? '192.168.10.1',
+                'wifi_ssid' => $activeClaim->wifi_ssid,
+            ],
+            'history' => $history,
+        ]);
+    }
+
+    /**
+     * Claim / Reallocate IoT Device to Petugas Area ("Tarik Perangkat")
+     * POST /api/iot/registration/claim
+     * Payload: {"duty_area": "satpam_gerbang" | "kios_pelayanan", "notes": "string"}
+     */
+    public function claimRegistration(Request $request)
+    {
+        $validated = $request->validate([
+            'duty_area' => 'required|in:satpam_gerbang,kios_pelayanan',
+            'notes' => 'nullable|string|max:255',
+            'device_ip' => 'nullable|string|max:50',
+        ]);
+
+        $user = $request->user();
+        $dutyArea = $validated['duty_area'];
+        $notes = $validated['notes'] ?? ($dutyArea === 'satpam_gerbang'
+            ? "Perangkat ditarik & dialokasikan ke Pos Satpam Gerbang oleh {$user?->name}"
+            : "Perangkat ditarik & dialokasikan ke Meja Kios Pelayanan oleh {$user?->name}");
+
+        // Nonaktifkan klaim sebelumnya
+        IotClaim::where('is_active', true)->update(['is_active' => false]);
+
+        // Buat klaim baru
+        $newClaim = IotClaim::create([
+            'duty_area' => $dutyArea,
+            'claimed_by' => $user?->id,
+            'claimed_by_name' => $user?->name ?? 'Petugas SmartWarga',
+            'claimed_by_role' => $user?->role ?? 'satpam',
+            'device_ip' => $validated['device_ip'] ?? '192.168.10.1',
+            'notes' => $notes,
+            'is_active' => true,
+        ]);
+
+        $areaLabel = $dutyArea === 'satpam_gerbang' ? 'Pos Satpam Gerbang Utama' : 'Meja Kios Pelayanan Terpadu';
+
+        return response()->json([
+            'success' => true,
+            'message' => "Berhasil menarik perangkat! Kendali ESP32 sekarang resmi dialokasikan ke {$areaLabel}.",
+            'active_claim' => $newClaim,
+        ]);
+    }
+
+    /**
+     * Save Wi-Fi Configuration Info to Active Claim
+     * POST /api/iot/registration/wifi-config
+     * Payload: {"ssid": "string", "token": "nullable|string"}
+     */
+    public function saveWifiConfig(Request $request)
+    {
+        $validated = $request->validate([
+            'ssid' => 'required|string|max:100',
+            'token' => 'nullable|string|max:100',
+            'device_ip' => 'nullable|string|max:50',
+        ]);
+
+        $activeClaim = IotClaim::where('is_active', true)->latest()->first();
+        if ($activeClaim) {
+            $activeClaim->update([
+                'wifi_ssid' => $validated['ssid'],
+                'device_token' => $validated['token'] ?? $activeClaim->device_token,
+                'device_ip' => $validated['device_ip'] ?? $activeClaim->device_ip,
+            ]);
+        }
+
+        return response()->json([
+            'success' => true,
+            'message' => "Konfigurasi Wi-Fi '{$validated['ssid']}' berhasil dicatat untuk alokasi area aktif.",
+            'active_claim' => $activeClaim,
         ]);
     }
 

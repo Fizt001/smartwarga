@@ -69,21 +69,12 @@ export default function Sidebar({
     return activeTab === tabId;
   };
 
-  // 1. Navigation items for Warga (KK Utama) - Jika IoT Offline, tampilkan menu khusus Koneksi Wi-Fi IoT
+  // 1. Navigation items for Warga (KK Utama) - Bersih tanpa menu teknis IoT (Khusus Petugas)
   const residentNavItems = [
     { id: 'dashboard', label: 'Beranda Warga', icon: Home, desc: 'Ringkasan & Agenda Lingkungan' },
     { id: 'ipl', label: 'Iuran IPL Saya', icon: CreditCard, desc: 'Kalender 12 Bulan & QRIS Mandiri' },
     { id: 'layanan', label: 'Layanan Warga', icon: FileText, desc: 'Surat, UMKM, Aset & Koperasi' },
     { id: 'pengaduan', label: 'Pusat Pengaduan', icon: MessageSquareWarning, desc: 'Aspirasi & Lapor Fasilitas' },
-    ...(!iotOnline ? [
-      { 
-        id: 'wifi-setup', 
-        label: 'Koneksi Wi-Fi IoT', 
-        icon: Wifi, 
-        desc: 'Hubungkan ESP32 ke Router Wi-Fi',
-        badge: 'Offline' 
-      }
-    ] : []),
   ];
 
   // 2. Navigation items for Bendahara (Facilitator - Financial & Cash Authority)
@@ -279,6 +270,36 @@ export default function Sidebar({
       desc: 'Sirine Panic & Keamanan Wilayah', 
       isLive: true 
     },
+    { 
+      id: 'wifi-setup', 
+      label: 'Setup & Alokasi IoT (PC)', 
+      icon: Wifi, 
+      desc: 'Registrasi Wi-Fi & Alokasi Area' 
+    },
+  ];
+
+  // 5. Navigation items for Satpam (Security Officers at Main Gate)
+  const isSatpam = user?.role === 'satpam';
+  const satpamNavItems = [
+    { 
+      id: 'iot', 
+      label: 'Monitoring Pos Gerbang & IoT', 
+      icon: ShieldCheck, 
+      desc: 'Kendali Palang, Sirine & Akses Masuk',
+      isLive: true 
+    },
+    { 
+      id: 'wifi-setup', 
+      label: 'Setup & Alokasi IoT (PC)', 
+      icon: Wifi, 
+      desc: 'Registrasi Wi-Fi & Alokasi Area Pos' 
+    },
+    { 
+      id: 'pengaduan', 
+      label: 'Laporan Keamanan Warga', 
+      icon: MessageSquareWarning, 
+      desc: 'Pengaduan & Tindak Cepat Satpam' 
+    },
   ];
 
   // Determine current active navigation list and section title based on role
@@ -286,7 +307,9 @@ export default function Sidebar({
   const isSekretaris = user?.role === 'sekretaris';
   const isLeader = user?.role === 'rt' || user?.role === 'rw' || user?.role === 'super_admin';
 
-  const navItems = isBendahara 
+  const navItems = isSatpam
+    ? satpamNavItems
+    : isBendahara 
     ? bendaharaNavItems 
     : isSekretaris 
     ? sekretarisNavItems 
@@ -294,7 +317,9 @@ export default function Sidebar({
     ? leaderNavItems 
     : residentNavItems;
 
-  const sectionTitle = isBendahara
+  const sectionTitle = isSatpam
+    ? 'POS SATPAM GERBANG UTAMA'
+    : isBendahara
     ? 'TATA KELOLA BENDAHARA (FASILITATOR)'
     : isSekretaris
     ? 'ADMINISTRASI & AGENDA (SEKRETARIS)'
@@ -308,7 +333,9 @@ export default function Sidebar({
         {/* Status Profile Card: Distinct for Pengurus vs Resident */}
         {user && (
           <div className={`p-4 rounded-2xl shadow-md space-y-2.5 text-white ${
-            isBendahara
+            isSatpam
+              ? 'bg-gradient-to-tr from-slate-900 via-blue-950 to-slate-900 border border-blue-500/40'
+              : isBendahara
               ? 'bg-gradient-to-tr from-slate-900 via-amber-950 to-slate-900 border border-amber-500/30'
               : isSekretaris
               ? 'bg-gradient-to-tr from-slate-900 via-cyan-950 to-slate-900 border border-cyan-500/30'
@@ -320,11 +347,13 @@ export default function Sidebar({
               <span className="text-[10px] text-slate-300 font-bold uppercase tracking-wider flex items-center gap-1 truncate max-w-[150px]">
                 <MapPin className="w-3 h-3 text-emerald-400 shrink-0" />
                 <span className="truncate">
-                  {user.house?.full_address || (user.rt_number ? `RT ${user.rt_number} / RW 05` : 'Lingkungan RW 05')}
+                  {isSatpam ? 'Pos Gerbang Utama' : (user.house?.full_address || (user.rt_number ? `RT ${user.rt_number} / RW 05` : 'Lingkungan RW 05'))}
                 </span>
               </span>
               <span className={`text-[10px] font-black px-2 py-0.5 rounded-full uppercase tracking-wider ${
-                isBendahara
+                isSatpam
+                  ? 'bg-blue-400 text-slate-950'
+                  : isBendahara
                   ? 'bg-amber-400 text-slate-950'
                   : isSekretaris
                   ? 'bg-cyan-400 text-slate-950'
@@ -334,7 +363,9 @@ export default function Sidebar({
                   ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/40'
                   : 'bg-amber-500/20 text-amber-300 border border-amber-500/40'
               }`}>
-                {isBendahara
+                {isSatpam
+                  ? 'Satpam Gerbang'
+                  : isBendahara
                   ? 'Bendahara'
                   : isSekretaris
                   ? 'Sekretaris'

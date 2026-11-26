@@ -59,6 +59,10 @@ Route::prefix('iot')->group(function () {
     // IoT Provisioning & Online Status Check
     Route::get('/device/status', [IoTController::class, 'getDeviceStatus']);
     Route::post('/device/token', [IoTController::class, 'generateDeviceToken']);
+    // IoT Allocation & Claim Management ("Tarik-tarikan Area Satpam vs Kios")
+    Route::get('/registration/claim', [IoTController::class, 'getRegistrationClaim']);
+    Route::post('/registration/claim', [IoTController::class, 'claimRegistration']);
+    Route::post('/registration/wifi-config', [IoTController::class, 'saveWifiConfig']);
 });
 
 /*

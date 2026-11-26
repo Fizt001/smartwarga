@@ -71,7 +71,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   const isPengurus = Boolean(
-    user && ['super_admin', 'rw', 'rt', 'bendahara', 'sekretaris'].includes(user.role)
+    user && ['super_admin', 'rw', 'rt', 'bendahara', 'sekretaris', 'satpam'].includes(user.role)
   );
 
   const isApproved = Boolean(user && user.status === 'approved');

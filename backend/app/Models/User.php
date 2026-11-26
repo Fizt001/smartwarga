@@ -90,6 +90,11 @@ class User extends Authenticatable
         return $this->role === 'sekretaris';
     }
 
+    public function isSatpam(): bool
+    {
+        return $this->role === 'satpam';
+    }
+
     public function isWarga(): bool
     {
         return $this->role === 'warga';
@@ -97,7 +102,12 @@ class User extends Authenticatable
 
     public function isPengurus(): bool
     {
-        return in_array($this->role, ['super_admin', 'rw', 'rt', 'bendahara', 'sekretaris']);
+        return in_array($this->role, ['super_admin', 'rw', 'rt', 'bendahara', 'sekretaris', 'satpam']);
+    }
+
+    public function isPetugas(): bool
+    {
+        return in_array($this->role, ['super_admin', 'rw', 'rt', 'bendahara', 'sekretaris', 'satpam']);
     }
 
     public function isApproved(): bool

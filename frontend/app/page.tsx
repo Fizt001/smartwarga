@@ -127,8 +127,25 @@ export default function HomePage() {
 
   // Active View Renderer
   const renderCurrentView = () => {
-    // If user is Pengurus (Bendahara, Sekretaris, RT, RW, Super Admin), they should never see resident payment interfaces
+    // If user is Pengurus / Petugas (Bendahara, Sekretaris, RT, RW, Super Admin, Satpam)
     if (isPengurus) {
+      if (activeTab === 'wifi-setup') {
+        return (
+          <WifiSetupView
+            onNavigateTab={handleNavigate}
+            onSuccessReturn={() => handleNavigate('iot', undefined, true)}
+          />
+        );
+      }
+      if (activeTab === 'iot') {
+        return <IoTView onNavigateTab={handleNavigate} />;
+      }
+      if (user?.role === 'satpam') {
+        if (activeTab === 'pengaduan') {
+          return <PengaduanView />;
+        }
+        return <IoTView onNavigateTab={handleNavigate} />;
+      }
       if (activeTab === 'pengurus' || activeTab === 'ipl' || activeTab === 'dashboard') {
         return (
           <PengurusView
@@ -136,9 +153,6 @@ export default function HomePage() {
             onSubTabChange={(sub) => handleNavigate('pengurus', sub, true)}
           />
         );
-      }
-      if (activeTab === 'iot') {
-        return <IoTView />;
       }
     }
 

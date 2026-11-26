@@ -943,6 +943,71 @@ class IoTMonitoringTest extends TestCase
             'rfid_uid' => null,
         ]);
     }
+
+    /**
+     * White-Box 32: Petugas Satpam dapat mengklaim / menarik kendali IoT ke Pos Satpam Gerbang
+     */
+    public function test_whitebox_satpam_can_claim_iot_device_to_gate_area()
+    {
+        $satpam = User::factory()->create([
+            'role' => 'satpam',
+            'name' => 'Pak Joko Satpam',
+        ]);
+
+        $this->assertTrue($satpam->isSatpam());
+        $this->assertTrue($satpam->isPengurus());
+
+        $response = $this->actingAs($satpam)->postJson('/api/iot/registration/claim', [
+            'duty_area' => 'satpam_gerbang',
+            'notes' => 'Ditarik ke Pos Satpam Gerbang Utama',
+        ]);
+
+        $response->assertStatus(200)
+            ->assertJson([
+                'success' => true,
+            ]);
+
+        $this->assertDatabaseHas('iot_claims', [
+            'duty_area' => 'satpam_gerbang',
+            'claimed_by' => $satpam->id,
+            'is_active' => true,
+        ]);
+    }
+
+    /**
+     * White-Box 33: Petugas Kios dapat menarik kembali kendali IoT ke Meja Kios Pelayanan
+     */
+    public function test_whitebox_kios_officer_can_reclaim_iot_device_to_kiosk_area()
+    {
+        $kiosOfficer = User::factory()->create([
+            'role' => 'sekretaris',
+            'name' => 'Ibu Rina Sekretaris Kios',
+        ]);
+
+        $response = $this->actingAs($kiosOfficer)->postJson('/api/iot/registration/claim', [
+            'duty_area' => 'kios_pelayanan',
+            'notes' => 'Ditarik ke Meja Kios Pelayanan Balai Warga',
+        ]);
+
+        $response->assertStatus(200)
+            ->assertJson([
+                'success' => true,
+            ]);
+
+        $this->assertDatabaseHas('iot_claims', [
+            'duty_area' => 'kios_pelayanan',
+            'claimed_by' => $kiosOfficer->id,
+            'is_active' => true,
+        ]);
+
+        // Verifikasi endpoint getRegistrationClaim mengembalikan area kios aktif
+        $claimCheck = $this->getJson('/api/iot/registration/claim');
+        $claimCheck->assertStatus(200)
+            ->assertJson([
+                'success' => true,
+                'duty_area' => 'kios_pelayanan',
+            ]);
+    }
 }
 
 

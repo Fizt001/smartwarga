@@ -625,13 +625,20 @@ void handleRootPortal() {
 }
 
 void setupLocalWebServer() {
-  // Halaman Root Portal Mandiri
+  // Halaman Root Portal Mandiri & Aliasnya
   localServer.on("/", HTTP_GET, handleRootPortal);
+  localServer.on("/portal", HTTP_GET, handleRootPortal);
+  localServer.on("/index.html", HTTP_GET, handleRootPortal);
+  localServer.on("/setup", HTTP_GET, handleRootPortal);
 
-  // Captive Portal Detection Endpoints (Android, Apple iOS/macOS, Windows)
+  // Captive Portal Detection Endpoints (Android, Apple iOS/macOS, Windows, Samsung, Firefox)
   localServer.on("/generate_204", HTTP_GET, handleRootPortal);
+  localServer.on("/gen_204", HTTP_GET, handleRootPortal);
   localServer.on("/hotspot-detect.html", HTTP_GET, handleRootPortal);
   localServer.on("/ncsi.txt", HTTP_GET, handleRootPortal);
+  localServer.on("/connecttest.txt", HTTP_GET, handleRootPortal);
+  localServer.on("/success.txt", HTTP_GET, handleRootPortal);
+  localServer.on("/canonical.html", HTTP_GET, handleRootPortal);
 
   // REST API Endpoints
   localServer.on("/api/wifi/scan", HTTP_OPTIONS, handleCorsPreflight);
@@ -647,11 +654,13 @@ void setupLocalWebServer() {
     setCorsHeaders();
     if (localServer.method() == HTTP_OPTIONS) {
       localServer.send(204);
+      return;
+    }
+    // Jika sedang AP provisioning, sajikan langsung portal setup untuk permintaan URL apapun!
+    if (currentSystemMode == SYSTEM_MODE_AP_PROVISIONING) {
+      localServer.send_P(200, "text/html", PORTAL_HTML);
     } else {
-      // Redirect Captive Portal ke Root (Gunakan IP Statis 192.168.4.1 agar
-      // tidak Null Pointer)
-      localServer.sendHeader("Location", "http://192.168.4.1/", true);
-      localServer.send(302, "text/plain", "");
+      localServer.send(404, "text/plain", "Not Found");
     }
   });
 
@@ -674,8 +683,15 @@ void startApProvisioningMode() {
   WiFi.softAPConfig(AP_LOCAL_IP, AP_GATEWAY, AP_SUBNET);
   WiFi.softAP(AP_SSID_NAME); // OPEN HOTSPOT TANPA PASSWORD!
 
+  delay(100);
+
   // Nyalakan DNS Server untuk Captive Portal Otomatis
+  dnsServer.stop();
   dnsServer.start(DNS_PORT, "*", AP_LOCAL_IP);
+
+  // Pastikan WebServer Port 80 aktif dan terikat ke SoftAP interface
+  localServer.close();
+  localServer.begin();
 
   Serial.println(
       "\n=================================================================");

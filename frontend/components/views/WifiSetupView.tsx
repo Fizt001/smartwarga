@@ -4,33 +4,21 @@ import React, { useState, useEffect } from 'react';
 import { 
   Wifi, 
   WifiOff, 
-  Lock, 
-  Eye, 
-  EyeOff, 
   RefreshCw, 
   CheckCircle2, 
   AlertCircle, 
-  Key, 
   Copy, 
   Check, 
   ArrowRight, 
-  Cpu, 
-  Signal, 
   Radio, 
-  ShieldCheck, 
-  Sparkles,
-  Info,
-  ChevronRight,
-  ExternalLink
+  ExternalLink,
+  ShieldCheck,
+  Smartphone,
+  Globe,
+  HelpCircle,
+  Sparkles
 } from 'lucide-react';
 import { fetchApi } from '@/lib/api';
-import { useAuth } from '@/lib/auth-context';
-
-interface ScannedNetwork {
-  ssid: string;
-  rssi: number;
-  secure: boolean;
-}
 
 interface WifiSetupViewProps {
   onSuccessReturn?: () => void;
@@ -38,38 +26,16 @@ interface WifiSetupViewProps {
 }
 
 export default function WifiSetupView({ onSuccessReturn, onNavigateTab }: WifiSetupViewProps) {
-  const { user } = useAuth();
-
-  // Form State
-  const [ssid, setSsid] = useState('');
-  const [password, setPassword] = useState('');
-  const [showPassword, setShowPassword] = useState(false);
-  const [deviceToken, setDeviceToken] = useState('');
-  const [tokenJsonString, setTokenJsonString] = useState('');
-
-  // Scanning & Networks
-  const [scannedNetworks, setScannedNetworks] = useState<ScannedNetwork[]>([]);
-  const [isScanning, setIsScanning] = useState(false);
-  const [scanError, setScanError] = useState<string | null>(null);
-
-  // Token Generation State
-  const [isGeneratingToken, setIsGeneratingToken] = useState(false);
-  const [copiedToken, setCopiedToken] = useState(false);
-
-  // Connecting State
-  const [isConnecting, setIsConnecting] = useState(false);
-  const [connectStep, setConnectStep] = useState<string>('');
-  const [connectionSuccess, setConnectionSuccess] = useState(false);
-  const [connectError, setConnectError] = useState<string | null>(null);
-
-  // Realtime device status
   const [deviceOnline, setDeviceOnline] = useState<boolean | null>(null);
   const [checkingStatus, setCheckingStatus] = useState(false);
+  const [copiedSsid, setCopiedSsid] = useState(false);
+  const [showReconfig, setShowReconfig] = useState(false);
 
-  // Fetch initial token and check device status on mount
   useEffect(() => {
-    generateToken();
     checkCurrentDeviceStatus();
+    // Polling status perangkat tiap 4 detik untuk auto-detect saat online
+    const interval = setInterval(checkCurrentDeviceStatus, 4000);
+    return () => clearInterval(interval);
   }, []);
 
   const checkCurrentDeviceStatus = async () => {
@@ -86,195 +52,19 @@ export default function WifiSetupView({ onSuccessReturn, onNavigateTab }: WifiSe
     }
   };
 
-  // Generate Device Token via backend API
-  const generateToken = async () => {
-    setIsGeneratingToken(true);
-    try {
-      const res = await fetchApi('/iot/device/token', { method: 'POST' });
-      if (res && res.data) {
-        setDeviceToken(res.data.device_token);
-        setTokenJsonString(JSON.stringify(res.data, null, 2));
-      }
-    } catch (err: any) {
-      console.error('Failed to generate device token:', err);
-      // Fallback local token
-      const fallback = {
-        device_token: `SW-LOCAL-${Date.now().toString(36).toUpperCase()}`,
-        device_key: 'DEVICE_AIO_SWARGA',
-        house_code: user?.house?.house_code || 'BLOK-A1/01',
-        generated_at: new Date().toISOString(),
-      };
-      setDeviceToken(fallback.device_token);
-      setTokenJsonString(JSON.stringify(fallback, null, 2));
-    } finally {
-      setIsGeneratingToken(false);
-    }
+  const handleCopySsid = () => {
+    navigator.clipboard.writeText('SmartWarga-Setup');
+    setCopiedSsid(true);
+    setTimeout(() => setCopiedSsid(false), 2000);
   };
 
-  // Scan Wi-Fi Networks from ESP32 Local AP (192.168.4.1)
-  const scanWifiNetworks = async () => {
-    setIsScanning(true);
-    setScanError(null);
-
-    try {
-      // Abort controller with 5s timeout
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 6000);
-
-      const res = await fetch('http://192.168.4.1/api/wifi/scan', {
-        method: 'GET',
-        headers: { 'Accept': 'application/json' },
-        signal: controller.signal,
-      });
-
-      clearTimeout(timeoutId);
-
-      if (res.ok) {
-        const data = await res.json();
-        if (Array.isArray(data) && data.length > 0) {
-          setScannedNetworks(data);
-          return;
-        }
-      }
-      throw new Error('Tidak ada jaringan yang ditemukan.');
-    } catch (err: any) {
-      console.warn('ESP32 direct scan failed (maybe not connected to AP or blocked by HTTPS Mixed-Content):', err);
-      setScannedNetworks([]); // Kosongkan daftar agar tidak menampilkan data palsu/dummy
-      setScanError(
-        'Pemindaian otomatis dari situs HTTPS dibatasi oleh keamanan browser (Mixed-Content / Private Network). Silakan ketik nama Wi-Fi Anda langsung pada kotak di bawah, atau sambungkan HP ke Wi-Fi "SmartWarga-Setup" dan buka browser ke http://192.168.4.1'
-      );
-    } finally {
-      setIsScanning(false);
-    }
-  };
-
-  // Copy JSON token to clipboard
-  const handleCopyJson = () => {
-    navigator.clipboard.writeText(tokenJsonString || deviceToken);
-    setCopiedToken(true);
-    setTimeout(() => setCopiedToken(false), 2000);
-  };
-
-  // Connect ESP32 to router
-  const handleConnectDevice = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!ssid.trim()) {
-      setConnectError('Silakan pilih atau ketik SSID Wi-Fi terlebih dahulu.');
-      return;
-    }
-
-    setIsConnecting(true);
-    setConnectError(null);
-    setConnectionSuccess(false);
-
-    try {
-      setConnectStep('Mengirim konfigurasi SSID & Token JSON ke ESP32...');
-
-      // Payload JSON to ESP32
-      const payload = {
-        ssid: ssid.trim(),
-        password: password,
-        device_token: deviceToken || `SW-AUTO-${Date.now().toString(36)}`,
-      };
-
-      let sentToEsp32 = false;
-
-      try {
-        const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 6000);
-
-        const espRes = await fetch('http://192.168.4.1/api/wifi/connect', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(payload),
-          signal: controller.signal,
-        });
-        clearTimeout(timeoutId);
-        if (espRes.ok) {
-          sentToEsp32 = true;
-        }
-      } catch (espErr) {
-        console.warn('Direct POST to 192.168.4.1 timed out or blocked by CORS:', espErr);
-      }
-
-      setConnectStep('ESP32 sedang menghubungkan ke router & mendaftarkan heartbeat...');
-
-      // Polling check to backend for online status
-      let attempts = 0;
-      const maxAttempts = 12; // 12 * 2.5s = 30 seconds
-      let isNowOnline = false;
-
-      while (attempts < maxAttempts) {
-        await new Promise((resolve) => setTimeout(resolve, 2500));
-        attempts++;
-        setConnectStep(`Menunggu status online server... (${attempts}/${maxAttempts})`);
-
-        try {
-          const statusRes = await fetchApi('/iot/device/status');
-          if (statusRes && statusRes.is_online) {
-            isNowOnline = true;
-            break;
-          }
-        } catch {
-          // Keep waiting
-        }
-
-        // If not sent directly, attempt simulation heartbeat to confirm token
-        if (attempts === 5 && !sentToEsp32) {
-          try {
-            await fetchApi('/iot/heartbeat', {
-              method: 'POST',
-              body: JSON.stringify({
-                device_type: 'all',
-                device_token: payload.device_token,
-              }),
-            });
-          } catch {}
-        }
-      }
-
-      if (isNowOnline) {
-        setConnectionSuccess(true);
-        setDeviceOnline(true);
-        setConnectStep('Perangkat IoT Berhasil ONLINE!');
-        setTimeout(() => {
-          if (onSuccessReturn) {
-            onSuccessReturn();
-          } else if (onNavigateTab) {
-            onNavigateTab('dashboard');
-          }
-        }, 2500);
-      } else {
-        // Fallback: If ESP32 received it, let user know to reconnect to normal Wi-Fi
-        setConnectionSuccess(true);
-        setDeviceOnline(true);
-        setConnectStep('Konfigurasi berhasil disimpan di ESP32. Menyinkronkan...');
-        setTimeout(() => {
-          if (onSuccessReturn) {
-            onSuccessReturn();
-          } else if (onNavigateTab) {
-            onNavigateTab('dashboard');
-          }
-        }, 3000);
-      }
-    } catch (err: any) {
-      console.error('Connection process failed:', err);
-      setConnectError(err.message || 'Gagal mengirim konfigurasi ke perangkat.');
-    } finally {
-      setIsConnecting(false);
-    }
-  };
-
-  const getSignalStrength = (rssi: number) => {
-    if (rssi >= -60) return { label: 'Sangat Kuat', color: 'text-emerald-600 bg-emerald-50' };
-    if (rssi >= -70) return { label: 'Kuat', color: 'text-blue-600 bg-blue-50' };
-    if (rssi >= -80) return { label: 'Sedang', color: 'text-amber-600 bg-amber-50' };
-    return { label: 'Lemah', color: 'text-rose-600 bg-rose-50' };
+  const openPortal = () => {
+    window.open('http://192.168.4.1', '_blank');
   };
 
   return (
     <div className="max-w-3xl mx-auto space-y-6 pb-12">
-      {/* Top Banner & Status Indicator */}
+      {/* Top Banner & Status Header */}
       <div className="bg-white rounded-3xl p-6 sm:p-8 shadow-sm border border-slate-200/80 relative overflow-hidden">
         <div className="absolute top-0 right-0 w-64 h-64 bg-gradient-to-br from-emerald-100/40 to-teal-100/20 rounded-full blur-3xl -mr-20 -mt-20 pointer-events-none" />
 
@@ -295,14 +85,14 @@ export default function WifiSetupView({ onSuccessReturn, onNavigateTab }: WifiSe
 
           <div className="flex items-center gap-2">
             <div
-              className={`px-3 py-1.5 rounded-full text-xs font-bold flex items-center gap-1.5 ${
+              className={`px-3.5 py-1.5 rounded-full text-xs font-bold flex items-center gap-2 ${
                 deviceOnline
                   ? 'bg-emerald-100 text-emerald-800 border border-emerald-300'
                   : 'bg-rose-100 text-rose-800 border border-rose-300'
               }`}
             >
               <span
-                className={`w-2 h-2 rounded-full ${
+                className={`w-2.5 h-2.5 rounded-full ${
                   deviceOnline ? 'bg-emerald-600 animate-ping' : 'bg-rose-500'
                 }`}
               />
@@ -323,211 +113,171 @@ export default function WifiSetupView({ onSuccessReturn, onNavigateTab }: WifiSe
         </div>
       </div>
 
-      {/* Main Setup Card Form */}
-      <form onSubmit={handleConnectDevice} className="bg-white rounded-3xl p-6 sm:p-8 shadow-sm border border-slate-200/80 space-y-6">
-        {/* Step 1: Wi-Fi Selection & Scanner */}
-        <div className="space-y-3">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-            <label className="text-sm font-bold text-slate-900 flex items-center gap-2">
-              <Wifi className="w-4 h-4 text-emerald-600" />
-              1. Nama Jaringan Wi-Fi (SSID)
-            </label>
-            <div className="flex items-center gap-2">
-              <button
-                type="button"
-                onClick={scanWifiNetworks}
-                disabled={isScanning}
-                className="text-xs font-bold text-emerald-700 hover:text-emerald-800 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 px-3 py-1.5 rounded-xl transition flex items-center gap-1.5"
-              >
-                <RefreshCw className={`w-3.5 h-3.5 ${isScanning ? 'animate-spin' : ''}`} />
-                {isScanning ? 'Memindai...' : 'Pindai Wi-Fi Sekitar'}
-              </button>
-              <a
-                href="http://192.168.4.1"
-                target="_blank"
-                rel="noreferrer"
-                className="text-xs font-bold text-blue-700 hover:text-blue-800 bg-blue-50 hover:bg-blue-100 border border-blue-200 px-3 py-1.5 rounded-xl transition flex items-center gap-1.5"
-                title="Buka portal offline langsung di ESP32"
-              >
-                <ExternalLink className="w-3.5 h-3.5" />
-                <span>Portal 192.168.4.1</span>
-              </a>
-            </div>
+      {/* Jika Perangkat Sudah ONLINE dan pengguna tidak meminta rekonfigurasi */}
+      {deviceOnline && !showReconfig ? (
+        <div className="bg-white rounded-3xl p-6 sm:p-8 shadow-sm border border-emerald-200/80 space-y-6 text-center">
+          <div className="w-16 h-16 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center mx-auto shadow-inner">
+            <CheckCircle2 className="w-10 h-10 animate-bounce" />
+          </div>
+          <div className="space-y-1">
+            <h2 className="text-xl font-black text-slate-900">Perangkat IoT ESP32 ONLINE!</h2>
+            <p className="text-sm text-slate-500 max-w-md mx-auto">
+              Kontroler ESP32 telah terhubung ke router Wi-Fi dan siap melayani sensor RFID gerbang, kios antrean, serta tombol panik darurat.
+            </p>
           </div>
 
-          {/* SSID Direct Input */}
-          <div className="relative">
-            <input
-              type="text"
-              value={ssid}
-              onChange={(e) => setSsid(e.target.value)}
-              placeholder="Ketik nama Wi-Fi Anda (misal: Wi-Fi Rumah, Indihome, Hotspot HP)..."
-              required
-              className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-2xl text-sm font-semibold text-slate-900 focus:bg-white focus:ring-2 focus:ring-emerald-500 focus:outline-none transition shadow-inner"
-            />
-          </div>
-
-          {/* Scanned Network List if available from ESP32 */}
-          {scannedNetworks.length > 0 && (
-            <div className="space-y-1.5 bg-slate-50/70 p-3 rounded-2xl border border-slate-200/80 max-h-48 overflow-y-auto">
-              <div className="text-[11px] font-bold text-slate-400 uppercase tracking-wider px-1">
-                Pilih Dari Jaringan Terdeteksi ({scannedNetworks.length}):
-              </div>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 mt-1">
-                {scannedNetworks.map((net, idx) => {
-                  const strength = getSignalStrength(net.rssi);
-                  const isSelected = ssid === net.ssid;
-                  return (
-                    <button
-                      key={`${net.ssid}-${idx}`}
-                      type="button"
-                      onClick={() => setSsid(net.ssid)}
-                      className={`text-left p-2.5 rounded-xl border transition flex items-center justify-between ${
-                        isSelected
-                          ? 'bg-emerald-500 text-white border-emerald-600 font-bold shadow-sm'
-                          : 'bg-white hover:bg-slate-100 text-slate-800 border-slate-200'
-                      }`}
-                    >
-                      <div className="flex items-center gap-2 truncate">
-                        <Signal className={`w-4 h-4 shrink-0 ${isSelected ? 'text-white' : 'text-emerald-600'}`} />
-                        <span className="text-xs truncate font-medium">{net.ssid}</span>
-                      </div>
-                      <span className={`text-[10px] px-2 py-0.5 rounded-full font-bold uppercase shrink-0 ${
-                        isSelected ? 'bg-white/20 text-white' : strength.color
-                      }`}>
-                        {strength.label}
-                      </span>
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
-          )}
-
-          {scanError && (
-            <div className="p-3 bg-amber-50 border border-amber-200 rounded-xl text-xs text-amber-900 flex items-start gap-2.5 leading-relaxed">
-              <Info className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
-              <div>
-                <span className="font-bold">Info Pemindaian: </span>
-                {scanError}
-              </div>
-            </div>
-          )}
-        </div>
-
-        {/* Step 2: Wi-Fi Password */}
-        <div className="space-y-2">
-          <label className="text-sm font-bold text-slate-900 flex items-center gap-2">
-            <Lock className="w-4 h-4 text-emerald-600" />
-            2. Password Wi-Fi
-          </label>
-          <div className="relative">
-            <input
-              type={showPassword ? 'text' : 'password'}
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              placeholder="Masukkan password Wi-Fi..."
-              className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-2xl text-sm text-slate-900 focus:bg-white focus:ring-2 focus:ring-emerald-500 focus:outline-none transition pr-12"
-            />
+          <div className="flex flex-col sm:flex-row items-center justify-center gap-3 pt-2">
             <button
-              type="button"
-              onClick={() => setShowPassword(!showPassword)}
-              className="absolute right-3 top-1/2 -translate-y-1/2 p-1.5 text-slate-400 hover:text-slate-600 rounded-lg transition"
+              onClick={() => {
+                if (onSuccessReturn) onSuccessReturn();
+                else if (onNavigateTab) onNavigateTab('dashboard');
+              }}
+              className="w-full sm:w-auto px-6 py-3 rounded-2xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-bold text-sm shadow-md shadow-emerald-700/20 transition flex items-center justify-center gap-2"
             >
-              {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+              <span>Kembali ke Beranda</span>
+              <ArrowRight className="w-4 h-4" />
+            </button>
+            <button
+              onClick={() => setShowReconfig(true)}
+              className="w-full sm:w-auto px-5 py-3 rounded-2xl border border-slate-200 text-slate-600 hover:text-slate-900 hover:bg-slate-50 font-bold text-sm transition"
+            >
+              Ganti Jaringan Wi-Fi
             </button>
           </div>
-          <p className="text-[11px] text-slate-400">
-            Biarkan kosong jika jaringan Wi-Fi Anda tidak memakai password (Open Network).
-          </p>
         </div>
-
-        {/* Step 3: Device Token & JSON Generator */}
-        <div className="space-y-3 pt-2">
-          <div className="flex items-center justify-between">
-            <label className="text-sm font-bold text-slate-900 flex items-center gap-2">
-              <Key className="w-4 h-4 text-emerald-600" />
-              3. JSON Token Autentikasi Perangkat (Otomatis)
-            </label>
-            <div className="flex items-center gap-2">
-              <button
-                type="button"
-                onClick={generateToken}
-                disabled={isGeneratingToken}
-                className="text-xs font-bold text-slate-600 hover:text-slate-900 bg-slate-100 hover:bg-slate-200 px-2.5 py-1 rounded-xl transition flex items-center gap-1"
-              >
-                <RefreshCw className={`w-3 h-3 ${isGeneratingToken ? 'animate-spin' : ''}`} />
-                Generate Ulang
-              </button>
-              <button
-                type="button"
-                onClick={handleCopyJson}
-                className="text-xs font-bold text-emerald-700 bg-emerald-50 hover:bg-emerald-100 px-2.5 py-1 rounded-xl transition flex items-center gap-1 border border-emerald-200"
-              >
-                {copiedToken ? <Check className="w-3 h-3 text-emerald-600" /> : <Copy className="w-3 h-3" />}
-                {copiedToken ? 'Tersalin' : 'Salin JSON'}
-              </button>
+      ) : (
+        /* Alur Setup 3 Langkah Jelas Sesuai Konsep Baru */
+        <div className="bg-white rounded-3xl p-6 sm:p-8 shadow-sm border border-slate-200/80 space-y-8">
+          <div className="border-b border-slate-100 pb-4">
+            <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-emerald-700 bg-emerald-50 px-3 py-1 rounded-full w-fit mb-2">
+              <Sparkles className="w-3.5 h-3.5" />
+              Petunjuk Sambungan 3 Langkah
             </div>
+            <h2 className="text-lg sm:text-xl font-black text-slate-900">
+              Cara Menyambungkan ESP32 ke Wi-Fi Rumah
+            </h2>
+            <p className="text-xs sm:text-sm text-slate-500 mt-1">
+              Saat belum ada Wi-Fi, ESP32 memancarkan sinyal hotspot terbuka. Ikuti 3 langkah berikut dari HP Anda:
+            </p>
           </div>
 
-          <div className="bg-slate-900 text-emerald-400 p-4 rounded-2xl font-mono text-xs overflow-x-auto shadow-inner relative border border-slate-800">
-            <div className="absolute top-2 right-2 text-[10px] text-slate-500 uppercase tracking-widest font-sans font-bold">
-              Payload JSON
+          {/* STEP 1 */}
+          <div className="flex items-start gap-4">
+            <div className="w-9 h-9 rounded-2xl bg-emerald-600 text-white font-black text-base flex items-center justify-center shrink-0 shadow-md shadow-emerald-600/30">
+              1
             </div>
-            <pre className="whitespace-pre-wrap leading-relaxed">{tokenJsonString || '{\n  "device_token": "' + deviceToken + '"\n}'}</pre>
-          </div>
-          <div className="text-[11px] text-slate-500 flex items-center gap-1.5">
-            <ShieldCheck className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
-            Token ini memvalidasi keaslian perangkat hardware ESP32 dengan akun warga & server SMART-WARGA.
-          </div>
-        </div>
+            <div className="flex-1 space-y-2.5">
+              <div className="flex items-center gap-2">
+                <Smartphone className="w-4 h-4 text-emerald-600" />
+                <h3 className="text-sm font-bold text-slate-900">
+                  Hubungkan Wi-Fi HP Anda ke Hotspot ESP32
+                </h3>
+              </div>
+              <p className="text-xs text-slate-500">
+                Buka menu Wi-Fi di HP / Laptop Anda, lalu sambungkan ke hotspot pancingan terbuka:
+              </p>
 
-        {/* Status Messages */}
-        {connectError && (
-          <div className="p-4 bg-rose-50 border border-rose-200 rounded-2xl flex items-start gap-3 text-rose-800 text-xs sm:text-sm">
-            <AlertCircle className="w-5 h-5 text-rose-600 shrink-0 mt-0.5" />
-            <div>
-              <div className="font-bold">Gagal Menghubungkan</div>
-              <div className="mt-0.5">{connectError}</div>
-            </div>
-          </div>
-        )}
+              {/* SSID Info Card */}
+              <div className="p-3.5 bg-slate-50 border border-slate-200/90 rounded-2xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+                <div className="space-y-0.5">
+                  <div className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">
+                    Nama Hotspot Wi-Fi (SSID):
+                  </div>
+                  <div className="font-mono text-sm sm:text-base font-black text-emerald-700 flex items-center gap-2">
+                    <Wifi className="w-4 h-4" />
+                    SmartWarga-Setup
+                  </div>
+                </div>
 
-        {connectionSuccess && (
-          <div className="p-4 bg-emerald-50 border border-emerald-300 rounded-2xl flex items-start gap-3 text-emerald-900 text-xs sm:text-sm animate-fade-in">
-            <CheckCircle2 className="w-5 h-5 text-emerald-600 shrink-0 mt-0.5 animate-bounce" />
-            <div>
-              <div className="font-bold">Berhasil! Perangkat IoT Terhubung</div>
-              <div className="mt-0.5">
-                Konfigurasi telah aktif di ESP32 dan berstatus ONLINE. Mengalihkan ke dashboard...
+                <div className="flex items-center gap-2 w-full sm:w-auto">
+                  <span className="text-[11px] font-semibold text-slate-500 bg-white border border-slate-200 px-2.5 py-1 rounded-xl">
+                    Tanpa Password (Open)
+                  </span>
+                  <button
+                    type="button"
+                    onClick={handleCopySsid}
+                    className="text-xs font-bold text-slate-700 bg-white hover:bg-slate-100 border border-slate-200 px-3 py-1.5 rounded-xl transition flex items-center gap-1.5"
+                  >
+                    {copiedSsid ? <Check className="w-3.5 h-3.5 text-emerald-600" /> : <Copy className="w-3.5 h-3.5" />}
+                    {copiedSsid ? 'Tersalin' : 'Salin'}
+                  </button>
+                </div>
               </div>
             </div>
           </div>
-        )}
 
-        {/* Step 4: Submit Button & Loading State */}
-        <div className="pt-2">
-          <button
-            type="submit"
-            disabled={isConnecting || !ssid.trim()}
-            className="w-full py-3.5 px-6 rounded-2xl bg-gradient-to-r from-emerald-600 via-teal-600 to-emerald-700 hover:from-emerald-500 hover:to-teal-600 text-white font-bold text-sm shadow-lg shadow-emerald-700/25 disabled:opacity-50 disabled:cursor-not-allowed transition flex items-center justify-center gap-2"
-          >
-            {isConnecting ? (
-              <>
-                <RefreshCw className="w-4 h-4 animate-spin" />
-                <span>{connectStep || 'Menghubungkan Perangkat...'}</span>
-              </>
-            ) : (
-              <>
-                <Wifi className="w-4 h-4" />
-                <span>Hubungkan Perangkat ke Wi-Fi</span>
-                <ArrowRight className="w-4 h-4 ml-1" />
-              </>
-            )}
-          </button>
+          {/* STEP 2 */}
+          <div className="flex items-start gap-4">
+            <div className="w-9 h-9 rounded-2xl bg-amber-500 text-white font-black text-base flex items-center justify-center shrink-0 shadow-md shadow-amber-500/30">
+              2
+            </div>
+            <div className="flex-1 space-y-2">
+              <div className="flex items-center gap-2">
+                <AlertCircle className="w-4 h-4 text-amber-600" />
+                <h3 className="text-sm font-bold text-slate-900">
+                  Jangan Muat Ulang (Reload) Halaman Ini
+                </h3>
+              </div>
+              <div className="p-3.5 bg-amber-50/80 border border-amber-200/80 rounded-2xl text-xs text-amber-950 leading-relaxed">
+                <strong>Penting:</strong> Setelah HP tersambung ke <u>SmartWarga-Setup</u>, biarkan halaman browser ini tetap terbuka dan <strong>jangan di-refresh</strong> (karena hotspot ESP32 tidak memiliki kuota internet luar).
+              </div>
+            </div>
+          </div>
+
+          {/* STEP 3 */}
+          <div className="flex items-start gap-4">
+            <div className="w-9 h-9 rounded-2xl bg-blue-600 text-white font-black text-base flex items-center justify-center shrink-0 shadow-md shadow-blue-600/30">
+              3
+            </div>
+            <div className="flex-1 space-y-3">
+              <div className="flex items-center gap-2">
+                <Globe className="w-4 h-4 text-blue-600" />
+                <h3 className="text-sm font-bold text-slate-900">
+                  Buka Portal Setup ESP32 (192.168.4.1)
+                </h3>
+              </div>
+              <p className="text-xs text-slate-500">
+                Klik tombol di bawah untuk membuka halaman pengaturan mandiri di dalam modul ESP32:
+              </p>
+
+              {/* Big Action Button */}
+              <div className="pt-1">
+                <a
+                  href="http://192.168.4.1"
+                  target="_blank"
+                  rel="noreferrer"
+                  className="w-full py-4 px-6 rounded-2xl bg-gradient-to-r from-emerald-600 via-teal-600 to-emerald-700 hover:from-emerald-500 hover:to-teal-600 text-white font-black text-sm sm:text-base shadow-lg shadow-emerald-700/25 transition flex items-center justify-center gap-2.5 text-center"
+                >
+                  <Globe className="w-5 h-5 shrink-0" />
+                  <span>BUKA PORTAL SETUP 192.168.4.1</span>
+                  <ExternalLink className="w-4 h-4 shrink-0" />
+                </a>
+              </div>
+
+              {/* Fitur di dalam Portal Preview */}
+              <div className="bg-slate-50 border border-slate-200/80 rounded-2xl p-4 space-y-2 mt-3">
+                <div className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">
+                  Di halaman portal 192.168.4.1 nanti, Anda dapat:
+                </div>
+                <ul className="text-xs text-slate-600 space-y-1.5 list-disc list-inside">
+                  <li><strong>Memindai Wi-Fi Sekitar:</strong> Menangkap sinyal Wi-Fi rumah secara nyata via antena ESP32.</li>
+                  <li><strong>Pilih Wi-Fi & Isi Password:</strong> Masukkan kata sandi Wi-Fi rumah Anda.</li>
+                  <li><strong>Generate Token:</strong> Membuat token autentikasi otomatis untuk keamanan.</li>
+                  <li><strong>Klik Hubungkan Perangkat (OK):</strong> ESP32 langsung beralih ke Wi-Fi rumah dan online!</li>
+                </ul>
+              </div>
+
+              {/* Troubleshooting hint */}
+              <div className="p-3 bg-slate-100/70 border border-slate-200 rounded-xl text-[11px] text-slate-500 flex items-start gap-2">
+                <HelpCircle className="w-4 h-4 text-slate-400 shrink-0 mt-0.5" />
+                <span>
+                  <strong>Tips jika portal tidak terbuka:</strong> Matikan sementara <u>Data Seluler (Paket Data)</u> di HP Anda agar koneksi browser mengalir melalui Wi-Fi ESP32, lalu klik tombol portal di atas lagi atau ketik <code>http://192.168.4.1</code> di browser.
+                </span>
+              </div>
+            </div>
+          </div>
         </div>
-      </form>
+      )}
     </div>
   );
 }
-

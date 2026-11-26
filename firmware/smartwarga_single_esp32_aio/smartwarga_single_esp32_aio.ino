@@ -635,13 +635,28 @@ void setupLocalWebServer() {
   localServer.on("/index.html", HTTP_GET, handleRootPortal);
   localServer.on("/setup", HTTP_GET, handleRootPortal);
 
-  // Captive Portal Detection Endpoints (Android, Apple iOS/macOS, Windows, Samsung, Firefox)
-  localServer.on("/generate_204", HTTP_GET, handleRootPortal);
-  localServer.on("/gen_204", HTTP_GET, handleRootPortal);
+  // Auto-Validasi Android, Windows & Apple agar OS HP TIDAK MEMBLOKIR Google Chrome!
+  localServer.on("/generate_204", HTTP_GET, []() {
+    setCorsHeaders();
+    localServer.send(204);
+  });
+  localServer.on("/gen_204", HTTP_GET, []() {
+    setCorsHeaders();
+    localServer.send(204);
+  });
+  localServer.on("/ncsi.txt", HTTP_GET, []() {
+    setCorsHeaders();
+    localServer.send(200, "text/plain", "Microsoft NCSI");
+  });
+  localServer.on("/connecttest.txt", HTTP_GET, []() {
+    setCorsHeaders();
+    localServer.send(200, "text/plain", "Microsoft Connect Test");
+  });
+  localServer.on("/success.txt", HTTP_GET, []() {
+    setCorsHeaders();
+    localServer.send(200, "text/plain", "success\n");
+  });
   localServer.on("/hotspot-detect.html", HTTP_GET, handleRootPortal);
-  localServer.on("/ncsi.txt", HTTP_GET, handleRootPortal);
-  localServer.on("/connecttest.txt", HTTP_GET, handleRootPortal);
-  localServer.on("/success.txt", HTTP_GET, handleRootPortal);
   localServer.on("/canonical.html", HTTP_GET, handleRootPortal);
 
   // REST API Endpoints
@@ -657,6 +672,11 @@ void setupLocalWebServer() {
   localServer.onNotFound([]() {
     setCorsHeaders();
     if (localServer.method() == HTTP_OPTIONS) {
+      localServer.send(204);
+      return;
+    }
+    String uri = localServer.uri();
+    if (uri.indexOf("204") != -1) {
       localServer.send(204);
       return;
     }

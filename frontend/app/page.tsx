@@ -223,7 +223,7 @@ export default function HomePage() {
 
       {/* When not logged in */}
       {!user ? (
-        <main className="flex-1 flex items-center justify-center p-4">
+        <main className="flex-1 flex flex-col justify-center">
           <AuthView />
         </main>
       ) : (

@@ -1088,30 +1088,50 @@ void processKioskTap(String rfidUid) {
       StaticJsonDocument<512> resDoc;
       deserializeJson(resDoc, response);
 
-      int qNum = resDoc["queue_number"] | 1;
-      String status = resDoc["status"].as<String>();
-      String line1 = resDoc["lcd_line1"].as<String>();
-      String line2 = resDoc["lcd_line2"].as<String>();
-      String citizenName = resDoc["citizen_name"].as<String>();
-
-      displayLcdKiosk(
-          line1.length() > 0 ? line1 : ("ANTREAN #" + String(qNum)),
-          line2.length() > 0
-              ? line2
-              : (status == "active" ? "SILAKAN LAYANAN" : "HARAP MENUNGGU"));
-
-      if (status == "active") {
-        beepSuccess();
+      bool isSuccess = resDoc["success"] | true;
+      if (!isSuccess) {
+        String line1 = resDoc["lcd_line1"].as<String>();
+        String line2 = resDoc["lcd_line2"].as<String>();
+        displayLcdKiosk(line1.length() > 0 ? line1 : "KARTU ASING!",
+                        line2.length() > 0 ? line2 : "BELUM TERDAFTAR");
+        beepReject();
+        blinkAlienCardAlert(6);
         delay(2000);
       } else {
-        beepShort();
-        blinkAlienCardAlert(3);
-        delay(1500);
+        int qNum = resDoc["queue_number"] | 1;
+        String status = resDoc["status"].as<String>();
+        String line1 = resDoc["lcd_line1"].as<String>();
+        String line2 = resDoc["lcd_line2"].as<String>();
+        String citizenName = resDoc["citizen_name"].as<String>();
+
+        displayLcdKiosk(
+            line1.length() > 0 ? line1 : ("ANTREAN #" + String(qNum)),
+            line2.length() > 0
+                ? line2
+                : (status == "active" ? "SILAKAN LAYANAN" : "HARAP MENUNGGU"));
+
+        if (status == "active") {
+          beepSuccess();
+          delay(2000);
+        } else {
+          beepShort();
+          blinkAlienCardAlert(3);
+          delay(1500);
+        }
       }
     } else {
-      displayLcdKiosk("ERROR LAYANAN", "GAGAL MEMPROSES");
+      StaticJsonDocument<512> errDoc;
+      deserializeJson(errDoc, response);
+      String line1 = errDoc["lcd_line1"].as<String>();
+      String line2 = errDoc["lcd_line2"].as<String>();
+      if (line1.length() > 0) {
+        displayLcdKiosk(line1, line2.length() > 0 ? line2 : "BELUM TERDAFTAR");
+      } else {
+        displayLcdKiosk("KARTU ASING!", "BELUM TERDAFTAR");
+      }
       beepReject();
-      delay(1500);
+      blinkAlienCardAlert(6);
+      delay(2000);
     }
   }
 

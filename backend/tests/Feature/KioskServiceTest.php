@@ -98,6 +98,29 @@ class KioskServiceTest extends TestCase
             ]);
     }
 
+    public function test_unregistered_card_cannot_queue_at_kiosk()
+    {
+        $resp = $this->postJson('/api/iot/pelayanan/tap', [
+            'rfid_uid' => 'UID_UNKNOWN_123',
+            'device_id' => 'AIO_KIOSK_PIN4'
+        ]);
+
+        $resp->assertStatus(422)
+            ->assertJson([
+                'success' => false,
+                'is_registered' => false,
+                'lcd_line1' => 'KARTU ASING!',
+                'lcd_line2' => 'BELUM TERDAFTAR',
+            ]);
+
+        // Pastikan tidak ada antrean yang dibuat
+        $this->assertEquals(0, KioskServiceQueue::count());
+
+        // Namun tetap tersimpan di latest_ktp_scan untuk pendaftaran kartu baru
+        $this->assertEquals('UID_UNKNOWN_123', Cache::get('latest_ktp_scan')['rfid_uid']);
+        $this->assertFalse(Cache::get('latest_ktp_scan')['already_registered']);
+    }
+
     public function test_gate_logs_visibility_for_resident_and_admin()
     {
         $resident = User::factory()->create(['role' => 'warga', 'rfid_uid' => 'UID_WARGA']);

@@ -32,22 +32,36 @@ class KioskServiceController extends Controller
 
         // 1. Cari data warga pemilik kartu
         $user = User::with('house')->where('rfid_uid', $rfidUid)->first();
-        $citizenName = $user ? $user->name : ("Warga Baru (" . substr($rfidUid, -4) . ")");
-        $userId = $user?->id;
 
-        // 2. Simpan ke Cache latest_ktp_scan agar form registrasi/pairing e-KTP di web juga menangkapnya
+        // 2. Simpan ke Cache latest_ktp_scan agar form registrasi/pairing e-KTP di web tetap menangkap UID-nya
         Cache::put('latest_ktp_scan', [
             'rfid_uid' => $rfidUid,
             'device_id' => $deviceId,
             'scanned_at' => now()->toIso8601String(),
             'timestamp' => now()->timestamp,
             'already_registered' => (bool) $user,
-            'owner_id' => $userId,
+            'owner_id' => $user?->id,
             'owner_name' => $user?->name,
             'owner_house' => $user?->house?->house_code,
         ], 120);
 
-        // 3. Cek apakah kartu ini sudah ada antrean aktif atau menunggu hari ini
+        // 3. JIKA KARTU TIDAK TERDAFTAR / TANPA IDENTITAS: TOLAK ANTREAN!
+        // Hanya kartu e-KTP warga yang sudah terdaftar di sistem yang boleh mengambil antrean pelayanan.
+        if (!$user) {
+            return response()->json([
+                'success' => false,
+                'is_registered' => false,
+                'rfid_uid' => $rfidUid,
+                'message' => "Kartu fisik [{$rfidUid}] tidak terdaftar di sistem SMART-WARGA. Harap daftarkan kartu/e-KTP Anda terlebih dahulu ke Petugas Balai Warga.",
+                'lcd_line1' => 'KARTU ASING!',
+                'lcd_line2' => 'BELUM TERDAFTAR',
+            ], 422);
+        }
+
+        $citizenName = $user->name;
+        $userId = $user->id;
+
+        // 4. Cek apakah kartu ini sudah ada antrean aktif atau menunggu hari ini
         $existingQueue = KioskServiceQueue::whereDate('queue_date', $today)
             ->where('rfid_uid', $rfidUid)
             ->whereIn('status', ['active', 'waiting'])

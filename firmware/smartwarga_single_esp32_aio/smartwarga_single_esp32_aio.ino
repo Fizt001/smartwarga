@@ -85,11 +85,12 @@ String apiBaseUrl = DEFAULT_API_BASE_URL;
 #define PIN_I2C_SDA 21
 #define PIN_I2C_SCL 22
 
-// ALAMAT I2C DUAL LCD 16x2 (Fallback default jika scanner mendeteksi):
-// LCD 1 (Gerbang Masuk): 0x27 (Default tanpa solder jumper)
+// ALAMAT I2C DUAL LCD 16x2:
+// LCD 1 (Khusus RFID 1 / Gerbang Masuk): 0x27 (Default tanpa jumper solder)
 #define LCD_GATE_ADDR 0x27
-// LCD 2 (Kios Pelayanan): 0x26 (Solder pad A0 di backpack I2C)
-// Catatan: Jika modul tipe PCF8574AT, alamatnya 0x3F (default) & 0x3E (jumper A0)
+// LCD 2 (Khusus RFID 2 / Kios Pelayanan & Antrean): 0x26 (Solder pad A0 di
+// modul backpack I2C) Catatan: Jika modul Anda bertipe PCF8574AT, gunakan 0x3F
+// (default) & 0x3E (jumper A0)
 #define LCD_KIOSK_ADDR 0x26
 
 // TIMBANGAN DIGITAL HX711 (Bank Sampah - Opsional)
@@ -109,10 +110,10 @@ WebServer localServer(80);
 MFRC522 *rfid1 = nullptr; // Reader 1 di Pin 5 (Gerbang)
 MFRC522 *rfid2 = nullptr; // Reader 2 di Pin 4 (Kios)
 Servo gateServo;
-LiquidCrystal_I2C *lcdGate = nullptr;  // Pointer LCD 1 khusus RFID 1 (Gerbang Tol)
-LiquidCrystal_I2C *lcdKiosk = nullptr; // Pointer LCD 2 khusus RFID 2 (Kios Pelayanan & Antrean)
-uint8_t detectedLcdGateAddr = 0;
-uint8_t detectedLcdKioskAddr = 0;
+LiquidCrystal_I2C lcdGate(LCD_GATE_ADDR, 16,
+                          2); // LCD 1 khusus RFID 1 (Gerbang Tol)
+LiquidCrystal_I2C lcdKiosk(LCD_KIOSK_ADDR, 16,
+                           2); // LCD 2 khusus RFID 2 (Kios Pelayanan & Antrean)
 
 enum SystemMode {
   SYSTEM_MODE_AP_PROVISIONING, // Mode Open Hotspot Pancingan untuk Setup Wi-Fi
@@ -240,25 +241,21 @@ void soundAlarmSirene(int cycles) {
 void displayLcdGate(String line1, String line2) {
   Serial.printf("[LCD 1 - GERBANG] %-16s | %-16s\n", line1.c_str(),
                 line2.c_str());
-  if (lcdGate != nullptr) {
-    lcdGate->clear();
-    lcdGate->setCursor(0, 0);
-    lcdGate->print(line1.substring(0, 16));
-    lcdGate->setCursor(0, 1);
-    lcdGate->print(line2.substring(0, 16));
-  }
+  lcdGate.clear();
+  lcdGate.setCursor(0, 0);
+  lcdGate.print(line1.substring(0, 16));
+  lcdGate.setCursor(0, 1);
+  lcdGate.print(line2.substring(0, 16));
 }
 
 void displayLcdKiosk(String line1, String line2) {
   Serial.printf("[LCD 2 - KIOSK  ] %-16s | %-16s\n", line1.c_str(),
                 line2.c_str());
-  if (lcdKiosk != nullptr) {
-    lcdKiosk->clear();
-    lcdKiosk->setCursor(0, 0);
-    lcdKiosk->print(line1.substring(0, 16));
-    lcdKiosk->setCursor(0, 1);
-    lcdKiosk->print(line2.substring(0, 16));
-  }
+  lcdKiosk.clear();
+  lcdKiosk.setCursor(0, 0);
+  lcdKiosk.print(line1.substring(0, 16));
+  lcdKiosk.setCursor(0, 1);
+  lcdKiosk.print(line2.substring(0, 16));
 }
 
 // Menampilkan pesan ke kedua layar LCD secara bersamaan
@@ -269,7 +266,7 @@ void displayLcd(String line1, String line2) {
 
 void updateIdleLcdGate() {
   if (currentSystemMode == SYSTEM_MODE_AP_PROVISIONING) {
-    displayLcdGate("GERBANG (SETUP)", "SmartWarga-Setup");
+    displayLcdGate("SmartWarga-Setup", "192.168.4.1");
     return;
   }
 
@@ -285,7 +282,7 @@ void updateIdleLcdGate() {
 
 void updateIdleLcdKiosk() {
   if (currentSystemMode == SYSTEM_MODE_AP_PROVISIONING) {
-    displayLcdKiosk("SETUP WI-FI HP", "192.168.4.1");
+    displayLcdKiosk("SmartWarga-Setup", "192.168.4.1");
     return;
   }
 
@@ -318,82 +315,28 @@ void initLcdHardware() {
   Wire.begin(PIN_I2C_SDA, PIN_I2C_SCL);
   Wire.setClock(100000);
 
-  Serial.println("\n--------------------------------------------------");
-  Serial.println("🔍 [I2C BUS SCANNER] Memindai modul LCD I2C...");
-  uint8_t detectedAddrs[8];
-  int foundCount = 0;
+  Serial.printf("➡️ Menginisialisasi LCD 1 (Gerbang Tol) di alamat 0x%02X...\n",
+                LCD_GATE_ADDR);
+  lcdGate.init();
+  lcdGate.backlight();
+  lcdGate.clear();
+  lcdGate.setCursor(0, 0);
+  lcdGate.print("LCD 1: GERBANG");
+  lcdGate.setCursor(0, 1);
+  lcdGate.print("MEMUAT SISTEM...");
 
-  for (uint8_t addr = 0x08; addr < 0x78; addr++) {
-    Wire.beginTransmission(addr);
-    byte error = Wire.endTransmission();
-    if (error == 0) {
-      Serial.printf("   📍 Perangkat I2C Terdeteksi di Alamat: 0x%02X\n", addr);
-      if (foundCount < 8) {
-        detectedAddrs[foundCount++] = addr;
-      }
-    }
-  }
+  Serial.printf(
+      "➡️ Menginisialisasi LCD 2 (Kios Pelayanan) di alamat 0x%02X...\n",
+      LCD_KIOSK_ADDR);
+  lcdKiosk.init();
+  lcdKiosk.backlight();
+  lcdKiosk.clear();
+  lcdKiosk.setCursor(0, 0);
+  lcdKiosk.print("LCD 2: KIOSK");
+  lcdKiosk.setCursor(0, 1);
+  lcdKiosk.print("MEMUAT SISTEM...");
 
-  Serial.printf("📊 Total perangkat I2C ditemukan: %d modul\n", foundCount);
-
-  if (foundCount == 0) {
-    Serial.println("❌ PERINGATAN: Tidak ada modul I2C yang terdeteksi!");
-    Serial.println("   -> Periksa kabel VCC (ke VIN 5V), GND, SDA (GPIO 21), dan SCL (GPIO 22).");
-  } else if (foundCount == 1) {
-    detectedLcdGateAddr = detectedAddrs[0];
-    Serial.printf("⚠️ HANYA 1 MODUL LCD TERDETEKSI di alamat 0x%02X!\n", detectedLcdGateAddr);
-    Serial.println("   -> LCD ke-2 belum aktif / terdeteksi. KEMUNGKINAN PENYEBAB:");
-    Serial.println("      1. Kedua LCD masih memiliki alamat DEFAULT yang sama (0x27).");
-    Serial.println("         Keduanya berebut bus I2C. Solder/sambung pad jumper A0 di belakang LCD ke-2!");
-    Serial.println("      2. Kabel SDA / SCL / VCC / GND pada LCD ke-2 longgar atau lepas.");
-    Serial.println("      3. Jumper cap hitam (backlight) di belakang LCD ke-2 belum terpasang.");
-    Serial.println("      4. Potensiometer kontras (trimpot biru) di belakang LCD ke-2 perlu diputar obeng.");
-
-    lcdGate = new LiquidCrystal_I2C(detectedLcdGateAddr, 16, 2);
-    lcdGate->init();
-    lcdGate->backlight();
-    lcdGate->clear();
-    lcdGate->setCursor(0, 0);
-    lcdGate->print("LCD 1: GERBANG");
-    lcdGate->setCursor(0, 1);
-    lcdGate->print("MEMUAT SISTEM...");
-  } else {
-    // 2 atau lebih perangkat terdeteksi
-    // Alamat default (biasanya 0x27 atau 0x3F) digunakan untuk Gerbang
-    // Alamat hasil jumper (biasanya 0x26 atau 0x3E) digunakan untuk Kiosk
-    uint8_t a = detectedAddrs[0];
-    uint8_t b = detectedAddrs[1];
-    if (a > b) {
-      detectedLcdGateAddr = a;   // misal 0x27
-      detectedLcdKioskAddr = b;  // misal 0x26
-    } else {
-      detectedLcdGateAddr = b;   // misal 0x27
-      detectedLcdKioskAddr = a;  // misal 0x26
-    }
-
-    Serial.printf("✅ DUAL LCD BERHASIL DIALOKASIKAN SECARA OTOMATIS:\n");
-    Serial.printf("   - LCD 1 (Gerbang Tol  - RFID 1 Pin 5) -> Alamat 0x%02X\n", detectedLcdGateAddr);
-    Serial.printf("   - LCD 2 (Kios Antrean - RFID 2 Pin 4) -> Alamat 0x%02X\n", detectedLcdKioskAddr);
-    Serial.println("--------------------------------------------------\n");
-
-    lcdGate = new LiquidCrystal_I2C(detectedLcdGateAddr, 16, 2);
-    lcdGate->init();
-    lcdGate->backlight();
-    lcdGate->clear();
-    lcdGate->setCursor(0, 0);
-    lcdGate->print("LCD 1: GERBANG");
-    lcdGate->setCursor(0, 1);
-    lcdGate->print("MEMUAT SISTEM...");
-
-    lcdKiosk = new LiquidCrystal_I2C(detectedLcdKioskAddr, 16, 2);
-    lcdKiosk->init();
-    lcdKiosk->backlight();
-    lcdKiosk->clear();
-    lcdKiosk->setCursor(0, 0);
-    lcdKiosk->print("LCD 2: KIOSK");
-    lcdKiosk->setCursor(0, 1);
-    lcdKiosk->print("MEMUAT SISTEM...");
-  }
+  Serial.println("✅ Dual Layar LCD 16x2 I2C Berhasil Dinyalakan!");
 }
 
 // ==================================================================================================
@@ -746,7 +689,7 @@ void startApProvisioningMode() {
   Serial.println(
       "=================================================================\n");
 
-  displayLcd("HOTSPOT TERBUKA", "SmartWarga-Setup");
+  displayLcd("SmartWarga-Setup", "192.168.4.1");
   digitalWrite(PIN_LED_STATUS, LOW);
 }
 
@@ -1307,7 +1250,7 @@ void loop() {
                        "Hotspot Terbuka (SmartWarga-Setup)...");
         wifiDisconnectStartTime = 0;
         startApProvisioningMode();
-        displayLcd("WIFI TERPUTUS!", "SmartWarga-Setup");
+        displayLcd("SmartWarga-Setup", "192.168.4.1");
         beepReject();
       }
     } else {

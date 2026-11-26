@@ -619,13 +619,29 @@ window.onload=function(){generateToken();scanWifi();};
 </body>
 </html>)rawliteral";
 
-// GET / -> Aplikasi Web Captive Portal Mandiri ESP32
+// GET / -> Aplikasi Web Captive Portal Mandiri ESP32 (Chunked Transfer - Aman untuk Chrome Android)
 void handleRootPortal() {
+  Serial.printf("📥 [HTTP GET /] Permintaan portal dari IP: %s\n",
+                localServer.client().remoteIP().toString().c_str());
   setCorsHeaders();
-  localServer.sendHeader("Cache-Control", "no-cache, no-store, must-revalidate");
-  localServer.setContentLength(strlen_P(PORTAL_HTML));
-  localServer.send(200, "text/html", "");
-  localServer.sendContent_P(PORTAL_HTML);
+  localServer.chunkResponseBegin("text/html");
+
+  const char *ptr = PORTAL_HTML;
+  size_t total = strlen_P(PORTAL_HTML);
+  size_t offset = 0;
+  char buf[1024];
+
+  while (offset < total) {
+    size_t chunk = (total - offset > sizeof(buf) - 1) ? (sizeof(buf) - 1)
+                                                      : (total - offset);
+    memcpy_P(buf, ptr + offset, chunk);
+    buf[chunk] = '\0';
+    localServer.chunkWrite(buf, chunk);
+    offset += chunk;
+  }
+
+  localServer.chunkResponseEnd();
+  Serial.println("✅ [HTTP GET /] Pengiriman portal ke browser selesai!");
 }
 
 void setupLocalWebServer() {
@@ -682,10 +698,7 @@ void setupLocalWebServer() {
     }
     // Jika sedang AP provisioning, sajikan langsung portal setup untuk permintaan URL apapun!
     if (currentSystemMode == SYSTEM_MODE_AP_PROVISIONING) {
-      localServer.sendHeader("Cache-Control", "no-cache, no-store, must-revalidate");
-      localServer.setContentLength(strlen_P(PORTAL_HTML));
-      localServer.send(200, "text/html", "");
-      localServer.sendContent_P(PORTAL_HTML);
+      handleRootPortal();
     } else {
       localServer.send(404, "text/plain", "Not Found");
     }

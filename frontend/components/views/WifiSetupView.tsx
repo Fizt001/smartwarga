@@ -251,11 +251,22 @@ export default function WifiSetupView({ onSuccessReturn, onNavigateTab }: WifiSe
               </div>
 
               {/* Troubleshooting hint */}
-              <div className="p-3 bg-slate-100/70 border border-slate-200 rounded-xl text-[11px] text-slate-500 flex items-start gap-2">
-                <HelpCircle className="w-4 h-4 text-slate-400 shrink-0 mt-0.5" />
-                <span>
-                  <strong>Tips jika portal tidak terbuka:</strong> Matikan sementara <u>Data Seluler (Paket Data)</u> di HP Anda agar koneksi browser mengalir melalui Wi-Fi ESP32, lalu klik tombol portal di atas lagi atau ketik <code>http://192.168.4.1</code> di browser.
-                </span>
+              <div className="p-4 bg-amber-50/90 border border-amber-200/90 rounded-2xl text-xs text-amber-950 space-y-2 mt-3">
+                <div className="font-bold flex items-center gap-1.5 text-amber-900">
+                  <AlertCircle className="w-4 h-4 text-amber-600 shrink-0" />
+                  <span>Jika di HP Muncul "Tidak Terhubung" atau Gagal Membuka:</span>
+                </div>
+                <ul className="space-y-1.5 list-disc list-inside text-amber-900 pl-1 leading-relaxed">
+                  <li>
+                    <strong>Cek Bilah Alamat (URL) di HP:</strong> Browser HP sering otomatis menambahkan <em>https</em>. Jika URL menjadi <code>https://192.168.4.1</code>, <strong>hapus huruf 's'</strong> agar menjadi <code>http://192.168.4.1</code> lalu tekan Enter.
+                  </li>
+                  <li>
+                    <strong>Pilih "Tetap Terhubung":</strong> Jika di HP muncul notifikasi <em>"Wi-Fi ini tidak ada internet. Tetap terhubung?"</em>, ketuk dan pilih <strong>"Ya / Tetap Terhubung"</strong> agar HP tidak memblokir akses ke ESP32.
+                  </li>
+                  <li>
+                    <strong>Alternatif Tab Baru:</strong> Buka tab baru di browser HP lalu ketik langsung: <code>http://192.168.4.1</code>
+                  </li>
+                </ul>
               </div>
             </div>
           </div>

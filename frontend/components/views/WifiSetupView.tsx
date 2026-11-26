@@ -19,7 +19,8 @@ import {
   HelpCircle,
   Sparkles,
   KeyRound,
-  Send
+  Send,
+  Trash2
 } from 'lucide-react';
 import { fetchApi } from '@/lib/api';
 
@@ -281,6 +282,26 @@ export default function WifiSetupView({ onSuccessReturn, onNavigateTab }: WifiSe
     } finally {
       setIsConnecting(false);
     }
+  };
+
+  const handleResetOldWifi = async () => {
+    if (!confirm('Apakah Anda ingin menghapus dan melupakan Wi-Fi lama (termasuk hotspot HP lama) yang tersimpan di ESP32?')) {
+      return;
+    }
+    try {
+      await fetch('http://192.168.10.1/api/wifi/reset', { method: 'POST' });
+    } catch {
+      // Fallback iframe form POST
+      try {
+        const form = document.createElement('form');
+        form.method = 'POST';
+        form.action = 'http://192.168.10.1/api/wifi/reset';
+        document.body.appendChild(form);
+        form.submit();
+        setTimeout(() => form.remove(), 500);
+      } catch {}
+    }
+    alert('Kredensial Wi-Fi lama telah direset di ESP32. Antena sekarang tenang dan siap untuk Wi-Fi baru.');
   };
 
   return (
@@ -569,9 +590,17 @@ export default function WifiSetupView({ onSuccessReturn, onNavigateTab }: WifiSe
             </div>
           </form>
 
-          {/* Opsi Tambahan / Alternatif Buka Portal Langsung */}
+          {/* Opsi Tambahan / Alternatif Buka Portal Langsung & Reset */}
           <div className="pt-4 border-t border-slate-100 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-slate-500">
-            <span>Pilihan lain (opsional): Buka halaman portal mandiri ESP32:</span>
+            <button
+              type="button"
+              onClick={handleResetOldWifi}
+              className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl font-bold text-rose-700 bg-rose-50 hover:bg-rose-100 border border-rose-200 transition"
+            >
+              <Trash2 className="w-3.5 h-3.5" />
+              <span>Lupakan / Reset Wi-Fi Lama</span>
+            </button>
+
             <a
               href="http://192.168.10.1/login"
               target="_blank"
@@ -579,7 +608,7 @@ export default function WifiSetupView({ onSuccessReturn, onNavigateTab }: WifiSe
               className="inline-flex items-center gap-1.5 font-bold text-emerald-700 hover:text-emerald-800 hover:underline"
             >
               <Globe className="w-3.5 h-3.5" />
-              <span>Buka http://192.168.10.1/login</span>
+              <span>Buka Portal (192.168.10.1/login)</span>
               <ExternalLink className="w-3 h-3" />
             </a>
           </div>

@@ -395,6 +395,13 @@ void resetCredentialsNVS() {
   startApProvisioningMode();
 }
 
+void handleApiWifiReset() {
+  setCorsHeaders();
+  resetCredentialsNVS();
+  localServer.send(200, "application/json",
+                   "{\"success\":true,\"message\":\"Kredensial Wi-Fi lama berhasil dihapus\"}");
+}
+
 // ==================================================================================================
 // 7. APLIKASI WEB CAPTIVE PORTAL & REST API ESP32 (PORT 80)
 // ==================================================================================================
@@ -668,6 +675,10 @@ void setupLocalWebServer() {
   localServer.on("/api/wifi/connect", HTTP_OPTIONS, handleCorsPreflight);
   localServer.on("/api/wifi/connect", HTTP_POST, handleApiWifiConnect);
 
+  localServer.on("/api/wifi/reset", HTTP_OPTIONS, handleCorsPreflight);
+  localServer.on("/api/wifi/reset", HTTP_POST, handleApiWifiReset);
+  localServer.on("/api/wifi/reset", HTTP_GET, handleApiWifiReset);
+
   localServer.on("/api/status", HTTP_OPTIONS, handleCorsPreflight);
   localServer.on("/api/status", HTTP_GET, handleApiStatus);
 
@@ -702,16 +713,18 @@ void setupLocalWebServer() {
 void startApProvisioningMode() {
   currentSystemMode = SYSTEM_MODE_AP_PROVISIONING;
   
-  // Hentikan koneksi Station agar tidak ada proses reconnect latar belakang yang mengganggu sinyal AP
-  WiFi.disconnect(true, false);
-  delay(50);
+  // Hentikan koneksi Station dan HAPUS kredensial lama dari radio agar tidak ada proses reconnect latar belakang
+  WiFi.setAutoReconnect(false);
+  WiFi.disconnect(true, true); // true, true = radio off & hapus memori STA radio lama
+  delay(100);
 
-  // Nyalakan PURE OPEN HOTSPOT (WIFI_AP) agar stabil 100% dan tidak putus-putus
+  // Nyalakan PURE OPEN HOTSPOT (WIFI_AP) dengan TX power 17dBm (bebas brownout saat HP konek)
   WiFi.mode(WIFI_AP);
+  WiFi.setTxPower(WIFI_POWER_17dBm);
   WiFi.softAPConfig(AP_LOCAL_IP, AP_GATEWAY, AP_SUBNET);
-  WiFi.softAP(AP_SSID_NAME); // OPEN HOTSPOT TANPA PASSWORD!
+  WiFi.softAP(AP_SSID_NAME, NULL, 1, 0, 4); // Channel 1, open, max 4 klien
 
-  delay(50);
+  delay(100);
 
   // Nyalakan DNS Server untuk Captive Portal Otomatis
   dnsServer.stop();
@@ -784,15 +797,15 @@ bool connectToSavedWifi(int timeoutSeconds) {
     updateIdleLcd();
     return true;
   } else {
-    Serial.println("\n❌ [WiFi] Gagal terhubung ke router. Menyalakan kembali "
-                   "Open Hotspot Setup yang stabil.");
+    Serial.println("\n❌ [WiFi] Gagal terhubung ke SSID lama. Menghentikan percobaan ke SSID lama agar AP tenang.");
     digitalWrite(PIN_LED_STATUS, LOW);
     displayLcd("GAGAL KONEK WIFI", "KEMBALI KE SETUP");
     beepReject();
     delay(1200);
 
-    // Hentikan percobaan koneksi STA agar tidak mengganggu SoftAP
-    WiFi.disconnect(true, false);
+    // Kosongkan savedSsid di memori RAM agar ESP tidak terus-menerus mencoba menyambung ke SSID Samsung lama!
+    savedSsid = "";
+
     startApProvisioningMode();
     return false;
   }
@@ -1255,7 +1268,8 @@ void setup() {
 
   // Siapkan network stack Wi-Fi sebelum WebServer dijalankan
   WiFi.persistent(false);
-  WiFi.mode(WIFI_AP_STA);
+  WiFi.setAutoReconnect(false);
+  WiFi.mode(WIFI_AP);
 
   // Inisialisasi WebServer & Captive Portal
   setupLocalWebServer();

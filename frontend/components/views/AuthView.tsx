@@ -21,17 +21,16 @@ import {
   X,
   ChevronRight,
   ChevronDown,
-  Building2,
   Zap,
   ExternalLink,
   MessageCircle,
-  Sparkles,
-  Wifi
+  Check
 } from 'lucide-react';
 
-function WebPalugadaLogo({ gradId = 'palugadaGrad', size = 40 }: { gradId?: string; size?: number }) {
+function WebPalugadaLogo({ idSuffix = '1', size = 36 }: { idSuffix?: string; size?: number }) {
+  const gradId = `palugadaLogoGrad_${idSuffix}`;
   return (
-    <svg width={size} height={size} viewBox="0 0 36 36" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+    <svg width={size} height={size} viewBox="0 0 36 36" fill="none" xmlns="http://www.w3.org/2000/svg" className="shrink-0">
       <defs>
         <linearGradient id={gradId} x1="0" y1="0" x2="36" y2="36" gradientUnits="userSpaceOnUse">
           <stop offset="0%" stopColor="#0ea5e9" />
@@ -40,17 +39,14 @@ function WebPalugadaLogo({ gradId = 'palugadaGrad', size = 40 }: { gradId?: stri
       </defs>
       <rect width="36" height="36" rx="9" fill={`url(#${gradId})`} />
       <rect x="0.5" y="0.5" width="35" height="35" rx="8.5" stroke="rgba(255,255,255,0.35)" strokeWidth="1" />
-      {/* Elemen Browser Window */}
       <rect x="4.5" y="7" width="20" height="16" rx="2.5" fill="rgba(255,255,255,0.18)" stroke="#ffffff" strokeWidth="1.3" />
       <line x1="4.5" y1="11.5" x2="24.5" y2="11.5" stroke="#ffffff" strokeWidth="1" strokeOpacity="0.8" />
       <circle cx="7" cy="9.25" r="0.8" fill="#ffffff" />
       <circle cx="9.5" cy="9.25" r="0.8" fill="#ffffff" fillOpacity="0.8" />
       <circle cx="12" cy="9.25" r="0.8" fill="#ffffff" fillOpacity="0.8" />
-      {/* Simbol Code </> */}
       <path d="M8 15.5l-1.8 1.5 1.8 1.5" stroke="#ffffff" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round" />
       <path d="M12 14.5l-1.5 4" stroke="#ffffff" strokeWidth="1.1" strokeLinecap="round" />
       <path d="M14 15.5l1.8 1.5-1.8 1.5" stroke="#ffffff" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round" />
-      {/* Elemen Palu Konstruksi */}
       <path d="M15 28L23.5 19.5" stroke="#ffffff" strokeWidth="2.8" strokeLinecap="round" />
       <path d="M16 27L18.5 24.5" stroke="#0284c7" strokeWidth="1.6" strokeLinecap="round" />
       <g transform="translate(24, 19) rotate(-45)">
@@ -68,7 +64,7 @@ const platformFeatures = [
     icon: ShieldCheck,
     tag: 'Hardware IoT',
     tagColor: 'bg-sky-50 text-sky-700 border-sky-200',
-    iconBg: 'bg-gradient-to-br from-[#0ea5e9] to-[#10b981] text-white',
+    iconColor: 'bg-gradient-to-br from-[#0ea5e9] to-[#10b981] text-white',
     title: 'Keamanan Gerbang & Pos Satpam',
     desc: 'Otomasi palang servo gerbang via RFID e-KTP, absensi ronda malam satpam, dan log akses kendaraan real-time.',
   },
@@ -76,7 +72,7 @@ const platformFeatures = [
     icon: CreditCard,
     tag: 'Transparansi',
     tagColor: 'bg-emerald-50 text-emerald-700 border-emerald-200',
-    iconBg: 'bg-gradient-to-br from-emerald-500 to-teal-600 text-white',
+    iconColor: 'bg-gradient-to-br from-emerald-500 to-teal-500 text-white',
     title: 'Iuran Warga (IPL) & Kas Terbuka',
     desc: 'Kalender tagihan IPL 12 bulan, pembayaran QRIS/Dompet Warga, verifikasi Bendahara, serta rekap kas RT ke RW terbuka.',
   },
@@ -84,7 +80,7 @@ const platformFeatures = [
     icon: FileText,
     tag: 'Persuratan',
     tagColor: 'bg-violet-50 text-violet-700 border-violet-200',
-    iconBg: 'bg-gradient-to-br from-violet-500 to-indigo-600 text-white',
+    iconColor: 'bg-gradient-to-br from-violet-500 to-indigo-500 text-white',
     title: 'Surat Pengantar Digital & PDF',
     desc: 'Pengajuan surat pengantar RT/RW secara online dengan alur validasi berjenjang RT & RW hingga dokumen siap cetak.',
   },
@@ -92,7 +88,7 @@ const platformFeatures = [
     icon: Volume2,
     tag: 'Darurat 24 Jam',
     tagColor: 'bg-rose-50 text-rose-700 border-rose-200',
-    iconBg: 'bg-gradient-to-br from-rose-500 to-red-600 text-white',
+    iconColor: 'bg-gradient-to-br from-rose-500 to-red-500 text-white',
     title: 'Tombol Panik & Sirine Terpadu',
     desc: 'Peringatan bahaya satu sentuhan yang langsung membunyikan sirine fisik pos gerbang dan mengirim alert ke petugas.',
   },
@@ -100,7 +96,7 @@ const platformFeatures = [
     icon: Recycle,
     tag: 'Kios Mandiri',
     tagColor: 'bg-amber-50 text-amber-700 border-amber-200',
-    iconBg: 'bg-gradient-to-br from-amber-500 to-orange-500 text-white',
+    iconColor: 'bg-gradient-to-br from-amber-500 to-orange-500 text-white',
     title: 'Kios Pelayanan & Bank Sampah',
     desc: 'Anjungan mandiri di Balai Warga untuk antrean pelayanan e-KTP terdaftar, pairing kartu baru, dan setor bank sampah.',
   },
@@ -108,20 +104,20 @@ const platformFeatures = [
     icon: Users,
     tag: 'Sensus RW 05',
     tagColor: 'bg-cyan-50 text-cyan-700 border-cyan-200',
-    iconBg: 'bg-gradient-to-br from-cyan-500 to-sky-600 text-white',
+    iconColor: 'bg-gradient-to-br from-cyan-500 to-sky-600 text-white',
     title: 'Sensus 300 Hunian & KK Utama',
     desc: 'Pendataan unit rumah RT 01-03 yang memisahkan KK Utama (penanggung jawab IPL) dengan KK Pendukung secara rapi.',
   },
 ];
 
 const roleSummaries = [
-  { name: 'Super Admin', desc: 'Kontrol penuh seluruh modul & konfigurasi IoT', badge: 'bg-slate-900 text-white' },
-  { name: 'Ketua RW 05', desc: 'Supervisi 3 RT, approval surat RW & audit kas', badge: 'bg-sky-100 text-sky-900 border border-sky-200' },
-  { name: 'Sekretaris RW / RT', desc: 'Validasi penomoran surat, agenda kegiatan & aset', badge: 'bg-violet-100 text-violet-900 border border-violet-200' },
-  { name: 'Bendahara RW / RT', desc: 'Generate tagihan IPL, ACC QRIS, top-up & pencairan kas', badge: 'bg-emerald-100 text-emerald-900 border border-emerald-200' },
-  { name: 'Ketua RT 01–03', desc: 'ACC warga baru, sensus hunian & persetujuan tingkat RT', badge: 'bg-cyan-100 text-cyan-900 border border-cyan-200' },
-  { name: 'Satpam Gerbang', desc: 'Monitoring pos gerbang, palang servo, ronda & sirine', badge: 'bg-sky-900 text-white' },
-  { name: 'Warga (KK Utama)', desc: 'Bayar IPL, ajukan surat, pantau kas, aduan & tombol panik', badge: 'bg-teal-100 text-teal-900 border border-teal-200' },
+  { name: 'Super Admin', desc: 'Kontrol penuh seluruh modul, audit data & konfigurasi IoT', badge: 'bg-slate-900 text-white' },
+  { name: 'Ketua RW 05', desc: 'Supervisi 3 RT, approval surat tingkat RW & pantau kas', badge: 'bg-sky-50 text-sky-800 border border-sky-200' },
+  { name: 'Sekretaris RW / RT', desc: 'Validasi penomoran surat, agenda kegiatan & aset fasum', badge: 'bg-violet-50 text-violet-800 border border-violet-200' },
+  { name: 'Bendahara RW / RT', desc: 'Generate tagihan IPL, ACC QRIS, top-up & pencairan kas', badge: 'bg-emerald-50 text-emerald-800 border border-emerald-200' },
+  { name: 'Ketua RT 01–03', desc: 'ACC pendaftaran warga baru, sensus hunian & persetujuan RT', badge: 'bg-cyan-50 text-cyan-800 border border-cyan-200' },
+  { name: 'Satpam Gerbang', desc: 'Monitoring pos gerbang, palang servo, absensi ronda & sirine', badge: 'bg-sky-950 text-white' },
+  { name: 'Warga (KK Utama)', desc: 'Bayar IPL, ajukan surat, pantau kas, pengaduan & tombol panik', badge: 'bg-teal-50 text-teal-800 border border-teal-200' },
 ];
 
 const wargaAccounts = [
@@ -163,6 +159,9 @@ const wargaAccounts = [
   { name: 'Julius Wisnu Broto', email: 'julius.wisnu@smartwarga.test', unit: 'RT 01 Blok B No. 12' },
   { name: 'Bambang Pamungkas', email: 'bambang@smartwarga.test', unit: 'RT 02 Blok B No. 01' },
 ];
+
+const PALUGADA_WA_URL =
+  'https://wa.me/6282169299119?text=Halo%20tim%20Web%20Palugada!%20Saya%20melihat%20aplikasi%20SMART-WARGA%20RW%2005%20(di%20bawah%20naungan%20manajemensystem.my.id)%20dan%20ingin%20konsultasi%20pembuatan%20website%20atau%20aplikasi.';
 
 export default function AuthView() {
   const { login } = useAuth();
@@ -220,7 +219,7 @@ export default function AuthView() {
     };
   }, [showAuthModal]);
 
-  // Polling sensor ESP32 saat warga klik "Pindai dari Scanner ESP32" di form pendaftaran
+  // Polling sensor ESP32 saat warga klik "Pindai dari ESP32" di form pendaftaran
   useEffect(() => {
     let interval: any = null;
     if (isScanningRfid) {
@@ -337,6 +336,7 @@ export default function AuthView() {
     }
   };
 
+  // Quick Account Picker chips with optional auto-login
   const fillQuickAccount = async (email: string, autoLogin: boolean = false) => {
     setLoginEmail(email);
     setLoginPassword('password');
@@ -365,262 +365,285 @@ export default function AuthView() {
     }
   };
 
-  const waPromoUrl =
-    'https://wa.me/6282169299119?text=Halo%20tim%20Web%20Palugada!%20Saya%20melihat%20aplikasi%20SMART-WARGA%20RW%2005%20dan%20ingin%20konsultasi%20jasa%20pembuatan%20website%20%2F%20aplikasi.';
-
   return (
-    <div className="min-h-screen flex flex-col bg-white text-slate-800">
-      {/* 1. Sticky White Frosted Navbar (Selaras WEB Palugada, Tombol Login selalu terlihat di HP & Desktop) */}
-      <header className="sticky top-0 z-40 bg-white/85 backdrop-blur-xl border-b border-slate-200/80">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 sm:h-[68px] flex items-center justify-between gap-3">
-          {/* Brand */}
-          <a href="#" className="flex items-center gap-2.5 sm:gap-3 min-w-0">
-            <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl overflow-hidden border border-sky-200 shadow-sm bg-emerald-950 shrink-0">
+    <div className="min-h-screen flex flex-col bg-white text-slate-800 selection:bg-sky-100 selection:text-sky-900">
+      {/* 1. Sticky White Frosted Navbar (Serasi dengan WEB Palugada — tombol Login selalu langsung tampil di HP & Desktop) */}
+      <header className="sticky top-0 z-40 bg-white/85 backdrop-blur-xl border-b border-slate-200/80 shadow-xs">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-[68px] flex items-center justify-between gap-3">
+          {/* Brand Logo */}
+          <a href="#home" className="flex items-center gap-2.5 sm:gap-3 min-w-0 group">
+            <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl overflow-hidden border border-sky-200 shadow-sm shrink-0 transition group-hover:scale-105">
               <img src="/icon-192.png" alt="SMART-WARGA" className="w-full h-full object-cover" />
             </div>
             <div className="truncate">
-              <div className="font-black text-base sm:text-lg tracking-tight leading-none text-slate-900">
-                <span className="bg-gradient-to-r from-[#0ea5e9] to-[#10b981] bg-clip-text text-transparent">
+              <div className="flex items-baseline gap-1 leading-none">
+                <span className="font-black text-base sm:text-xl tracking-tight bg-gradient-to-r from-[#0ea5e9] to-[#10b981] bg-clip-text text-transparent">
                   SMART
                 </span>
-                <span>-WARGA</span>
+                <span className="font-extrabold text-sm sm:text-base text-slate-800 tracking-tight">
+                  -WARGA
+                </span>
               </div>
-              <div className="text-[10px] sm:text-[11px] font-semibold text-sky-600 leading-tight mt-0.5">
+              <div className="text-[10px] sm:text-[11px] font-semibold text-sky-600 leading-tight mt-0.5 truncate">
                 RW 05 &bull; by WEB Palugada
               </div>
             </div>
           </a>
 
-          {/* Desktop Navigation */}
+          {/* Desktop Navigation Links */}
           <nav className="hidden md:flex items-center gap-6 text-sm font-semibold text-slate-600">
-            <a href="#fitur" className="hover:text-sky-600 transition">
+            <a href="#fitur" className="hover:text-[#0ea5e9] transition">
               Fitur
             </a>
-            <a href="#iot" className="hover:text-sky-600 transition">
+            <a href="#iot" className="hover:text-[#0ea5e9] transition">
               IoT ESP32
             </a>
-            <a href="#role" className="hover:text-sky-600 transition">
+            <a href="#role" className="hover:text-[#0ea5e9] transition">
               Akses Role
             </a>
-            <a href="#naungan" className="hover:text-emerald-600 transition">
+            <a href="#naungan" className="hover:text-[#0ea5e9] transition">
               WEB Palugada
             </a>
           </nav>
 
-          {/* Top Action Buttons (Selalu terlihat di HP tanpa scroll) */}
+          {/* Action Buttons (Selalu terlihat di HP & Desktop tanpa perlu scroll) */}
           <div className="flex items-center gap-2 shrink-0">
             <button
               type="button"
               onClick={() => openAuthModal('register')}
-              className="px-3.5 sm:px-4 py-2 rounded-full border border-sky-400 bg-white/90 hover:bg-sky-50 text-sky-700 text-xs sm:text-sm font-bold transition active:scale-95"
+              className="px-3 sm:px-4 py-2 rounded-full border-2 border-[#0ea5e9]/60 bg-white hover:bg-sky-50 text-[#0284c7] text-xs sm:text-sm font-bold flex items-center gap-1.5 transition active:scale-95"
             >
-              Daftar
+              <UserPlus className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+              <span>Daftar</span>
             </button>
             <button
               type="button"
               onClick={() => openAuthModal('login')}
-              className="px-4 sm:px-5 py-2 rounded-full bg-gradient-to-r from-[#0ea5e9] to-[#10b981] hover:opacity-95 text-white text-xs sm:text-sm font-bold shadow-[0_4px_15px_rgba(14,165,233,0.3)] flex items-center gap-1.5 transition active:scale-95"
+              className="px-4 sm:px-5 py-2 rounded-full bg-gradient-to-r from-[#0ea5e9] to-[#10b981] hover:brightness-105 text-white text-xs sm:text-sm font-bold flex items-center gap-1.5 shadow-[0_4px_15px_rgba(14,165,233,0.3)] transition active:scale-95"
             >
               <LogIn className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
-              <span>Masuk</span>
+              <span className="hidden sm:inline">Masuk Akun</span>
+              <span className="sm:hidden">Masuk</span>
             </button>
           </div>
         </div>
       </header>
 
-      {/* 2. Hero Section Terang Pastel 2-Kolom (Gaya WEB Palugada) */}
-      <section className="relative overflow-hidden bg-[linear-gradient(160deg,#f0f9ff_0%,#ecfdf5_50%,#f5f3ff_100%)] pt-10 pb-12 sm:pt-14 sm:pb-16 lg:pt-16 lg:pb-20 px-4 sm:px-6 lg:px-8">
-        {/* Soft Blurred Pastel Shapes */}
+      {/* 2. Hero Section 2-Kolom Asimetris (Tema Terang Pastel WEB Palugada: Sky -> Mint -> Lavender) */}
+      <section
+        id="home"
+        className="relative overflow-hidden bg-[linear-gradient(160deg,#f0f9ff_0%,#ecfdf5_50%,#f5f3ff_100%)] pt-10 pb-12 sm:pt-14 sm:pb-16 lg:pt-16 lg:pb-14 px-4 sm:px-6 lg:px-8"
+      >
+        {/* Soft Pastel Ambient Orbs */}
         <div className="absolute inset-0 pointer-events-none overflow-hidden">
-          <div className="absolute -top-24 -left-24 w-96 h-96 rounded-full bg-[#0ea5e9]/15 blur-3xl" />
-          <div className="absolute top-1/3 -right-24 w-[420px] h-[420px] rounded-full bg-[#10b981]/15 blur-3xl" />
-          <div className="absolute -bottom-24 left-1/3 w-80 h-80 rounded-full bg-[#8b5cf6]/10 blur-3xl" />
+          <div className="absolute -top-24 -left-24 w-80 h-80 rounded-full bg-[#0ea5e9]/15 blur-[90px]" />
+          <div className="absolute top-1/4 -right-24 w-96 h-96 rounded-full bg-[#10b981]/15 blur-[100px]" />
+          <div className="absolute -bottom-24 left-1/3 w-80 h-80 rounded-full bg-[#8b5cf6]/10 blur-[90px]" />
         </div>
 
         <div className="relative z-10 max-w-7xl mx-auto">
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 lg:gap-12 items-center">
-            {/* Hero Kolom Kiri */}
-            <div className="lg:col-span-6 space-y-6 text-center lg:text-left">
-              <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-white border border-slate-200/80 shadow-sm text-xs font-bold text-slate-700">
-                <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse" />
+            {/* KOLOM KIRI: Identitas, Headline, CTA Pill & Kartu Statistik Putih */}
+            <div className="lg:col-span-6 space-y-5 sm:space-y-6">
+              {/* Pill Badge Naungan WEB Palugada */}
+              <div className="inline-flex items-center gap-2 bg-white border border-slate-200/80 shadow-sm rounded-full px-4 py-1.5 text-xs font-bold text-slate-700">
+                <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
                 <span>Produk Ekosistem WEB Palugada &bull; RW 05</span>
               </div>
 
+              {/* Headline Besar & Tegas */}
               <h1 className="text-3xl sm:text-5xl font-black text-slate-900 tracking-tight leading-[1.12]">
-                Sistem Digital &amp;{' '}
+                Sistem Digital &amp;
+                <br />
                 <span className="bg-gradient-to-r from-[#0ea5e9] to-[#10b981] bg-clip-text text-transparent">
                   Keamanan IoT
                 </span>{' '}
                 RW 05
               </h1>
 
-              <div className="space-y-2 max-w-xl mx-auto lg:mx-0">
-                <p className="text-base sm:text-lg font-extrabold text-slate-800">
+              {/* Subjudul & Deskripsi */}
+              <div className="text-sm sm:text-base text-slate-600 leading-relaxed max-w-xl space-y-1.5">
+                <p className="font-extrabold text-slate-800">
                   Semua layanan warga &amp; gerbang pintar dalam satu sistem!
                 </p>
-                <p className="text-sm sm:text-base text-slate-600 leading-relaxed">
-                  Sensus 300 hunian, transparansi iuran IPL 12 bulan, pengajuan surat digital, tombol panik darurat, kios pelayanan mandiri, hingga otomasi palang gerbang RFID berbasis ESP32.
+                <p>
+                  Sensus 300 hunian, transparansi iuran IPL 12 bulan, pengajuan surat pengantar digital, tombol panik darurat, kios pelayanan mandiri, hingga otomasi palang gerbang RFID berbasis ESP32.
                 </p>
               </div>
 
-              {/* Pill CTA Buttons */}
-              <div className="flex flex-col sm:flex-row items-center justify-center lg:justify-start gap-3.5">
+              {/* 2 Tombol Pill CTA */}
+              <div className="flex flex-wrap items-center gap-3.5 pt-1">
                 <button
                   type="button"
                   onClick={() => openAuthModal('login')}
-                  className="w-full sm:w-auto px-7 py-3.5 rounded-full bg-gradient-to-r from-[#0ea5e9] to-[#10b981] hover:opacity-95 text-white font-bold text-sm sm:text-base shadow-[0_6px_20px_rgba(14,165,233,0.35)] flex items-center justify-center gap-2 transition active:scale-95"
+                  className="px-7 py-3.5 rounded-full bg-gradient-to-r from-[#0ea5e9] to-[#10b981] hover:brightness-105 text-white font-bold text-sm sm:text-base inline-flex items-center gap-2 shadow-[0_6px_20px_rgba(14,165,233,0.35)] transition active:scale-95"
                 >
-                  <LogIn className="w-4 h-4" />
+                  <LogIn className="w-4 h-4 sm:w-5 sm:h-5" />
                   <span>Masuk ke Sistem</span>
                 </button>
                 <button
                   type="button"
                   onClick={() => openAuthModal('register')}
-                  className="w-full sm:w-auto px-7 py-3.5 rounded-full border-2 border-[#0ea5e9] text-[#0284c7] bg-white/85 hover:bg-sky-50 font-bold text-sm sm:text-base flex items-center justify-center gap-2 transition active:scale-95"
+                  className="px-7 py-3.5 rounded-full border-2 border-[#0ea5e9] bg-white/85 hover:bg-sky-50 text-[#0284c7] font-bold text-sm sm:text-base inline-flex items-center gap-2 transition active:scale-95"
                 >
-                  <UserPlus className="w-4 h-4" />
+                  <UserPlus className="w-4 h-4 sm:w-5 sm:h-5" />
                   <span>Daftar Warga Baru</span>
                 </button>
               </div>
 
-              {/* Floating White Stats Card ala WEB Palugada */}
-              <div className="pt-1 flex justify-center lg:justify-start">
-                <div className="bg-white/95 border border-slate-200/80 rounded-2xl shadow-lg shadow-slate-900/5 px-5 sm:px-7 py-4 inline-flex items-center gap-4 sm:gap-7">
-                  <div className="text-center lg:text-left">
-                    <div className="text-xl sm:text-2xl font-black text-slate-900">
-                      37<span className="text-[#10b981]">+</span>
+              {/* Floating White Stats Card (Gaya WEB Palugada) */}
+              <div className="pt-2">
+                <div className="bg-white/95 border border-slate-200/70 rounded-2xl shadow-[0_10px_30px_rgba(15,23,42,0.06)] px-5 sm:px-7 py-4 inline-flex flex-wrap items-center gap-5 sm:gap-7">
+                  <div>
+                    <div className="text-xl sm:text-2xl font-black text-slate-900 leading-none">
+                      37<span className="text-[#0ea5e9]">+</span>
                     </div>
-                    <div className="text-[11px] sm:text-xs font-semibold text-slate-500">KK Aktif</div>
+                    <div className="text-xs font-medium text-slate-500 mt-1">KK Aktif</div>
                   </div>
                   <div className="w-px h-9 bg-slate-200" />
-                  <div className="text-center lg:text-left">
-                    <div className="text-xl sm:text-2xl font-black text-slate-900">
+                  <div>
+                    <div className="text-xl sm:text-2xl font-black text-slate-900 leading-none">
                       300
                     </div>
-                    <div className="text-[11px] sm:text-xs font-semibold text-slate-500">Unit Hunian</div>
+                    <div className="text-xs font-medium text-slate-500 mt-1">Unit Hunian</div>
                   </div>
                   <div className="w-px h-9 bg-slate-200" />
-                  <div className="text-center lg:text-left">
-                    <div className="text-xl sm:text-2xl font-black text-slate-900">
-                      2 <span className="text-[#0ea5e9] text-base sm:text-lg">Area</span>
+                  <div>
+                    <div className="text-xl sm:text-2xl font-black text-slate-900 leading-none">
+                      2<span className="text-[#10b981] text-base sm:text-lg font-extrabold ml-1">Area</span>
                     </div>
-                    <div className="text-[11px] sm:text-xs font-semibold text-slate-500">IoT ESP32</div>
+                    <div className="text-xs font-medium text-slate-500 mt-1">IoT ESP32</div>
                   </div>
                 </div>
               </div>
             </div>
 
-            {/* Hero Kolom Kanan: Visual Showcase Card + 2 Floating Badges */}
-            <div className="lg:col-span-6 relative px-2 sm:px-6 lg:px-2 py-4">
-              {/* Main Preview Card */}
-              <div className="bg-white rounded-3xl shadow-2xl shadow-sky-900/10 border border-sky-100 p-5 sm:p-6 relative">
-                {/* Browser Top Dots */}
-                <div className="flex items-center justify-between border-b border-slate-100 pb-3.5 mb-4">
+            {/* KOLOM KANAN: Visual Showcase Card + 2 Floating Badges ala WEB Palugada */}
+            <div className="lg:col-span-6 relative px-2 sm:px-4 lg:px-2">
+              {/* Main White Preview Card */}
+              <div className="relative bg-white rounded-3xl shadow-[0_20px_50px_rgba(14,165,233,0.12)] border border-sky-100 p-5 sm:p-6">
+                {/* Mini Browser Window Header */}
+                <div className="flex items-center justify-between pb-4 mb-4 border-b border-slate-100">
                   <div className="flex items-center gap-1.5">
                     <span className="w-2.5 h-2.5 rounded-full bg-rose-400" />
                     <span className="w-2.5 h-2.5 rounded-full bg-amber-400" />
                     <span className="w-2.5 h-2.5 rounded-full bg-emerald-400" />
                   </div>
-                  <div className="text-[11px] font-mono font-semibold text-slate-400 bg-slate-50 px-3 py-1 rounded-full border border-slate-200/70">
+                  <div className="text-[11px] font-mono font-semibold text-slate-400 bg-slate-50 px-3 py-1 rounded-full border border-slate-100 truncate max-w-[220px] sm:max-w-none">
                     swarga.manajemensystem.my.id
                   </div>
-                  <span className="text-[10px] font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200">
-                    ONLINE
+                  <span className="text-[10px] font-extrabold text-emerald-700 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded-full">
+                    LIVE
                   </span>
                 </div>
 
                 {/* Inner Preview Header */}
-                <div className="flex items-center gap-3.5 mb-4 p-3.5 rounded-2xl bg-gradient-to-r from-sky-50 to-emerald-50 border border-sky-100">
-                  <div className="w-12 h-12 rounded-2xl overflow-hidden border border-sky-200 bg-emerald-950 shrink-0 shadow-sm">
-                    <img src="/icon-192.png" alt="Logo SMART-WARGA" className="w-full h-full object-cover" />
+                <div className="flex items-center gap-3 p-3.5 rounded-2xl bg-gradient-to-r from-sky-50 to-emerald-50 border border-sky-100/80 mb-4">
+                  <div className="w-12 h-12 rounded-2xl overflow-hidden border border-white shadow-sm shrink-0">
+                    <img src="/icon-192.png" alt="SMART-WARGA" className="w-full h-full object-cover" />
+                  </div>
+                  <div className="min-w-0">
+                    <div className="text-sm sm:text-base font-black text-slate-900 truncate">
+                      Dashboard SMART-WARGA RW 05
+                    </div>
+                    <div className="text-xs text-slate-600 truncate">
+                      Terhubung Realtime &bull; 3 Wilayah RT (01, 02, 03)
+                    </div>
+                  </div>
+                </div>
+
+                {/* Dual-Area IoT Mini Status Cards */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-4">
+                  <div className="p-3.5 rounded-2xl bg-slate-50 border border-slate-200/80">
+                    <div className="flex items-center justify-between mb-1.5">
+                      <span className="text-[10px] font-extrabold uppercase tracking-wider text-sky-700 bg-sky-100 px-2 py-0.5 rounded-md">
+                        Area 1 &bull; Gerbang
+                      </span>
+                      <span className="w-2 h-2 rounded-full bg-emerald-500 animate-ping" />
+                    </div>
+                    <div className="text-xs font-extrabold text-slate-900">Pos Satpam &amp; Servo</div>
+                    <div className="text-[11px] text-slate-500 mt-0.5">
+                      RFID Reader 1 (Pin 5) &bull; Sirine
+                    </div>
+                  </div>
+
+                  <div className="p-3.5 rounded-2xl bg-slate-50 border border-slate-200/80">
+                    <div className="flex items-center justify-between mb-1.5">
+                      <span className="text-[10px] font-extrabold uppercase tracking-wider text-emerald-700 bg-emerald-100 px-2 py-0.5 rounded-md">
+                        Area 2 &bull; Kios
+                      </span>
+                      <span className="w-2 h-2 rounded-full bg-emerald-500 animate-ping" />
+                    </div>
+                    <div className="text-xs font-extrabold text-slate-900">Meja Kios Balai Warga</div>
+                    <div className="text-[11px] text-slate-500 mt-0.5">
+                      RFID Reader 2 (Pin 4) &bull; LCD 16x2
+                    </div>
+                  </div>
+                </div>
+
+                {/* Mini Service Chips */}
+                <div className="grid grid-cols-3 gap-2 text-center">
+                  <div className="p-2.5 rounded-xl bg-sky-50/70 border border-sky-100">
+                    <div className="text-xs font-black text-sky-700">IPL 12 Bln</div>
+                    <div className="text-[10px] text-slate-500">QRIS &amp; Kas</div>
+                  </div>
+                  <div className="p-2.5 rounded-xl bg-violet-50/70 border border-violet-100">
+                    <div className="text-xs font-black text-violet-700">Surat PDF</div>
+                    <div className="text-[10px] text-slate-500">ACC RT/RW</div>
+                  </div>
+                  <div className="p-2.5 rounded-xl bg-rose-50/70 border border-rose-100">
+                    <div className="text-xs font-black text-rose-700">Panic Alert</div>
+                    <div className="text-[10px] text-slate-500">Sirine 24 Jam</div>
+                  </div>
+                </div>
+
+                {/* Floating Badge Top-Left (Gaya "Proyek Selesai" di WEB Palugada) */}
+                <div className="hidden sm:flex items-center gap-2.5 absolute -top-5 -left-6 bg-white rounded-2xl shadow-xl shadow-slate-900/10 border border-slate-100 px-4 py-2.5">
+                  <div className="w-8 h-8 rounded-xl bg-emerald-500 text-white flex items-center justify-center shrink-0">
+                    <Check className="w-4 h-4 stroke-[3]" />
                   </div>
                   <div>
-                    <div className="text-sm font-black text-slate-900">Dashboard Terpadu SMART-WARGA RW 05</div>
-                    <div className="text-xs text-slate-600 mt-0.5">
-                      Integrasi Sensus Warga, Iuran IPL, Persuratan &amp; Hardware ESP32
-                    </div>
+                    <div className="text-xs font-extrabold text-slate-900 leading-tight">ESP32 Dual-Area</div>
+                    <div className="text-[10px] text-slate-500 font-medium">Gerbang &amp; Kios Otomatis</div>
                   </div>
                 </div>
 
-                {/* Dual-Area Live Preview Grid */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-4">
-                  <div className="p-3.5 rounded-2xl bg-sky-50/70 border border-sky-200/80">
-                    <div className="flex items-center justify-between mb-1.5">
-                      <span className="text-[10px] font-extrabold uppercase text-sky-700 bg-sky-100 px-2 py-0.5 rounded-md">
-                        Area 1 &bull; Pos Gerbang
-                      </span>
-                      <Wifi className="w-3.5 h-3.5 text-emerald-600" />
-                    </div>
-                    <div className="text-xs font-extrabold text-slate-900">Palang Servo + RFID Pin 5</div>
-                    <div className="text-[11px] text-slate-600 mt-0.5">Tap e-KTP warga &amp; ronda satpam</div>
+                {/* Floating Badge Bottom-Right (Gaya "Fast Delivery" di WEB Palugada) */}
+                <div className="hidden sm:flex items-center gap-2.5 absolute -bottom-5 -right-5 bg-white rounded-2xl shadow-xl shadow-slate-900/10 border border-slate-100 px-4 py-2.5">
+                  <div className="w-8 h-8 rounded-xl bg-amber-100 text-amber-600 flex items-center justify-center shrink-0">
+                    <Zap className="w-4 h-4 fill-amber-500" />
                   </div>
-                  <div className="p-3.5 rounded-2xl bg-emerald-50/70 border border-emerald-200/80">
-                    <div className="flex items-center justify-between mb-1.5">
-                      <span className="text-[10px] font-extrabold uppercase text-emerald-700 bg-emerald-100 px-2 py-0.5 rounded-md">
-                        Area 2 &bull; Meja Kios
-                      </span>
-                      <Cpu className="w-3.5 h-3.5 text-sky-600" />
-                    </div>
-                    <div className="text-xs font-extrabold text-slate-900">Antrean Kios + LCD Pin 4</div>
-                    <div className="text-[11px] text-slate-600 mt-0.5">Legalitas surat &amp; bank sampah</div>
+                  <div>
+                    <div className="text-xs font-extrabold text-slate-900 leading-tight">8 Role RBAC</div>
+                    <div className="text-[10px] text-slate-500 font-medium">Warga, RT/RW &amp; Satpam</div>
                   </div>
-                </div>
-
-                {/* Quick Module Pills */}
-                <div className="flex flex-wrap items-center gap-2 text-[11px] font-bold text-slate-700">
-                  <span className="px-2.5 py-1 rounded-full bg-slate-100 border border-slate-200">IPL 12 Bulan</span>
-                  <span className="px-2.5 py-1 rounded-full bg-slate-100 border border-slate-200">Surat PDF Online</span>
-                  <span className="px-2.5 py-1 rounded-full bg-slate-100 border border-slate-200">Tombol Panik</span>
-                  <span className="px-2.5 py-1 rounded-full bg-slate-100 border border-slate-200">Posyandu &amp; UMKM</span>
-                </div>
-              </div>
-
-              {/* Floating Card Top Left */}
-              <div className="hidden sm:flex items-center gap-2.5 bg-white rounded-2xl shadow-xl shadow-slate-900/10 border border-slate-100 px-4 py-3 absolute -top-2 -left-2 z-20">
-                <div className="w-9 h-9 rounded-xl bg-emerald-100 text-emerald-600 flex items-center justify-center shrink-0">
-                  <CheckCircle2 className="w-5 h-5" />
-                </div>
-                <div>
-                  <div className="text-xs font-extrabold text-slate-900">ESP32 Dual-Area</div>
-                  <div className="text-[11px] text-slate-500 font-medium">Gerbang &amp; Kios Siaga</div>
-                </div>
-              </div>
-
-              {/* Floating Card Bottom Right */}
-              <div className="hidden sm:flex items-center gap-2.5 bg-white rounded-2xl shadow-xl shadow-slate-900/10 border border-slate-100 px-4 py-3 absolute -bottom-2 -right-2 z-20">
-                <div className="w-9 h-9 rounded-xl bg-amber-100 text-amber-600 flex items-center justify-center shrink-0">
-                  <Zap className="w-5 h-5" />
-                </div>
-                <div>
-                  <div className="text-xs font-extrabold text-slate-900">8 Role RBAC</div>
-                  <div className="text-[11px] text-slate-500 font-medium">Warga, RT/RW &amp; Satpam</div>
                 </div>
               </div>
             </div>
           </div>
 
-          {/* Scroll Cue */}
-          <div className="mt-10 text-center hidden sm:block">
-            <a href="#fitur" className="inline-flex flex-col items-center gap-1 text-xs font-semibold text-slate-500 hover:text-sky-600 transition">
-              <span>Scroll ke bawah</span>
+          {/* Scroll Cue (Seperti WEB Palugada) */}
+          <div className="hidden lg:flex flex-col items-center mt-10 text-slate-400">
+            <a href="#fitur" className="flex flex-col items-center gap-1 hover:text-[#0ea5e9] transition">
+              <span className="text-xs font-medium">Scroll ke bawah</span>
               <ChevronDown className="w-4 h-4 animate-bounce" />
             </a>
           </div>
         </div>
       </section>
 
-      {/* 3. Section Fitur Unggulan SMART-WARGA (Clean White) */}
+      {/* 3. Section Fitur Unggulan SMART-WARGA (Bersih & Terang) */}
       <section id="fitur" className="bg-white py-16 sm:py-20 px-4 sm:px-6 lg:px-8">
         <div className="max-w-6xl mx-auto">
           <div className="text-center max-w-2xl mx-auto mb-12">
-            <span className="inline-block px-4 py-1.5 rounded-full bg-sky-100 text-sky-600 text-xs font-extrabold uppercase tracking-wider mb-3">
-              Ekosistem Layanan
+            <span className="inline-block text-xs font-extrabold uppercase tracking-wider text-[#0284c7] bg-sky-100 px-4 py-1.5 rounded-full mb-3">
+              Ekosistem Aplikasi
             </span>
             <h2 className="text-2xl sm:text-4xl font-black text-slate-900 tracking-tight">
-              Fitur Lengkap untuk Kebutuhan RW 05
+              Fitur Unggulan SMART-WARGA
             </h2>
             <p className="text-sm sm:text-base text-slate-500 mt-3 leading-relaxed">
-              Dibangun khusus untuk mempermudah administrasi warga, transparansi keuangan RT/RW, serta pengawasan keamanan lingkungan berbasis perangkat IoT.
+              Seluruh kebutuhan administrasi, keuangan, pelayanan warga, hingga kontrol keamanan fisik lingkungan terintegrasi dalam satu platform modern.
             </p>
           </div>
 
@@ -630,19 +653,23 @@ export default function AuthView() {
               return (
                 <div
                   key={idx}
-                  className="bg-white rounded-2xl p-6 border border-slate-200/90 shadow-sm hover:shadow-lg hover:-translate-y-0.5 hover:border-sky-300 transition-all duration-200 flex flex-col justify-between"
+                  className="bg-white rounded-2xl p-6 border border-slate-200/90 shadow-sm hover:shadow-lg hover:-translate-y-1 hover:border-sky-300 transition-all duration-200 flex flex-col justify-between"
                 >
                   <div>
                     <div className="flex items-center justify-between mb-4">
-                      <div className={`w-11 h-11 rounded-xl flex items-center justify-center shadow-sm ${item.iconBg}`}>
+                      <div className={`w-11 h-11 rounded-xl flex items-center justify-center ${item.iconColor} shadow-sm`}>
                         <Icon className="w-5 h-5" />
                       </div>
                       <span className={`text-[11px] font-bold px-2.5 py-1 rounded-full border ${item.tagColor}`}>
                         {item.tag}
                       </span>
                     </div>
-                    <h3 className="text-base font-extrabold text-slate-900 mb-2">{item.title}</h3>
-                    <p className="text-sm text-slate-600 leading-relaxed">{item.desc}</p>
+                    <h3 className="text-base font-extrabold text-slate-900 mb-2">
+                      {item.title}
+                    </h3>
+                    <p className="text-sm text-slate-600 leading-relaxed">
+                      {item.desc}
+                    </p>
                   </div>
                 </div>
               );
@@ -651,70 +678,78 @@ export default function AuthView() {
         </div>
       </section>
 
-      {/* 4. Section Arsitektur IoT ESP32 Dual-Area (Bright Gradient Accent) */}
-      <section id="iot" className="bg-gradient-to-br from-sky-50 via-white to-emerald-50 py-16 sm:py-20 px-4 sm:px-6 lg:px-8 border-y border-slate-200/80">
+      {/* 4. Section Arsitektur IoT ESP32 Dual-Area (Terang Pastel Sky-Emerald — Bukan Gelap!) */}
+      <section
+        id="iot"
+        className="bg-gradient-to-br from-sky-50 via-white to-emerald-50 py-16 sm:py-20 px-4 sm:px-6 lg:px-8 border-y border-slate-200/70"
+      >
         <div className="max-w-5xl mx-auto">
           <div className="text-center max-w-2xl mx-auto mb-10">
-            <span className="inline-flex items-center gap-1.5 px-4 py-1.5 rounded-full bg-emerald-100 text-emerald-700 text-xs font-extrabold uppercase tracking-wider mb-3">
+            <span className="inline-flex items-center gap-1.5 text-xs font-extrabold uppercase tracking-wider text-emerald-700 bg-emerald-100 px-4 py-1.5 rounded-full mb-3">
               <Cpu className="w-3.5 h-3.5" />
-              Integrasi Hardware ESP32
+              Keunggulan Hardware Terintegrasi
             </span>
             <h2 className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight">
-              Satu Mikrokontroler untuk Dua Pos Fisik
+              Arsitektur IoT ESP32 Dual-Area Otomatis
             </h2>
-            <p className="text-sm sm:text-base text-slate-600 mt-2.5">
-              Cukup hubungkan Wi-Fi dari PC Pos Satpam atau Meja Kios, kedua area langsung aktif dan beroperasi secara otomatis.
+            <p className="text-sm sm:text-base text-slate-600 mt-2.5 leading-relaxed">
+              Satu modul mikrokontroler ESP32 mengendalikan dua pos fisik sekaligus &mdash; cukup koneksikan Wi-Fi dari PC Pos Satpam atau Meja Kios, kedua area langsung siaga bersamaan.
             </p>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div className="bg-white rounded-2xl p-6 border border-sky-200 shadow-sm space-y-3">
-              <span className="inline-block text-xs font-extrabold uppercase tracking-wider text-sky-700 bg-sky-100 px-3 py-1 rounded-full">
+            <div className="bg-white border border-sky-200/80 rounded-3xl p-6 sm:p-7 shadow-md shadow-sky-900/5 space-y-3">
+              <div className="inline-block text-xs font-black uppercase tracking-wider text-sky-700 bg-sky-100 px-3 py-1 rounded-full">
                 Area 1 &bull; Pos Satpam Gerbang Utama
-              </span>
+              </div>
               <h3 className="text-lg font-extrabold text-slate-900">Palang Pintu Otomatis &amp; Ronda Malam</h3>
               <p className="text-sm text-slate-600 leading-relaxed">
-                Menggunakan <strong>RFID Reader 1 (Pin 5)</strong> untuk membuka <strong>Palang Servo (Pin 13)</strong> saat e-KTP warga terbaca, absensi ronda satpam, serta <strong>Sirine Buzzer (Pin 14)</strong> untuk tombol darurat.
+                Dilengkapi <strong>RFID Reader 1 (Pin 5)</strong> untuk tap e-KTP warga membuka <strong>Palang Servo (Pin 13)</strong>, absensi ronda satpam, serta <strong>Sirine Buzzer (Pin 14)</strong> yang aktif saat Tombol Panik ditekan.
               </p>
             </div>
 
-            <div className="bg-white rounded-2xl p-6 border border-emerald-200 shadow-sm space-y-3">
-              <span className="inline-block text-xs font-extrabold uppercase tracking-wider text-emerald-700 bg-emerald-100 px-3 py-1 rounded-full">
+            <div className="bg-white border border-emerald-200/80 rounded-3xl p-6 sm:p-7 shadow-md shadow-emerald-900/5 space-y-3">
+              <div className="inline-block text-xs font-black uppercase tracking-wider text-emerald-700 bg-emerald-100 px-3 py-1 rounded-full">
                 Area 2 &bull; Meja Kios Pelayanan Terpadu
-              </span>
+              </div>
               <h3 className="text-lg font-extrabold text-slate-900">Antrean Kios, Pairing e-KTP &amp; Bank Sampah</h3>
               <p className="text-sm text-slate-600 leading-relaxed">
-                Menggunakan <strong>RFID Reader 2 (Pin 4)</strong> dan <strong>LCD 16x2 I2C</strong>. Kartu warga terdaftar otomatis mendapat nomor antrean &amp; legalisasi berkas, sementara kartu asing ditolak otomatis.
+                Menggunakan <strong>RFID Reader 2 (Pin 4)</strong> dan layar <strong>LCD 16x2 I2C</strong>. Kartu warga terdaftar otomatis mendapat nomor antrean pelayanan &amp; legalisasi berkas, sedangkan kartu asing otomatis ditolak.
               </p>
             </div>
           </div>
         </div>
       </section>
 
-      {/* 5. Section Akses Role Lingkungan */}
+      {/* 5. Section Akses Terpadu 8 Role */}
       <section id="role" className="bg-white py-16 px-4 sm:px-6 lg:px-8">
         <div className="max-w-5xl mx-auto">
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
             <div>
-              <h2 className="text-2xl sm:text-3xl font-black text-slate-900">Akses Terpadu Berbasis Role (RBAC)</h2>
+              <span className="inline-block text-xs font-extrabold uppercase tracking-wider text-sky-700 bg-sky-100 px-3.5 py-1 rounded-full mb-2">
+                Manajemen Peran
+              </span>
+              <h2 className="text-2xl sm:text-3xl font-black text-slate-900">
+                Akses Terpadu 8 Role Lingkungan
+              </h2>
               <p className="text-sm text-slate-600 mt-1">
-                Setiap warga (KK Utama) hingga jajaran pengurus RT/RW dan Satpam memiliki dashboard dan wewenang terukur.
+                Setiap warga (KK Utama) hingga struktur pengurus RT/RW dan Satpam memiliki hak akses yang terukur.
               </p>
             </div>
             <button
               type="button"
               onClick={() => openAuthModal('login')}
-              className="px-6 py-3 rounded-full bg-gradient-to-r from-[#0ea5e9] to-[#10b981] hover:opacity-95 text-white text-sm font-bold flex items-center justify-center gap-2 shadow-md transition active:scale-95 shrink-0"
+              className="px-6 py-3 rounded-full bg-gradient-to-r from-[#0ea5e9] to-[#10b981] hover:brightness-105 text-white text-sm font-bold inline-flex items-center justify-center gap-2 shadow-[0_4px_15px_rgba(14,165,233,0.3)] transition active:scale-95 shrink-0"
             >
-              <span>Masuk &amp; Pilih Role Sekarang</span>
+              <span>Masuk &amp; Pilih Role</span>
               <ChevronRight className="w-4 h-4" />
             </button>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3.5">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
             {roleSummaries.map((role, i) => (
-              <div key={i} className="p-4 rounded-2xl border border-slate-200 bg-slate-50/70">
-                <span className={`inline-block text-xs font-extrabold px-2.5 py-1 rounded-full mb-2 ${role.badge}`}>
+              <div key={i} className="p-4 rounded-2xl border border-slate-200 bg-slate-50/60 hover:bg-white hover:border-sky-200 hover:shadow-sm transition">
+                <span className={`inline-block text-xs font-extrabold px-3 py-1 rounded-full mb-2 ${role.badge}`}>
                   {role.name}
                 </span>
                 <p className="text-xs sm:text-sm text-slate-600 leading-snug">{role.desc}</p>
@@ -724,32 +759,24 @@ export default function AuthView() {
         </div>
       </section>
 
-      {/* 6. Section Naungan & Promosi Jasa Web: WEB Palugada (manajemensystem.my.id) */}
-      <section id="naungan" className="bg-slate-50 py-14 sm:py-16 px-4 sm:px-6 lg:px-8 border-t border-slate-200">
+      {/* 6. Section Naungan & Promosi WEB Palugada (manajemensystem.my.id) */}
+      <section id="naungan" className="bg-slate-50 py-14 sm:py-16 px-4 sm:px-6 lg:px-8 border-t border-slate-200/80">
         <div className="max-w-5xl mx-auto">
-          <div className="rounded-3xl bg-gradient-to-r from-[#0ea5e9] to-[#10b981] p-[2px] shadow-xl shadow-sky-900/10">
-            <div className="bg-white rounded-[22px] p-6 sm:p-8 flex flex-col lg:flex-row items-start lg:items-center justify-between gap-6">
+          <div className="rounded-3xl bg-gradient-to-r from-[#0ea5e9] to-[#10b981] p-6 sm:p-10 text-white shadow-xl shadow-sky-900/10 relative overflow-hidden">
+            <div className="absolute -right-12 -bottom-12 w-56 h-56 rounded-full bg-white/10 blur-2xl pointer-events-none" />
+            <div className="relative z-10 flex flex-col lg:flex-row items-start lg:items-center justify-between gap-6">
               <div className="space-y-3 max-w-2xl">
-                <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-sky-50 border border-sky-200 text-sky-700 text-xs font-bold">
-                  <Sparkles className="w-3.5 h-3.5 text-emerald-600" />
-                  <span>Designed &amp; Created Under WEB Palugada</span>
+                <div className="inline-flex items-center gap-2.5 bg-white/15 backdrop-blur-md border border-white/25 rounded-full px-3.5 py-1.5">
+                  <WebPalugadaLogo idSuffix="banner" size={24} />
+                  <span className="text-xs font-extrabold tracking-wide">
+                    Di Bawah Naungan WEB Palugada &bull; manajemensystem.my.id
+                  </span>
                 </div>
-
-                <div className="flex items-center gap-3">
-                  <WebPalugadaLogo gradId="palugadaSectionGrad" size={44} />
-                  <div>
-                    <div className="flex items-baseline gap-1.5 leading-none">
-                      <span className="text-xl sm:text-2xl font-black bg-gradient-to-r from-[#0ea5e9] to-[#10b981] bg-clip-text text-transparent">
-                        WEB
-                      </span>
-                      <span className="text-lg sm:text-xl font-extrabold text-slate-900">Palugada</span>
-                    </div>
-                    <div className="text-xs font-bold text-sky-600 mt-0.5">manajemensystem.my.id</div>
-                  </div>
-                </div>
-
-                <p className="text-sm text-slate-600 leading-relaxed">
-                  <strong>SMART-WARGA RW 05</strong> merupakan portofolio sistem informasi &amp; otomasi IoT yang dirancang dan dibangun oleh <strong>Jasa Website Palugada</strong>. <em>Mau aplikasi / website apa aja, kita ada!!</em> Mulai dari portal komunitas RW, SIAKAD, e-commerce, dashboard analytics, hingga sistem custom berbasis perangkat keras.
+                <h2 className="text-2xl sm:text-3xl font-black leading-tight">
+                  Butuh Website atau Aplikasi Custom Seperti SMART-WARGA?
+                </h2>
+                <p className="text-sm sm:text-base text-sky-50 leading-relaxed">
+                  <strong>Mau aplikasi / website apa aja, kita ada!!</strong> SMART-WARGA RW 05 dirancang dan dikembangkan oleh <strong>Jasa Website Palugada</strong> &mdash; spesialis sistem informasi, company profile, e-commerce, SIAKAD, dashboard analytics, hingga integrasi IoT custom.
                 </p>
               </div>
 
@@ -758,19 +785,19 @@ export default function AuthView() {
                   href="https://manajemensystem.my.id"
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="px-6 py-3 rounded-full bg-gradient-to-r from-[#0ea5e9] to-[#10b981] hover:opacity-95 text-white text-xs sm:text-sm font-bold flex items-center justify-center gap-2 shadow-md transition"
+                  className="px-6 py-3 rounded-full bg-white text-[#0284c7] hover:bg-sky-50 font-extrabold text-sm inline-flex items-center justify-center gap-2 shadow-md transition active:scale-95"
                 >
                   <span>Kunjungi WEB Palugada</span>
                   <ExternalLink className="w-4 h-4" />
                 </a>
                 <a
-                  href={waPromoUrl}
+                  href={PALUGADA_WA_URL}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="px-6 py-3 rounded-full border-2 border-[#10b981] text-emerald-700 hover:bg-emerald-50 text-xs sm:text-sm font-bold flex items-center justify-center gap-2 transition"
+                  className="px-6 py-3 rounded-full bg-slate-900/25 hover:bg-slate-900/35 border border-white/30 text-white font-bold text-sm inline-flex items-center justify-center gap-2 transition active:scale-95"
                 >
                   <MessageCircle className="w-4 h-4" />
-                  <span>Konsultasi Jasa Web</span>
+                  <span>Konsultasi via WhatsApp</span>
                 </a>
               </div>
             </div>
@@ -778,47 +805,107 @@ export default function AuthView() {
         </div>
       </section>
 
-      {/* 7. Footer Resmi dengan Kredit WEB Palugada */}
-      <footer className="bg-slate-900 text-slate-300 py-10 px-4 sm:px-6 lg:px-8 border-t border-slate-800">
+      {/* 7. Footer Resmi dengan Identitas & Credit WEB Palugada */}
+      <footer className="bg-slate-900 text-slate-300 pt-12 pb-8 px-4 sm:px-6 lg:px-8">
         <div className="max-w-7xl mx-auto">
-          <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-6 pb-8 border-b border-slate-800">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl overflow-hidden border border-slate-700 bg-emerald-950 shrink-0">
-                <img src="/icon-192.png" alt="SMART-WARGA" className="w-full h-full object-cover" />
-              </div>
-              <div>
-                <div className="font-black text-base text-white flex items-center gap-1.5">
-                  <Building2 className="w-4 h-4 text-emerald-400" />
-                  <span>SMART-WARGA RW 05</span>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 pb-8 border-b border-slate-800">
+            {/* Kolom 1: Brand SMART-WARGA */}
+            <div className="space-y-3">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl overflow-hidden border border-slate-700 shrink-0">
+                  <img src="/icon-192.png" alt="SMART-WARGA" className="w-full h-full object-cover" />
                 </div>
-                <div className="text-xs text-slate-400">
-                  Sistem Terpadu Manajemen Lingkungan Warga &amp; IoT ESP32 Dual-Area
+                <div>
+                  <div className="font-black text-lg text-white leading-none">
+                    SMART<span className="text-[#38bdf8]">-WARGA</span>
+                  </div>
+                  <div className="text-xs text-slate-400 mt-0.5">Portal Digital Lingkungan RW 05</div>
                 </div>
               </div>
+              <p className="text-xs text-slate-400 leading-relaxed">
+                Sistem informasi terpadu tata kelola kependudukan, keuangan iuran IPL transparan, persuratan digital, serta integrasi keamanan gerbang &amp; kios IoT ESP32.
+              </p>
             </div>
 
-            <div className="flex items-center gap-3">
-              <WebPalugadaLogo gradId="palugadaFooterGrad" size={38} />
+            {/* Kolom 2: Developer & Naungan WEB Palugada */}
+            <div className="space-y-3">
+              <div className="text-xs font-extrabold uppercase tracking-wider text-slate-400">
+                Designed &amp; Created By
+              </div>
+              <a
+                href="https://manajemensystem.my.id"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-3 group"
+              >
+                <WebPalugadaLogo idSuffix="footer" size={38} />
+                <div>
+                  <div className="flex items-baseline gap-1.5 leading-none">
+                    <span className="text-lg font-black bg-gradient-to-r from-[#0ea5e9] to-[#10b981] bg-clip-text text-transparent">
+                      WEB
+                    </span>
+                    <span className="text-base font-bold text-white group-hover:text-sky-300 transition">
+                      Palugada
+                    </span>
+                  </div>
+                  <div className="text-xs font-semibold text-[#38bdf8] mt-0.5">
+                    manajemensystem.my.id
+                  </div>
+                </div>
+              </a>
+              <p className="text-xs text-slate-400">
+                Mau aplikasi / website apa aja, kita ada!!
+              </p>
+            </div>
+
+            {/* Kolom 3: Kontak WEB Palugada */}
+            <div className="space-y-2.5 text-xs">
+              <div className="text-xs font-extrabold uppercase tracking-wider text-slate-400">
+                Kontak Pengembang
+              </div>
               <div>
-                <div className="text-xs font-bold text-white">
-                  WEB Palugada &mdash; <span className="text-sky-400">manajemensystem.my.id</span>
-                </div>
-                <div className="text-[11px] text-slate-400">
-                  WA: 0821-6929-9119 &bull; Email: admin@manajemensystem.my.id
-                </div>
+                <a
+                  href={PALUGADA_WA_URL}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="hover:text-emerald-400 transition font-semibold"
+                >
+                  WhatsApp: 0821-6929-9119
+                </a>
+              </div>
+              <div>
+                <a
+                  href="mailto:admin@manajemensystem.my.id"
+                  className="hover:text-sky-400 transition font-semibold"
+                >
+                  Email: admin@manajemensystem.my.id
+                </a>
+              </div>
+              <div className="text-slate-400">
+                Website:{' '}
+                <a
+                  href="https://manajemensystem.my.id"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-[#38bdf8] hover:underline font-semibold"
+                >
+                  manajemensystem.my.id
+                </a>
               </div>
             </div>
           </div>
 
           <div className="pt-6 flex flex-col sm:flex-row items-center justify-between gap-2 text-xs text-slate-400">
-            <p>&copy; 2026 <strong className="text-slate-200">SMART-WARGA RW 05</strong>. All rights reserved.</p>
+            <p>
+              &copy; 2026 <strong className="text-white">SMART-WARGA RW 05</strong>. All rights reserved.
+            </p>
             <p>
               Designed &amp; Created by{' '}
               <a
                 href="https://manajemensystem.my.id"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="text-sky-400 hover:text-emerald-400 font-bold transition"
+                className="text-[#38bdf8] hover:underline font-bold"
               >
                 Jasa Website Palugada (manajemensystem.my.id)
               </a>
@@ -827,22 +914,22 @@ export default function AuthView() {
         </div>
       </footer>
 
-      {/* Floating WhatsApp Konsultasi WEB Palugada */}
+      {/* Floating WhatsApp Button (Gaya WEB Palugada) */}
       <a
-        href={waPromoUrl}
+        href={PALUGADA_WA_URL}
         target="_blank"
         rel="noopener noreferrer"
         aria-label="Chat WhatsApp WEB Palugada"
-        className="fixed bottom-5 right-5 z-40 px-4 py-2.5 rounded-full bg-[#25D366] hover:bg-[#1ebe5d] text-white font-bold text-xs sm:text-sm shadow-lg shadow-emerald-900/25 flex items-center gap-2 transition hover:-translate-y-0.5"
+        className="fixed bottom-5 right-5 z-30 bg-[#25D366] hover:bg-[#1ebe5d] text-white rounded-full px-4 py-3 shadow-lg shadow-emerald-600/30 flex items-center gap-2 text-xs sm:text-sm font-bold transition hover:-translate-y-0.5 active:scale-95"
       >
-        <MessageCircle className="w-4 h-4 sm:w-5 sm:h-5" />
-        <span className="hidden sm:inline">Chat Jasa Web</span>
+        <MessageCircle className="w-5 h-5" />
+        <span className="hidden sm:inline">Chat Sekarang</span>
       </a>
 
       {/* 8. DIALOG MODAL LOGIN & DAFTAR (Dibuka dari tombol atas / Hero — nyaman di HP & Desktop) */}
       {showAuthModal && (
         <div
-          className="fixed inset-0 z-50 bg-slate-900/65 backdrop-blur-sm flex items-center justify-center p-3 sm:p-4"
+          className="fixed inset-0 z-50 bg-slate-950/65 backdrop-blur-sm flex items-center justify-center p-3 sm:p-4"
           onClick={() => setShowAuthModal(false)}
           role="dialog"
           aria-modal="true"
@@ -864,7 +951,7 @@ export default function AuthView() {
 
             {/* Modal Header dengan Logo */}
             <div className="flex items-center gap-3 pr-8">
-              <div className="w-11 h-11 rounded-2xl overflow-hidden border border-sky-200 bg-emerald-950 shadow-sm shrink-0">
+              <div className="w-11 h-11 rounded-2xl overflow-hidden border border-sky-200 shadow-sm shrink-0">
                 <img src="/icon-192.png" alt="SMART-WARGA" className="w-full h-full object-cover" />
               </div>
               <div>
@@ -880,7 +967,7 @@ export default function AuthView() {
             </div>
 
             {/* Tab switch */}
-            <div className="grid grid-cols-2 p-1 bg-slate-100 rounded-2xl">
+            <div className="grid grid-cols-2 p-1 bg-slate-100 rounded-full">
               <button
                 type="button"
                 onClick={() => {
@@ -888,8 +975,8 @@ export default function AuthView() {
                   setErrorMsg('');
                   setSuccessMsg('');
                 }}
-                className={`py-2 text-xs sm:text-sm font-bold rounded-xl transition ${
-                  !isRegister ? 'bg-white text-sky-700 shadow-sm' : 'text-slate-500 hover:text-slate-800'
+                className={`py-2 text-xs sm:text-sm font-bold rounded-full transition ${
+                  !isRegister ? 'bg-white text-[#0284c7] shadow-sm' : 'text-slate-500 hover:text-slate-800'
                 }`}
               >
                 Masuk Akun
@@ -901,8 +988,8 @@ export default function AuthView() {
                   setErrorMsg('');
                   setSuccessMsg('');
                 }}
-                className={`py-2 text-xs sm:text-sm font-bold rounded-xl transition ${
-                  isRegister ? 'bg-white text-sky-700 shadow-sm' : 'text-slate-500 hover:text-slate-800'
+                className={`py-2 text-xs sm:text-sm font-bold rounded-full transition ${
+                  isRegister ? 'bg-white text-[#0284c7] shadow-sm' : 'text-slate-500 hover:text-slate-800'
                 }`}
               >
                 Daftar Warga Baru
@@ -933,7 +1020,7 @@ export default function AuthView() {
                       type="email"
                       value={loginEmail}
                       onChange={(e) => setLoginEmail(e.target.value)}
-                      className="w-full text-sm font-bold text-slate-900 bg-white pl-10 pr-3.5 py-2.5 rounded-xl border-2 border-slate-300 placeholder:text-slate-400 focus:bg-white focus:border-sky-500 focus:ring-2 focus:ring-sky-100 focus:outline-none transition shadow-xs"
+                      className="w-full text-sm font-bold text-slate-900 bg-white pl-10 pr-3.5 py-2.5 rounded-xl border-2 border-slate-300 placeholder:text-slate-400 focus:bg-white focus:border-[#0ea5e9] focus:ring-2 focus:ring-sky-100 focus:outline-none transition shadow-xs"
                       placeholder="nama@smartwarga.test"
                       required
                     />
@@ -948,7 +1035,7 @@ export default function AuthView() {
                       type="password"
                       value={loginPassword}
                       onChange={(e) => setLoginPassword(e.target.value)}
-                      className="w-full text-sm font-bold text-slate-900 bg-white pl-10 pr-3.5 py-2.5 rounded-xl border-2 border-slate-300 placeholder:text-slate-400 focus:bg-white focus:border-sky-500 focus:ring-2 focus:ring-sky-100 focus:outline-none transition shadow-xs"
+                      className="w-full text-sm font-bold text-slate-900 bg-white pl-10 pr-3.5 py-2.5 rounded-xl border-2 border-slate-300 placeholder:text-slate-400 focus:bg-white focus:border-[#0ea5e9] focus:ring-2 focus:ring-sky-100 focus:outline-none transition shadow-xs"
                       placeholder="••••••••"
                       required
                     />
@@ -958,7 +1045,7 @@ export default function AuthView() {
                 <button
                   type="submit"
                   disabled={loading}
-                  className="w-full py-3 bg-gradient-to-r from-[#0ea5e9] to-[#10b981] hover:opacity-95 text-white rounded-full text-sm font-black shadow-lg shadow-sky-500/25 active:scale-95 transition disabled:opacity-50"
+                  className="w-full py-3 bg-gradient-to-r from-[#0ea5e9] to-[#10b981] hover:brightness-105 text-white rounded-full text-sm font-black shadow-[0_6px_18px_rgba(14,165,233,0.3)] active:scale-95 transition disabled:opacity-50"
                 >
                   {loading ? 'MEMERIKSA...' : 'MASUK KE SISTEM'}
                 </button>
@@ -968,8 +1055,8 @@ export default function AuthView() {
                   {/* Dropdown Fast Login 37 Warga */}
                   <div className="p-3.5 bg-sky-50/80 rounded-2xl border border-sky-200 shadow-xs space-y-2.5">
                     <div className="flex items-center justify-between">
-                      <label className="text-xs font-black text-sky-950 flex items-center gap-1.5">
-                        <Users className="w-4 h-4 text-sky-700" />
+                      <label className="text-xs font-black text-slate-900 flex items-center gap-1.5">
+                        <Users className="w-4 h-4 text-[#0284c7]" />
                         <span>Pilih Akun Warga (37 KK Terdaftar):</span>
                       </label>
                       <span className="text-[10px] text-sky-800 font-extrabold bg-sky-200/80 px-2 py-0.5 rounded-full uppercase tracking-wider">
@@ -985,7 +1072,7 @@ export default function AuthView() {
                             fillQuickAccount(e.target.value, false);
                           }
                         }}
-                        className="w-full text-xs sm:text-sm font-bold px-3 py-2.5 rounded-xl border-2 border-sky-300 bg-white text-slate-900 focus:outline-none focus:ring-2 focus:ring-sky-500 shadow-xs"
+                        className="w-full text-xs sm:text-sm font-bold px-3 py-2.5 rounded-xl border-2 border-sky-300 bg-white text-slate-900 focus:outline-none focus:ring-2 focus:ring-[#0ea5e9] shadow-xs"
                       >
                         <option value="">-- Pilih Nama Warga Untuk Masuk Cepat --</option>
                         {wargaAccounts.map((w) => (
@@ -1002,7 +1089,7 @@ export default function AuthView() {
                             fillQuickAccount(selectedWargaEmail, true);
                           }
                         }}
-                        className="w-full py-2.5 bg-gradient-to-r from-[#0ea5e9] to-[#10b981] hover:opacity-95 disabled:opacity-40 text-white rounded-full text-xs sm:text-sm font-black transition flex items-center justify-center gap-1.5 shadow-sm active:scale-95"
+                        className="w-full py-2.5 bg-gradient-to-r from-[#0ea5e9] to-[#10b981] hover:brightness-105 disabled:opacity-40 text-white rounded-full text-xs sm:text-sm font-black transition flex items-center justify-center gap-1.5 shadow-sm active:scale-95"
                       >
                         <span>Masuk Sebagai Warga Terpilih</span>
                         <ArrowRight className="w-4 h-4" />
@@ -1096,12 +1183,12 @@ export default function AuthView() {
                       <button
                         type="button"
                         onClick={() => fillQuickAccount('satpam@smartwarga.test', true)}
-                        className="px-3 py-2.5 bg-gradient-to-r from-slate-900 to-blue-950 text-white text-xs font-bold rounded-xl border border-blue-500/40 hover:from-slate-800 hover:to-blue-900 flex items-center gap-2 text-left transition active:scale-95 shadow-sm"
+                        className="px-3 py-2.5 bg-gradient-to-r from-slate-900 to-sky-950 text-white text-xs font-bold rounded-xl border border-sky-500/40 hover:from-slate-800 hover:to-sky-900 flex items-center gap-2 text-left transition active:scale-95 shadow-sm"
                       >
-                        <span className="w-2.5 h-2.5 rounded-full bg-blue-400 shrink-0 animate-ping" />
+                        <span className="w-2.5 h-2.5 rounded-full bg-sky-400 shrink-0 animate-ping" />
                         <div className="truncate">
                           <div>Pak Bambang (Satpam)</div>
-                          <div className="text-[10px] font-normal text-blue-200">Pos Gerbang (Palang &amp; IoT)</div>
+                          <div className="text-[10px] font-normal text-sky-200">Pos Gerbang (Palang &amp; IoT)</div>
                         </div>
                       </button>
                     </div>
@@ -1121,7 +1208,7 @@ export default function AuthView() {
                     type="text"
                     value={regName}
                     onChange={(e) => setRegName(e.target.value)}
-                    className="w-full text-sm font-bold text-slate-900 bg-white px-3.5 py-2.5 rounded-xl border-2 border-slate-300 focus:border-sky-500 focus:outline-none"
+                    className="w-full text-sm font-bold text-slate-900 bg-white px-3.5 py-2.5 rounded-xl border-2 border-slate-300 focus:border-[#0ea5e9] focus:outline-none"
                     placeholder="Contoh: Ahmad Fadilah"
                     required
                   />
@@ -1135,7 +1222,7 @@ export default function AuthView() {
                       maxLength={16}
                       value={regNik}
                       onChange={(e) => setRegNik(e.target.value)}
-                      className="w-full text-xs sm:text-sm font-mono font-bold text-slate-900 bg-white px-3 py-2.5 rounded-xl border-2 border-slate-300 focus:border-sky-500 focus:outline-none"
+                      className="w-full text-xs sm:text-sm font-mono font-bold text-slate-900 bg-white px-3 py-2.5 rounded-xl border-2 border-slate-300 focus:border-[#0ea5e9] focus:outline-none"
                       placeholder="320101xxxxxxxxxx"
                     />
                   </div>
@@ -1146,7 +1233,7 @@ export default function AuthView() {
                       maxLength={16}
                       value={regNoKk}
                       onChange={(e) => setRegNoKk(e.target.value)}
-                      className="w-full text-xs sm:text-sm font-mono font-bold text-slate-900 bg-white px-3 py-2.5 rounded-xl border-2 border-slate-300 focus:border-sky-500 focus:outline-none"
+                      className="w-full text-xs sm:text-sm font-mono font-bold text-slate-900 bg-white px-3 py-2.5 rounded-xl border-2 border-slate-300 focus:border-[#0ea5e9] focus:outline-none"
                       placeholder="320101xxxxxxxxxx"
                     />
                   </div>
@@ -1159,7 +1246,7 @@ export default function AuthView() {
                       type="email"
                       value={regEmail}
                       onChange={(e) => setRegEmail(e.target.value)}
-                      className="w-full text-xs sm:text-sm font-bold text-slate-900 bg-white px-3 py-2.5 rounded-xl border-2 border-slate-300 focus:border-sky-500 focus:outline-none"
+                      className="w-full text-xs sm:text-sm font-bold text-slate-900 bg-white px-3 py-2.5 rounded-xl border-2 border-slate-300 focus:border-[#0ea5e9] focus:outline-none"
                       placeholder="email@warga.com"
                       required
                     />
@@ -1170,7 +1257,7 @@ export default function AuthView() {
                       type="text"
                       value={regPhone}
                       onChange={(e) => setRegPhone(e.target.value)}
-                      className="w-full text-xs sm:text-sm font-bold text-slate-900 bg-white px-3 py-2.5 rounded-xl border-2 border-slate-300 focus:border-sky-500 focus:outline-none"
+                      className="w-full text-xs sm:text-sm font-bold text-slate-900 bg-white px-3 py-2.5 rounded-xl border-2 border-slate-300 focus:border-[#0ea5e9] focus:outline-none"
                       placeholder="08123456789"
                       required
                     />
@@ -1183,7 +1270,7 @@ export default function AuthView() {
                     type="password"
                     value={regPassword}
                     onChange={(e) => setRegPassword(e.target.value)}
-                    className="w-full text-sm font-bold text-slate-900 bg-white px-3.5 py-2.5 rounded-xl border-2 border-slate-300 focus:border-sky-500 focus:outline-none"
+                    className="w-full text-sm font-bold text-slate-900 bg-white px-3.5 py-2.5 rounded-xl border-2 border-slate-300 focus:border-[#0ea5e9] focus:outline-none"
                     placeholder="Minimal 6 karakter"
                     required
                   />
@@ -1258,7 +1345,7 @@ export default function AuthView() {
                     <select
                       value={regKkType}
                       onChange={(e: any) => setRegKkType(e.target.value)}
-                      className="w-full text-xs font-bold px-2.5 py-2 rounded-xl border-2 border-emerald-300 bg-emerald-50 text-emerald-950"
+                      className="w-full text-xs font-bold px-2.5 py-2 rounded-xl border-2 border-sky-300 bg-sky-50 text-sky-950"
                     >
                       <option value="kk_utama">KK Utama (Kepala Rumah Tangga / Penanggung Jawab IPL)</option>
                       <option value="kk_pendukung">KK Pendukung / Tambahan (Kerabat Serumah)</option>
@@ -1271,16 +1358,16 @@ export default function AuthView() {
                 <div className="p-3.5 bg-slate-50 border border-slate-200 rounded-2xl space-y-2">
                   <div className="flex items-center justify-between gap-2">
                     <label className="text-xs font-bold text-slate-800 flex items-center gap-1.5">
-                      <CreditCard className="w-4 h-4 text-sky-600" />
+                      <CreditCard className="w-4 h-4 text-[#0ea5e9]" />
                       <span>UID Kartu RFID / e-KTP Fisik:</span>
                     </label>
                     <button
                       type="button"
                       onClick={() => setIsScanningRfid(!isScanningRfid)}
-                      className={`px-3 py-1.5 rounded-lg text-[11px] font-black transition flex items-center gap-1 shadow-xs ${
+                      className={`px-3 py-1.5 rounded-full text-[11px] font-black transition flex items-center gap-1 shadow-xs ${
                         isScanningRfid
                           ? 'bg-rose-500 text-white animate-pulse'
-                          : 'bg-sky-600 hover:bg-sky-700 text-white'
+                          : 'bg-[#0ea5e9] hover:bg-[#0284c7] text-white'
                       }`}
                     >
                       <Radio className={`w-3.5 h-3.5 ${isScanningRfid ? 'animate-spin' : ''}`} />
@@ -1290,7 +1377,7 @@ export default function AuthView() {
 
                   {isScanningRfid && (
                     <div className="p-2.5 bg-sky-50 border border-sky-200 rounded-xl text-xs text-sky-900 flex items-center gap-2 animate-pulse">
-                      <div className="w-2.5 h-2.5 rounded-full bg-sky-600 animate-ping shrink-0" />
+                      <div className="w-2.5 h-2.5 rounded-full bg-[#0ea5e9] animate-ping shrink-0" />
                       <span>Tempelkan kartu/e-KTP ke sensor RC522 sekarang...</span>
                     </div>
                   )}
@@ -1306,7 +1393,7 @@ export default function AuthView() {
                     type="text"
                     value={regRfid}
                     onChange={(e) => setRegRfid(e.target.value.toUpperCase())}
-                    className="w-full text-sm font-mono font-bold text-slate-900 px-3 py-2 rounded-xl border-2 border-slate-300 bg-white uppercase focus:border-sky-500 focus:outline-none"
+                    className="w-full text-sm font-mono font-bold text-slate-900 px-3 py-2 rounded-xl border-2 border-slate-300 bg-white uppercase focus:border-[#0ea5e9] focus:outline-none"
                     placeholder="Contoh: A1B2C3D4 (atau klik Pindai dari ESP32)"
                   />
                   <span className="text-[11px] text-slate-500 block leading-snug">
@@ -1317,24 +1404,27 @@ export default function AuthView() {
                 <button
                   type="submit"
                   disabled={loading}
-                  className="w-full py-3 bg-gradient-to-r from-[#0ea5e9] to-[#10b981] hover:opacity-95 text-white rounded-full text-sm font-black shadow-lg shadow-sky-500/25 active:scale-95 transition disabled:opacity-50"
+                  className="w-full py-3 bg-gradient-to-r from-[#0ea5e9] to-[#10b981] hover:brightness-105 text-white rounded-full text-sm font-black shadow-[0_6px_18px_rgba(14,165,233,0.3)] active:scale-95 transition disabled:opacity-50"
                 >
                   {loading ? 'MENDAFTAR...' : 'DAFTAR MENUNGGU ACC RT'}
                 </button>
               </form>
             )}
 
-            {/* Modal Credit */}
-            <div className="pt-2 border-t border-slate-100 text-center text-[11px] text-slate-400">
-              Designed &amp; Created by{' '}
-              <a
-                href="https://manajemensystem.my.id"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-sky-600 font-bold hover:underline"
-              >
-                WEB Palugada (manajemensystem.my.id)
-              </a>
+            {/* Credit WEB Palugada di bagian bawah modal */}
+            <div className="pt-3 border-t border-slate-100 flex items-center justify-center gap-2 text-[11px] text-slate-400">
+              <WebPalugadaLogo idSuffix="modal" size={18} />
+              <span>
+                Designed &amp; Created by{' '}
+                <a
+                  href="https://manajemensystem.my.id"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="font-bold text-[#0284c7] hover:underline"
+                >
+                  WEB Palugada
+                </a>
+              </span>
             </div>
           </div>
         </div>

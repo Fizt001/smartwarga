@@ -806,7 +806,7 @@ export default function AuthView() {
           aria-label="Portal Masuk SMART-WARGA"
         >
           <div
-            className="bg-white text-slate-900 rounded-3xl shadow-2xl border border-slate-200 w-full max-w-lg max-h-[92vh] overflow-y-auto p-5 sm:p-7 relative space-y-5"
+            className="bg-white text-slate-900 rounded-3xl shadow-2xl border border-slate-200 w-full max-w-5xl max-h-[94vh] overflow-y-auto p-5 sm:p-7 relative space-y-4"
             onClick={(e) => e.stopPropagation()}
           >
             {/* Tombol Tutup Modal */}
@@ -881,7 +881,9 @@ export default function AuthView() {
 
             {/* 1. LOGIN FORM */}
             {!isRegister ? (
-              <form onSubmit={handleLogin} className="space-y-4">
+              <form onSubmit={handleLogin} className="grid grid-cols-1 lg:grid-cols-2 gap-x-7 gap-y-5 lg:items-start">
+                {/* KOLOM KIRI: Form Login */}
+                <div className="space-y-4">
                 <div>
                   <label className="block text-xs font-bold text-slate-800 mb-1.5">Email Terdaftar:</label>
                   <div className="relative">
@@ -920,8 +922,13 @@ export default function AuthView() {
                   {loading ? 'MEMERIKSA...' : 'MASUK KE SISTEM'}
                 </button>
 
-                {/* Quick Demo Credentials & Dropdown Warga */}
-                <div className="pt-4 border-t border-slate-200 space-y-4">
+                <div className="p-3 bg-slate-50 border border-slate-200 rounded-xl text-[11px] text-slate-600 leading-relaxed">
+                  🔒 <strong>Ketentuan Akses Warga:</strong> Akses login sistem dikhususkan bagi <strong>KK Utama</strong> (Penanggung Jawab Rumah). <strong>KK Tambahan tidak memiliki akses login</strong> karena penanggung jawab iuran dan administrasi rumah adalah KK Utama.
+                </div>
+                </div>
+
+                {/* KOLOM KANAN: Akun Pintasan (Quick Demo Credentials & Dropdown Warga) */}
+                <div className="lg:border-l lg:border-slate-200 lg:pl-7 space-y-4">
                   {/* Dropdown Fast Login 37 Warga */}
                   <div className="p-3.5 bg-sky-50/80 rounded-2xl border border-sky-200 shadow-xs space-y-2.5">
                     <div className="flex items-center justify-between">
@@ -1064,14 +1071,13 @@ export default function AuthView() {
                     </div>
                   </div>
 
-                  <div className="p-3 bg-slate-50 border border-slate-200 rounded-xl text-[11px] text-slate-600 leading-relaxed">
-                    🔒 <strong>Ketentuan Akses Warga:</strong> Akses login sistem dikhususkan bagi <strong>KK Utama</strong> (Penanggung Jawab Rumah). <strong>KK Tambahan tidak memiliki akses login</strong> karena penanggung jawab iuran dan administrasi rumah adalah KK Utama.
-                  </div>
                 </div>
               </form>
             ) : (
               /* 2. REGISTER FORM */
-              <form onSubmit={handleRegister} className="space-y-3.5">
+              <form onSubmit={handleRegister} className="grid grid-cols-1 lg:grid-cols-2 gap-x-7 gap-y-4">
+                {/* KOLOM KIRI REGISTER: Identitas */}
+                <div className="space-y-3.5">
                 <div>
                   <label className="block text-xs font-bold text-slate-800 mb-1">Nama Lengkap Sesuai KTP:</label>
                   <input
@@ -1146,6 +1152,10 @@ export default function AuthView() {
                   />
                 </div>
 
+                </div>
+
+                {/* KOLOM KANAN REGISTER: Alamat & RFID */}
+                <div className="space-y-3.5">
                 {/* Wilayah & Rumah Selector */}
                 <div className="p-3.5 bg-slate-50 border border-slate-200 rounded-2xl space-y-2.5">
                   <span className="text-[11px] font-extrabold uppercase text-slate-600 block">
@@ -1271,13 +1281,17 @@ export default function AuthView() {
                   </span>
                 </div>
 
-                <button
-                  type="submit"
-                  disabled={loading}
-                  className="w-full py-3 bg-gradient-to-r from-[#0ea5e9] to-[#10b981] hover:brightness-105 text-white rounded-full text-sm font-black shadow-[0_6px_18px_rgba(14,165,233,0.3)] active:scale-95 transition disabled:opacity-50"
-                >
-                  {loading ? 'MENDAFTAR...' : 'DAFTAR MENUNGGU ACC RT'}
-                </button>
+                </div>
+
+                <div className="lg:col-span-2">
+                  <button
+                    type="submit"
+                    disabled={loading}
+                    className="w-full py-3 bg-gradient-to-r from-[#0ea5e9] to-[#10b981] hover:brightness-105 text-white rounded-full text-sm font-black shadow-[0_6px_18px_rgba(14,165,233,0.3)] active:scale-95 transition disabled:opacity-50"
+                  >
+                    {loading ? 'MENDAFTAR...' : 'DAFTAR MENUNGGU ACC RT'}
+                  </button>
+                </div>
               </form>
             )}
 

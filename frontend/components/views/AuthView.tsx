@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import { useAuth } from '@/lib/auth-context';
 import { fetchApi } from '@/lib/api';
 import {
@@ -189,6 +189,24 @@ export default function AuthView() {
   const [errorMsg, setErrorMsg] = useState('');
   const [successMsg, setSuccessMsg] = useState('');
 
+  // Dynamic Warga accounts from API (fallback to static list)
+  const [dynamicWargaAccounts, setDynamicWargaAccounts] = useState<Array<{ id?: number; name: string; email: string; unit: string }>>(wargaAccounts);
+
+  const fetchWargaAccounts = useCallback(async () => {
+    try {
+      const res = await fetchApi('/auth/warga-accounts');
+      if (res.success && Array.isArray(res.data) && res.data.length > 0) {
+        setDynamicWargaAccounts(res.data);
+      }
+    } catch {
+      // fallback to initial list
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchWargaAccounts();
+  }, [fetchWargaAccounts]);
+
   const openAuthModal = (mode: 'login' | 'register') => {
     setIsRegister(mode === 'register');
     setErrorMsg('');
@@ -318,6 +336,7 @@ export default function AuthView() {
 
       if (res.success && res.data) {
         setSuccessMsg(res.message);
+        fetchWargaAccounts();
         setLoginEmail(regEmail);
         setLoginPassword('');
         setTimeout(() => {
@@ -936,7 +955,7 @@ export default function AuthView() {
                     <div className="flex items-center justify-between">
                       <label className="text-xs font-black text-slate-900 flex items-center gap-1.5">
                         <Users className="w-4 h-4 text-[#0284c7]" />
-                        <span>Pilih Akun Warga (37 KK Terdaftar):</span>
+                        <span>Pilih Akun Warga ({dynamicWargaAccounts.length} KK Terdaftar):</span>
                       </label>
                       <span className="text-[10px] text-sky-800 font-extrabold bg-sky-200/80 px-2 py-0.5 rounded-full uppercase tracking-wider">
                         Warga
@@ -954,7 +973,7 @@ export default function AuthView() {
                         className="w-full text-xs sm:text-sm font-bold px-3 py-2.5 rounded-xl border-2 border-sky-300 bg-white text-slate-900 focus:outline-none focus:ring-2 focus:ring-[#0ea5e9] shadow-xs"
                       >
                         <option value="">-- Pilih Nama Warga Untuk Masuk Cepat --</option>
-                        {wargaAccounts.map((w) => (
+                        {dynamicWargaAccounts.map((w) => (
                           <option key={w.email} value={w.email}>
                             {w.name} — {w.unit}
                           </option>

@@ -25,6 +25,7 @@ use Illuminate\Support\Facades\Route;
 Route::prefix('auth')->group(function () {
     Route::post('/register', [AuthController::class, 'register']);
     Route::post('/login', [AuthController::class, 'login']);
+    Route::get('/warga-accounts', [AuthController::class, 'getPublicWargaAccounts']);
 });
 
 Route::get('/houses', [AuthController::class, 'getHouseList']);

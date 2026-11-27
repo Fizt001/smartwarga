@@ -254,6 +254,37 @@ class AuthController extends Controller
     }
 
     /**
+     * Public list of eligible warga accounts for quick login selection
+     */
+    public function getPublicWargaAccounts()
+    {
+        $wargas = User::where('role', 'warga')
+            ->where(function ($q) {
+                $q->where('kk_type', 'kk_utama')
+                  ->orWhereNull('kk_type')
+                  ->orWhereIn('id', House::whereNotNull('head_of_family_id')->pluck('head_of_family_id'));
+            })
+            ->where('email', 'not like', 'fam_%')
+            ->with('house')
+            ->get();
+
+        $data = $wargas->map(function ($u) {
+            $unitStr = $u->house ? $u->house->full_address : ('Wilayah RT ' . ($u->rt_number ?? '01'));
+            return [
+                'id' => $u->id,
+                'name' => $u->name,
+                'email' => $u->email,
+                'unit' => $unitStr,
+            ];
+        })->sortBy('unit')->values();
+
+        return response()->json([
+            'success' => true,
+            'data' => $data,
+        ]);
+    }
+
+    /**
      * Sensus Lengkap 300 Unit Rumah (100 per RT)
      */
     public function getHousesCensus(Request $request)

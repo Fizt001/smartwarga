@@ -45,17 +45,20 @@ class KioskServiceController extends Controller
             'owner_house' => $user?->house?->house_code,
         ], 120);
 
-        // 3. JIKA KARTU TIDAK TERDAFTAR / TANPA IDENTITAS: TOLAK ANTREAN!
-        // Hanya kartu e-KTP warga yang sudah terdaftar di sistem yang boleh mengambil antrean pelayanan.
+        // 3. JIKA KARTU BELUM TERDAFTAR: STATUS REGISTRASI / LAYANAN TERTUNDA
+        // Simpan UID untuk pendaftaran, beri feedback LCD 'LAYANAN TERTUNDA / E-KTP REGISTERED'
+        // dan JANGAN buat antrean pelayanan reguler sampai akun selesai didaftarkan.
         if (!$user) {
             return response()->json([
-                'success' => false,
+                'success' => true,
                 'is_registered' => false,
+                'need_registration' => true,
+                'status' => 'pending_registration',
                 'rfid_uid' => $rfidUid,
-                'message' => "Kartu fisik [{$rfidUid}] tidak terdaftar di sistem SMART-WARGA. Harap daftarkan kartu/e-KTP Anda terlebih dahulu ke Petugas Balai Warga.",
-                'lcd_line1' => 'KARTU ASING!',
-                'lcd_line2' => 'BELUM TERDAFTAR',
-            ], 422);
+                'message' => "e-KTP fisik [{$rfidUid}] berhasil terbaca! Layanan umum ditunda hingga kartu didaftarkan ke akun warga melalui web.",
+                'lcd_line1' => 'LAYANAN TERTUNDA',
+                'lcd_line2' => 'E-KTP REGISTERED',
+            ], 200);
         }
 
         $citizenName = $user->name;

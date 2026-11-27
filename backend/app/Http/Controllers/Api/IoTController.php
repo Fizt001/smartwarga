@@ -785,13 +785,23 @@ class IoTController extends Controller
         $user = User::with(['house', 'wallet'])->where('rfid_uid', $rfidUid)->first();
 
         if (!$user) {
+            Cache::put('latest_ktp_scan', [
+                'rfid_uid' => strtoupper($rfidUid),
+                'device_id' => 'KIOSK_TERMINAL',
+                'scanned_at' => now()->toIso8601String(),
+                'timestamp' => now()->timestamp,
+                'already_registered' => false,
+            ], 120);
+
             return response()->json([
-                'success' => false,
-                'mode' => 'rejected',
-                'message' => "Kartu e-KTP/RFID [{$rfidUid}] tidak terdaftar di sistem SMART-WARGA.",
-                'lcd_line1' => 'KARTU DITOLAK   ',
-                'lcd_line2' => 'TIDAK TERDAFTAR ',
-            ], 404);
+                'success' => true,
+                'is_registered' => false,
+                'need_registration' => true,
+                'mode' => 'pending_registration',
+                'message' => "Kartu e-KTP/RFID [{$rfidUid}] berhasil discan! Layanan umum ditunda untuk registrasi akun.",
+                'lcd_line1' => 'LAYANAN TERTUNDA',
+                'lcd_line2' => 'E-KTP REGISTERED',
+            ], 200);
         }
 
         $userAgent = (string) $request->header('User-Agent', '');

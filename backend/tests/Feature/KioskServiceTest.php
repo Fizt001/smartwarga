@@ -105,15 +105,16 @@ class KioskServiceTest extends TestCase
             'device_id' => 'AIO_KIOSK_PIN4'
         ]);
 
-        $resp->assertStatus(422)
+        $resp->assertStatus(200)
             ->assertJson([
-                'success' => false,
+                'success' => true,
                 'is_registered' => false,
-                'lcd_line1' => 'KARTU ASING!',
-                'lcd_line2' => 'BELUM TERDAFTAR',
+                'need_registration' => true,
+                'lcd_line1' => 'LAYANAN TERTUNDA',
+                'lcd_line2' => 'E-KTP REGISTERED',
             ]);
 
-        // Pastikan tidak ada antrean yang dibuat
+        // Pastikan tidak ada antrean pelayanan reguler yang dibuat untuk kartu asing
         $this->assertEquals(0, KioskServiceQueue::count());
 
         // Namun tetap tersimpan di latest_ktp_scan untuk pendaftaran kartu baru

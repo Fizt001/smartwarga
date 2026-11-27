@@ -122,7 +122,7 @@ const wargaAccounts = [
   { name: 'Budi Santoso', email: 'budi@smartwarga.test', unit: 'RT 01 Blok A No. 01' },
   { name: 'Joko Widodo', email: 'joko@smartwarga.test', unit: 'RT 01 Blok A No. 03' },
   { name: 'Achmad Vickry Firdaus', email: 'achmad.vickry@smartwarga.test', unit: 'RT 01 Blok A No. 04' },
-  { name: 'Cikal Prayoga', email: 'cikal.prayoga@smartwarga.test', unit: 'RT 01 Blok A No. 05' },
+  { name: 'Cikal Prayono', email: 'cikal.prayoga@smartwarga.test', unit: 'RT 01 Blok A No. 05' },
   { name: 'Julvan Augus Miseri Cordias Harefa', email: 'julvan.augus@smartwarga.test', unit: 'RT 01 Blok A No. 06' },
   { name: 'Reival Al Kahfi', email: 'reival.al@smartwarga.test', unit: 'RT 01 Blok A No. 07' },
   { name: 'Halim Hafis', email: 'halim.hafis@smartwarga.test', unit: 'RT 01 Blok A No. 08' },

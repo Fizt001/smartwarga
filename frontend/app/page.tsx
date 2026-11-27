@@ -219,16 +219,15 @@ export default function HomePage() {
 
   return (
     <div className="min-h-screen flex flex-col bg-slate-100/70">
-      <Navbar onOpenPanic={() => setShowPanicModal(true)} />
-
       {/* When not logged in */}
       {!user ? (
-        <main className="flex-1 flex flex-col justify-center">
+        <main className="flex-1 w-full">
           <AuthView />
         </main>
       ) : (
         /* When logged in */
         <>
+          <Navbar onOpenPanic={() => setShowPanicModal(true)} />
           <div className="flex-1 flex w-full">
             <Sidebar
               activeTab={activeTab}

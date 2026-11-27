@@ -22,8 +22,6 @@ import {
   ChevronRight,
   ChevronDown,
   Zap,
-  ExternalLink,
-  MessageCircle,
   Check
 } from 'lucide-react';
 
@@ -159,9 +157,6 @@ const wargaAccounts = [
   { name: 'Julius Wisnu Broto', email: 'julius.wisnu@smartwarga.test', unit: 'RT 01 Blok B No. 12' },
   { name: 'Bambang Pamungkas', email: 'bambang@smartwarga.test', unit: 'RT 02 Blok B No. 01' },
 ];
-
-const PALUGADA_WA_URL =
-  'https://wa.me/6282169299119?text=Halo%20tim%20Web%20Palugada!%20Saya%20melihat%20aplikasi%20SMART-WARGA%20RW%2005%20(di%20bawah%20naungan%20manajemensystem.my.id)%20dan%20ingin%20konsultasi%20pembuatan%20website%20atau%20aplikasi.';
 
 export default function AuthView() {
   const { login } = useAuth();
@@ -385,7 +380,7 @@ export default function AuthView() {
                 </span>
               </div>
               <div className="text-[10px] sm:text-[11px] font-semibold text-sky-600 leading-tight mt-0.5 truncate">
-                RW 05 &bull; by WEB Palugada
+                Digital RW 05 Platform
               </div>
             </div>
           </a>
@@ -400,9 +395,6 @@ export default function AuthView() {
             </a>
             <a href="#role" className="hover:text-[#0ea5e9] transition">
               Akses Role
-            </a>
-            <a href="#naungan" className="hover:text-[#0ea5e9] transition">
-              WEB Palugada
             </a>
           </nav>
 
@@ -445,10 +437,10 @@ export default function AuthView() {
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 lg:gap-12 items-center">
             {/* KOLOM KIRI: Identitas, Headline, CTA Pill & Kartu Statistik Putih */}
             <div className="lg:col-span-6 space-y-5 sm:space-y-6">
-              {/* Pill Badge Naungan WEB Palugada */}
+              {/* Pill Badge Portal */}
               <div className="inline-flex items-center gap-2 bg-white border border-slate-200/80 shadow-sm rounded-full px-4 py-1.5 text-xs font-bold text-slate-700">
                 <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-                <span>Produk Ekosistem WEB Palugada &bull; RW 05</span>
+                <span>Portal Digital Lingkungan RW 05 &bull; Terintegrasi IoT ESP32</span>
               </div>
 
               {/* Headline Besar & Tegas */}
@@ -759,174 +751,52 @@ export default function AuthView() {
         </div>
       </section>
 
-      {/* 6. Section Naungan & Promosi WEB Palugada (manajemensystem.my.id) */}
-      <section id="naungan" className="bg-slate-50 py-14 sm:py-16 px-4 sm:px-6 lg:px-8 border-t border-slate-200/80">
-        <div className="max-w-5xl mx-auto">
-          <div className="rounded-3xl bg-gradient-to-r from-[#0ea5e9] to-[#10b981] p-6 sm:p-10 text-white shadow-xl shadow-sky-900/10 relative overflow-hidden">
-            <div className="absolute -right-12 -bottom-12 w-56 h-56 rounded-full bg-white/10 blur-2xl pointer-events-none" />
-            <div className="relative z-10 flex flex-col lg:flex-row items-start lg:items-center justify-between gap-6">
-              <div className="space-y-3 max-w-2xl">
-                <div className="inline-flex items-center gap-2.5 bg-white/15 backdrop-blur-md border border-white/25 rounded-full px-3.5 py-1.5">
-                  <WebPalugadaLogo idSuffix="banner" size={24} />
-                  <span className="text-xs font-extrabold tracking-wide">
-                    Di Bawah Naungan WEB Palugada &bull; manajemensystem.my.id
-                  </span>
-                </div>
-                <h2 className="text-2xl sm:text-3xl font-black leading-tight">
-                  Butuh Website atau Aplikasi Custom Seperti SMART-WARGA?
-                </h2>
-                <p className="text-sm sm:text-base text-sky-50 leading-relaxed">
-                  <strong>Mau aplikasi / website apa aja, kita ada!!</strong> SMART-WARGA RW 05 dirancang dan dikembangkan oleh <strong>Jasa Website Palugada</strong> &mdash; spesialis sistem informasi, company profile, e-commerce, SIAKAD, dashboard analytics, hingga integrasi IoT custom.
-                </p>
+      {/* 6. Footer Ringkas SMART-WARGA & Atribusi WEB Palugada */}
+      <footer className="bg-slate-900 text-slate-400 py-8 px-4 sm:px-6 lg:px-8 border-t border-slate-800">
+        <div className="max-w-7xl mx-auto flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
+          <div className="space-y-2 max-w-xl">
+            <div className="flex items-center gap-3">
+              <div className="w-9 h-9 rounded-xl overflow-hidden border border-slate-700 shrink-0">
+                <img src="/icon-192.png" alt="SMART-WARGA" className="w-full h-full object-cover" />
               </div>
+              <div>
+                <div className="font-black text-base text-white leading-none">
+                  SMART<span className="text-[#38bdf8]">-WARGA</span>
+                </div>
+                <div className="text-xs text-slate-400 mt-0.5">Portal Digital Lingkungan RW 05</div>
+              </div>
+            </div>
+            <p className="text-xs text-slate-400 leading-relaxed">
+              Sistem informasi terpadu kependudukan, keuangan iuran IPL transparan, persuratan digital, serta integrasi keamanan gerbang &amp; kios IoT ESP32.
+            </p>
+            <p className="text-[11px] text-slate-500 pt-1">
+              &copy; 2026 <strong className="text-slate-300">SMART-WARGA RW 05</strong>. All rights reserved.
+            </p>
+          </div>
 
-              <div className="flex flex-col sm:flex-row lg:flex-col gap-3 w-full lg:w-auto shrink-0">
+          <div className="flex flex-col md:items-end gap-2 shrink-0">
+            <div className="inline-flex items-center gap-2.5 bg-slate-800/70 border border-slate-700/80 rounded-full px-3.5 py-2">
+              <WebPalugadaLogo idSuffix="footer" size={22} />
+              <span className="text-xs text-slate-300">
+                Designed &amp; Created by{' '}
                 <a
                   href="https://manajemensystem.my.id"
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="px-6 py-3 rounded-full bg-white text-[#0284c7] hover:bg-sky-50 font-extrabold text-sm inline-flex items-center justify-center gap-2 shadow-md transition active:scale-95"
+                  className="text-[#38bdf8] hover:underline font-bold"
                 >
-                  <span>Kunjungi WEB Palugada</span>
-                  <ExternalLink className="w-4 h-4" />
+                  WEB Palugada
                 </a>
-                <a
-                  href={PALUGADA_WA_URL}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="px-6 py-3 rounded-full bg-slate-900/25 hover:bg-slate-900/35 border border-white/30 text-white font-bold text-sm inline-flex items-center justify-center gap-2 transition active:scale-95"
-                >
-                  <MessageCircle className="w-4 h-4" />
-                  <span>Konsultasi via WhatsApp</span>
-                </a>
-              </div>
+              </span>
             </div>
-          </div>
-        </div>
-      </section>
-
-      {/* 7. Footer Resmi dengan Identitas & Credit WEB Palugada */}
-      <footer className="bg-slate-900 text-slate-300 pt-12 pb-8 px-4 sm:px-6 lg:px-8">
-        <div className="max-w-7xl mx-auto">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 pb-8 border-b border-slate-800">
-            {/* Kolom 1: Brand SMART-WARGA */}
-            <div className="space-y-3">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-xl overflow-hidden border border-slate-700 shrink-0">
-                  <img src="/icon-192.png" alt="SMART-WARGA" className="w-full h-full object-cover" />
-                </div>
-                <div>
-                  <div className="font-black text-lg text-white leading-none">
-                    SMART<span className="text-[#38bdf8]">-WARGA</span>
-                  </div>
-                  <div className="text-xs text-slate-400 mt-0.5">Portal Digital Lingkungan RW 05</div>
-                </div>
-              </div>
-              <p className="text-xs text-slate-400 leading-relaxed">
-                Sistem informasi terpadu tata kelola kependudukan, keuangan iuran IPL transparan, persuratan digital, serta integrasi keamanan gerbang &amp; kios IoT ESP32.
-              </p>
-            </div>
-
-            {/* Kolom 2: Developer & Naungan WEB Palugada */}
-            <div className="space-y-3">
-              <div className="text-xs font-extrabold uppercase tracking-wider text-slate-400">
-                Designed &amp; Created By
-              </div>
-              <a
-                href="https://manajemensystem.my.id"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="inline-flex items-center gap-3 group"
-              >
-                <WebPalugadaLogo idSuffix="footer" size={38} />
-                <div>
-                  <div className="flex items-baseline gap-1.5 leading-none">
-                    <span className="text-lg font-black bg-gradient-to-r from-[#0ea5e9] to-[#10b981] bg-clip-text text-transparent">
-                      WEB
-                    </span>
-                    <span className="text-base font-bold text-white group-hover:text-sky-300 transition">
-                      Palugada
-                    </span>
-                  </div>
-                  <div className="text-xs font-semibold text-[#38bdf8] mt-0.5">
-                    manajemensystem.my.id
-                  </div>
-                </div>
-              </a>
-              <p className="text-xs text-slate-400">
-                Mau aplikasi / website apa aja, kita ada!!
-              </p>
-            </div>
-
-            {/* Kolom 3: Kontak WEB Palugada */}
-            <div className="space-y-2.5 text-xs">
-              <div className="text-xs font-extrabold uppercase tracking-wider text-slate-400">
-                Kontak Pengembang
-              </div>
-              <div>
-                <a
-                  href={PALUGADA_WA_URL}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="hover:text-emerald-400 transition font-semibold"
-                >
-                  WhatsApp: 0821-6929-9119
-                </a>
-              </div>
-              <div>
-                <a
-                  href="mailto:admin@manajemensystem.my.id"
-                  className="hover:text-sky-400 transition font-semibold"
-                >
-                  Email: admin@manajemensystem.my.id
-                </a>
-              </div>
-              <div className="text-slate-400">
-                Website:{' '}
-                <a
-                  href="https://manajemensystem.my.id"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-[#38bdf8] hover:underline font-semibold"
-                >
-                  manajemensystem.my.id
-                </a>
-              </div>
-            </div>
-          </div>
-
-          <div className="pt-6 flex flex-col sm:flex-row items-center justify-between gap-2 text-xs text-slate-400">
-            <p>
-              &copy; 2026 <strong className="text-white">SMART-WARGA RW 05</strong>. All rights reserved.
-            </p>
-            <p>
-              Designed &amp; Created by{' '}
-              <a
-                href="https://manajemensystem.my.id"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-[#38bdf8] hover:underline font-bold"
-              >
-                Jasa Website Palugada (manajemensystem.my.id)
-              </a>
-            </p>
+            <span className="text-[11px] text-slate-500 font-mono">
+              manajemensystem.my.id
+            </span>
           </div>
         </div>
       </footer>
 
-      {/* Floating WhatsApp Button (Gaya WEB Palugada) */}
-      <a
-        href={PALUGADA_WA_URL}
-        target="_blank"
-        rel="noopener noreferrer"
-        aria-label="Chat WhatsApp WEB Palugada"
-        className="fixed bottom-5 right-5 z-30 bg-[#25D366] hover:bg-[#1ebe5d] text-white rounded-full px-4 py-3 shadow-lg shadow-emerald-600/30 flex items-center gap-2 text-xs sm:text-sm font-bold transition hover:-translate-y-0.5 active:scale-95"
-      >
-        <MessageCircle className="w-5 h-5" />
-        <span className="hidden sm:inline">Chat Sekarang</span>
-      </a>
-
-      {/* 8. DIALOG MODAL LOGIN & DAFTAR (Dibuka dari tombol atas / Hero — nyaman di HP & Desktop) */}
+      {/* 7. DIALOG MODAL LOGIN & DAFTAR (Dibuka dari tombol atas / Hero — nyaman di HP & Desktop) */}
       {showAuthModal && (
         <div
           className="fixed inset-0 z-50 bg-slate-950/65 backdrop-blur-sm flex items-center justify-center p-3 sm:p-4"

@@ -436,11 +436,11 @@ export default function AuthView() {
         <div className="relative z-10 max-w-7xl mx-auto">
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 lg:gap-12 items-center">
             {/* KOLOM KIRI: Identitas, Headline, CTA Pill & Kartu Statistik Putih */}
-            <div className="lg:col-span-6 space-y-5 sm:space-y-6">
+            <div className="lg:col-span-6 space-y-5 sm:space-y-6 text-center lg:text-left flex flex-col items-center lg:items-start">
               {/* Pill Badge Portal */}
-              <div className="inline-flex items-center gap-2 bg-white border border-slate-200/80 shadow-sm rounded-full px-4 py-1.5 text-xs font-bold text-slate-700">
-                <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-                <span>Portal Digital Lingkungan RW 05 &bull; Terintegrasi IoT ESP32</span>
+              <div className="inline-flex items-center gap-2 bg-white border border-slate-200/80 shadow-sm rounded-full px-4 py-1.5 text-xs font-bold text-slate-700 mx-auto lg:mx-0">
+                <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse shrink-0" />
+                <span className="truncate">Portal Digital Lingkungan RW 05 &bull; Terintegrasi IoT ESP32</span>
               </div>
 
               {/* Headline Besar & Tegas */}
@@ -454,7 +454,7 @@ export default function AuthView() {
               </h1>
 
               {/* Subjudul & Deskripsi */}
-              <div className="text-sm sm:text-base text-slate-600 leading-relaxed max-w-xl space-y-1.5">
+              <div className="text-sm sm:text-base text-slate-600 leading-relaxed max-w-xl space-y-1.5 mx-auto lg:mx-0">
                 <p className="font-extrabold text-slate-800">
                   Semua layanan warga &amp; gerbang pintar dalam satu sistem!
                 </p>
@@ -463,48 +463,48 @@ export default function AuthView() {
                 </p>
               </div>
 
-              {/* 2 Tombol Pill CTA */}
-              <div className="flex flex-wrap items-center gap-3.5 pt-1">
+              {/* 2 Tombol Pill CTA: Responsif Sejajar di Semua HP */}
+              <div className="grid grid-cols-2 gap-2.5 sm:gap-3.5 w-full sm:w-auto sm:flex sm:flex-row items-center justify-center lg:justify-start pt-1">
                 <button
                   type="button"
                   onClick={() => openAuthModal('login')}
-                  className="px-7 py-3.5 rounded-full bg-gradient-to-r from-[#0ea5e9] to-[#10b981] hover:brightness-105 text-white font-bold text-sm sm:text-base inline-flex items-center gap-2 shadow-[0_6px_20px_rgba(14,165,233,0.35)] transition active:scale-95"
+                  className="w-full sm:w-auto px-3 sm:px-7 py-3 sm:py-3.5 rounded-full bg-gradient-to-r from-[#0ea5e9] to-[#10b981] hover:brightness-105 text-white font-bold text-xs sm:text-base inline-flex items-center justify-center gap-1.5 sm:gap-2 shadow-[0_6px_20px_rgba(14,165,233,0.35)] transition active:scale-95 whitespace-nowrap"
                 >
-                  <LogIn className="w-4 h-4 sm:w-5 sm:h-5" />
-                  <span>Masuk ke Sistem</span>
+                  <LogIn className="w-4 h-4 sm:w-5 sm:h-5 shrink-0" />
+                  <span className="truncate">Masuk ke Sistem</span>
                 </button>
                 <button
                   type="button"
                   onClick={() => openAuthModal('register')}
-                  className="px-7 py-3.5 rounded-full border-2 border-[#0ea5e9] bg-white/85 hover:bg-sky-50 text-[#0284c7] font-bold text-sm sm:text-base inline-flex items-center gap-2 transition active:scale-95"
+                  className="w-full sm:w-auto px-3 sm:px-7 py-3 sm:py-3.5 rounded-full border-2 border-[#0ea5e9] bg-white hover:bg-sky-50 text-[#0284c7] font-bold text-xs sm:text-base inline-flex items-center justify-center gap-1.5 sm:gap-2 transition active:scale-95 whitespace-nowrap"
                 >
-                  <UserPlus className="w-4 h-4 sm:w-5 sm:h-5" />
-                  <span>Daftar Warga Baru</span>
+                  <UserPlus className="w-4 h-4 sm:w-5 sm:h-5 shrink-0" />
+                  <span className="truncate">Daftar Warga Baru</span>
                 </button>
               </div>
 
               {/* Floating White Stats Card (Gaya WEB Palugada) */}
-              <div className="pt-2">
-                <div className="bg-white/95 border border-slate-200/70 rounded-2xl shadow-[0_10px_30px_rgba(15,23,42,0.06)] px-5 sm:px-7 py-4 inline-flex flex-wrap items-center gap-5 sm:gap-7">
+              <div className="pt-2 w-full flex justify-center lg:justify-start">
+                <div className="bg-white/95 border border-slate-200/70 rounded-2xl shadow-[0_10px_30px_rgba(15,23,42,0.06)] px-4 sm:px-7 py-3.5 sm:py-4 inline-flex items-center justify-around sm:justify-start gap-4 sm:gap-7 w-full sm:w-auto max-w-md">
                   <div>
                     <div className="text-xl sm:text-2xl font-black text-slate-900 leading-none">
                       37<span className="text-[#0ea5e9]">+</span>
                     </div>
-                    <div className="text-xs font-medium text-slate-500 mt-1">KK Aktif</div>
+                    <div className="text-[11px] sm:text-xs font-medium text-slate-500 mt-1">KK Aktif</div>
                   </div>
-                  <div className="w-px h-9 bg-slate-200" />
+                  <div className="w-px h-8 sm:h-9 bg-slate-200" />
                   <div>
                     <div className="text-xl sm:text-2xl font-black text-slate-900 leading-none">
                       300
                     </div>
-                    <div className="text-xs font-medium text-slate-500 mt-1">Unit Hunian</div>
+                    <div className="text-[11px] sm:text-xs font-medium text-slate-500 mt-1">Unit Hunian</div>
                   </div>
-                  <div className="w-px h-9 bg-slate-200" />
+                  <div className="w-px h-8 sm:h-9 bg-slate-200" />
                   <div>
                     <div className="text-xl sm:text-2xl font-black text-slate-900 leading-none">
-                      2<span className="text-[#10b981] text-base sm:text-lg font-extrabold ml-1">Area</span>
+                      2<span className="text-[#10b981] text-sm sm:text-lg font-extrabold ml-1">Area</span>
                     </div>
-                    <div className="text-xs font-medium text-slate-500 mt-1">IoT ESP32</div>
+                    <div className="text-[11px] sm:text-xs font-medium text-slate-500 mt-1">IoT ESP32</div>
                   </div>
                 </div>
               </div>
@@ -639,27 +639,27 @@ export default function AuthView() {
             </p>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <div className="grid grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-6">
             {platformFeatures.map((item, idx) => {
               const Icon = item.icon;
               return (
                 <div
                   key={idx}
-                  className="bg-white rounded-2xl p-6 border border-slate-200/90 shadow-sm hover:shadow-lg hover:-translate-y-1 hover:border-sky-300 transition-all duration-200 flex flex-col justify-between"
+                  className="bg-white rounded-2xl p-3.5 sm:p-6 border border-slate-200/90 shadow-sm hover:shadow-lg hover:-translate-y-1 hover:border-sky-300 transition-all duration-200 flex flex-col justify-between"
                 >
                   <div>
-                    <div className="flex items-center justify-between mb-4">
-                      <div className={`w-11 h-11 rounded-xl flex items-center justify-center ${item.iconColor} shadow-sm`}>
-                        <Icon className="w-5 h-5" />
+                    <div className="flex items-center justify-between gap-1 mb-2.5 sm:mb-4">
+                      <div className={`w-8 h-8 sm:w-11 sm:h-11 rounded-lg sm:rounded-xl flex items-center justify-center ${item.iconColor} shadow-sm shrink-0`}>
+                        <Icon className="w-4 h-4 sm:w-5 sm:h-5" />
                       </div>
-                      <span className={`text-[11px] font-bold px-2.5 py-1 rounded-full border ${item.tagColor}`}>
+                      <span className={`text-[9px] sm:text-[11px] font-bold px-1.5 sm:px-2.5 py-0.5 sm:py-1 rounded-full border truncate ${item.tagColor}`}>
                         {item.tag}
                       </span>
                     </div>
-                    <h3 className="text-base font-extrabold text-slate-900 mb-2">
+                    <h3 className="text-xs sm:text-base font-extrabold text-slate-900 mb-1 sm:mb-2 line-clamp-2 sm:line-clamp-none">
                       {item.title}
                     </h3>
-                    <p className="text-sm text-slate-600 leading-relaxed">
+                    <p className="text-[11px] sm:text-sm text-slate-600 leading-snug sm:leading-relaxed line-clamp-3 sm:line-clamp-none">
                       {item.desc}
                     </p>
                   </div>
@@ -716,7 +716,7 @@ export default function AuthView() {
       {/* 5. Section Akses Terpadu 8 Role */}
       <section id="role" className="bg-white py-16 px-4 sm:px-6 lg:px-8">
         <div className="max-w-5xl mx-auto">
-          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8 text-center md:text-left">
             <div>
               <span className="inline-block text-xs font-extrabold uppercase tracking-wider text-sky-700 bg-sky-100 px-3.5 py-1 rounded-full mb-2">
                 Manajemen Peran
@@ -731,20 +731,22 @@ export default function AuthView() {
             <button
               type="button"
               onClick={() => openAuthModal('login')}
-              className="px-6 py-3 rounded-full bg-gradient-to-r from-[#0ea5e9] to-[#10b981] hover:brightness-105 text-white text-sm font-bold inline-flex items-center justify-center gap-2 shadow-[0_4px_15px_rgba(14,165,233,0.3)] transition active:scale-95 shrink-0"
+              className="px-6 py-3 rounded-full bg-gradient-to-r from-[#0ea5e9] to-[#10b981] hover:brightness-105 text-white text-sm font-bold inline-flex items-center justify-center gap-2 shadow-[0_4px_15px_rgba(14,165,233,0.3)] transition active:scale-95 shrink-0 self-center md:self-auto"
             >
               <span>Masuk &amp; Pilih Role</span>
               <ChevronRight className="w-4 h-4" />
             </button>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-2.5 sm:gap-4">
             {roleSummaries.map((role, i) => (
-              <div key={i} className="p-4 rounded-2xl border border-slate-200 bg-slate-50/60 hover:bg-white hover:border-sky-200 hover:shadow-sm transition">
-                <span className={`inline-block text-xs font-extrabold px-3 py-1 rounded-full mb-2 ${role.badge}`}>
-                  {role.name}
-                </span>
-                <p className="text-xs sm:text-sm text-slate-600 leading-snug">{role.desc}</p>
+              <div key={i} className="p-3 sm:p-4 rounded-2xl border border-slate-200 bg-slate-50/60 hover:bg-white hover:border-sky-200 hover:shadow-sm transition flex flex-col justify-between">
+                <div>
+                  <span className={`inline-block text-[10px] sm:text-xs font-extrabold px-2 sm:px-3 py-0.5 sm:py-1 rounded-full mb-1.5 sm:mb-2 ${role.badge}`}>
+                    {role.name}
+                  </span>
+                  <p className="text-[11px] sm:text-xs text-slate-600 leading-snug line-clamp-3 sm:line-clamp-none">{role.desc}</p>
+                </div>
               </div>
             ))}
           </div>
